@@ -1,0 +1,32 @@
+{
+  "name": "dbms-mini-project",
+  "version": "1.0.0",
+  "description": "This is dbms mini project for dbms laboratory from Poovarasan S currently studying in UVCE as  B.Tech in Information Science and Engineering as 3rd year (5th sem)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "start-server": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/poovarasansivakumar2003/DBMS-Mini-Project.git"
+  },
+  "keywords": [
+    "Pharmacy",
+    "Managament",
+    "System"
+  ],
+  "author": "Poovarasan S",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/issues"
+  },
+  "homepage": "https://github.com/poovarasansivakumar2003/DBMS-Mini-Project#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
