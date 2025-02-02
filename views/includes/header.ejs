@@ -8,9 +8,15 @@
         <%= pagetitle %>
     </title>
     <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script defer src="index.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body>
+<body onload="loadfun()">
+    <div id="loading">
+        <div class="loader"></div>
+    </div>
     <header>
         <nav>
             <ul>
@@ -18,7 +24,10 @@
                     <a href="/" class="<%= path === '/' ? 'active' : '' %>">Home</a>
                 </li>
                 <li>
-                    <a href="/admin/login" class="<%= path === 'login' ? 'active' : '' %>">Login</a>
+                    <a href="/admin/login" class="<%= path === '/login' ? 'active' : '' %>">Login</a>
+                </li>
+                <li>
+                    <a href="medicines" class="<%= path === '/medicines' ? 'active' : '' %>">Medicines</a>
                 </li>
             </ul>
         </nav>

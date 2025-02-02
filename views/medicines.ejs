@@ -1,0 +1,29 @@
+<%- include('includes/header') %>
+
+    <h1>Available Medicines</h1>
+
+    <% if (medicines.length > 0) { %>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Composition</th>
+                <th>Price</th>
+                <th>Expiry Date</th>
+            </tr>
+            <% medicines.forEach(medicine => { %>
+                <tr>
+                    <td><%= medicine.medicine_id %></td>
+                    <td><%= medicine.medicine_name %></td>
+                    <td><%= medicine.medicine_composition %></td>
+                    <td>₹<%= medicine.medicine_price %></td>
+                    <td><%= medicine.medicine_expiry_date %></td>
+                </tr>
+            <% }) %>
+        </table>
+    <% } else { %>
+        <p>No medicines found.</p>
+    <% } %>
+
+    <%- include('includes/footer') %>
+

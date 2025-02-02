@@ -1,11 +1,14 @@
 const express = require('express');
 const path = require('path');
+const cors = require("cors");
+const pool = require("./db");
 
 const app = express();
 
 // Middleware
-app.use(express.urlencoded({ extended: false })); 
 app.use(express.json()); 
+app.use(express.urlencoded({ extended: false })); 
+app.use(cors());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
 // Set View Engine
@@ -18,11 +21,11 @@ const shopRoutes = require('./routes/shop');
 
 // Use Routes
 app.use('/admin', adminRoutes);
-app.use(shopRoutes);
+app.use(shopRoutes); 
 
 // Handle 404 Errors
 app.use((req, res) => {
-    res.status(404).render('404', {pagetitle: 'Page Not Found', path:'err'});
+    res.status(404).render('404', { pagetitle: 'Page Not Found', path: 'err' });
 });
 
 // Start Server
