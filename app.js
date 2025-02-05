@@ -2,8 +2,18 @@ const express = require('express');
 const path = require('path');
 const cors = require("cors");
 const pool = require("./db");
+const session = require('express-session');
+require('dotenv').config();
 
 const app = express();
+
+// sign and encrypt session data
+app.use(session({
+    secret: process.env.SESSION_SECRET, // Uses the secret key from .env
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }
+}));
 
 // Middleware
 app.use(express.json()); 

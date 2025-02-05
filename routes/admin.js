@@ -1,39 +1,57 @@
 const express = require('express');
-const path = require('path');
+// const path = require('path');
+const bcrypt = require('bcryptjs');
 const pool = require("../db");
 const router = express.Router();
 
-router.get('/login', (req, res, next) => {
-    res.render('login',{pagetitle:'Login', path:'/login', error: req.query.error || null });
+// Login Page
+router.get('/login', (req, res) => {
+    res.render('login', { 
+        pagetitle: 'Login', 
+        path: '/login', 
+        error: req.query.error || null,
+        admin: req.session ? req.session.admin : null  
+    });
 });
 
-// Handle login form submission
+// Handle Login
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     try {
+        console.log("Received login request for:", username); // Debugging
+        // Fetch admin from the database
         const [rows] = await pool.query('SELECT * FROM admin WHERE admin_username = ?', [username]);
 
         if (rows.length === 0) {
+            console.log("Admin not found"); // Debugging
             return res.redirect('/login?error=Invalid credentials');
         }
 
         const admin = rows[0];
 
-        // Uncomment if passwords are hashed
-        // const isMatch = await bcrypt.compare(password, admin.admin_password);
-        const isMatch = password === admin.admin_password; // For plain text passwords
-
+        // Compare hashed password
+        const isMatch = await bcrypt.compare(password.trim(), admin.admin_password.trim());
         if (!isMatch) {
+            console.log("Password does not match"); // Debugging
+            console.log("Entered Password:", password);
+            console.log("Stored Hashed Password:", admin.admin_password);
+            console.log("Password Match Result:", isMatch);
             return res.redirect('/login?error=Invalid credentials');
+        }
+
+        if (!req.session) {
+            console.log("Session not initialized!"); // Debugging
+            return res.redirect('/login?error=Session not initialized');
         }
 
         // Store session data
         req.session.admin = { username: admin.admin_username };
-        
-        res.redirect('/'); 
+        console.log("Login successful, session set."); // Debugging
+
+        res.redirect('/admin/adminDashboard'); 
     } catch (err) {
-        console.error(err);
+        console.error("Login error:", err);
         res.redirect('/login?error=Server error');
     }
 });
@@ -41,19 +59,29 @@ router.post('/login', async (req, res) => {
 // Logout Route
 router.get('/logout', (req, res) => {
     req.session.destroy(() => {
-        res.redirect('/login');
+        res.redirect('/');
     });
 });
 
+router.get('/adminDashboard', (req, res) => {
+    if (!req.session.admin) {
+        return res.redirect('/admin/login');
+    }
+    res.render('adminDashboard', { 
+        pagetitle: req.session.admin.username, 
+        path: '/adminDashboard' ,
+        admin_username: req.session.admin.username 
+    });
+});
 
 // Route to add a new medicine
-router.post("/medicines", async (req, res) => {
+router.post("/admin/add-medicine", async (req, res) => {
     try {
-        const { medicine_name, medicine_composition, medicine_price, medicine_expiry_date } = req.body;
+        const { medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url } = req.body;
 
         const [result] = await pool.query(
-            "INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date) VALUES (?, ?, ?, ?)",
-            [medicine_name, medicine_composition, medicine_price, medicine_expiry_date]
+            "INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url) VALUES (?, ?, ?, ?, ?)",
+            [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url]
         );
 
         res.status(201).json({ message: "Medicine added successfully", medicine_id: result.insertId });

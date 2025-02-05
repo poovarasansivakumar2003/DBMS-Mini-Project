@@ -1,29 +1,30 @@
 <%- include('includes/header') %>
 
-    <h1>Available Medicines</h1>
+<div class="container mx-auto p-6">
+    <h1 class="text-3xl font-semibold text-gray-700 text-center mb-6">Available Medicines</h1>
 
     <% if (medicines.length > 0) { %>
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Composition</th>
-                <th>Price</th>
-                <th>Expiry Date</th>
-            </tr>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             <% medicines.forEach(medicine => { %>
-                <tr>
-                    <td><%= medicine.medicine_id %></td>
-                    <td><%= medicine.medicine_name %></td>
-                    <td><%= medicine.medicine_composition %></td>
-                    <td>₹<%= medicine.medicine_price %></td>
-                    <td><%= medicine.medicine_expiry_date %></td>
-                </tr>
+                <div class="border rounded-lg shadow-md p-4 bg-white hover:shadow-lg transition cursor-pointer">
+                    <img src="<%= medicine.medicine_img_url.replace('./public', '') %>" 
+                        alt="<%= medicine.medicine_name %>"
+                        class="w-full h-40 object-cover rounded-md mb-3">
+                    
+                    <h2 class="text-lg font-semibold text-gray-800"><%= medicine.medicine_name %></h2>
+                    <p class="text-gray-600 text-sm"><%= medicine.medicine_composition %></p>
+                    <p class="text-blue-600 font-bold text-lg mt-2">₹<%= medicine.medicine_price %></p>
+                    <p class="text-red-500 text-sm">Expiry: <%= new Date(medicine.medicine_expiry_date).toDateString() %></p>
+
+                    <button class="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                        Select
+                    </button>
+                </div>
             <% }) %>
-        </table>
+        </div>
     <% } else { %>
-        <p>No medicines found.</p>
+        <p class="text-center text-gray-600">No medicines found.</p>
     <% } %>
+</div>
 
-    <%- include('includes/footer') %>
-
+<%- include('includes/footer') %>

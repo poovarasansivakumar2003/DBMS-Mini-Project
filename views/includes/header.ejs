@@ -9,25 +9,37 @@
     </title>
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    <script defer src="index.js"></script>
+    <script defer src="/js/index.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body onload="loadfun()">
-    <div id="loading">
-        <div class="loader"></div>
+<body class="bg-gray-100">
+    <!-- Preloader -->
+    <div id="loading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
+        <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
     </div>
-    <header>
-        <nav>
-            <ul>
+
+    <!-- Main Content -->
+    <header class="bg-blue-600 shadow-lg fixed w-full top-0 left-0 z-50">
+        <nav class="container mx-auto flex justify-between items-center py-4 px-6">
+            <div class="text-white text-2xl font-bold">
+                <a href="/" class="hover:text-gray-300">Pharmacy</a>
+            </div>
+            <ul class="flex space-x-6">
                 <li>
-                    <a href="/" class="<%= path === '/' ? 'active' : '' %>">Home</a>
+                    <a href="/" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+                        Home
+                    </a>
                 </li>
                 <li>
-                    <a href="/admin/login" class="<%= path === '/login' ? 'active' : '' %>">Login</a>
+                    <a href="/admin/login" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+                        Login
+                    </a>
                 </li>
                 <li>
-                    <a href="medicines" class="<%= path === '/medicines' ? 'active' : '' %>">Medicines</a>
+                    <a href="/medicines" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+                        Medicines
+                    </a>
                 </li>
             </ul>
         </nav>

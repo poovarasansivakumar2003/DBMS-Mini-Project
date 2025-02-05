@@ -1,0 +1,73 @@
+<%- include('includes/header') %>
+<h1>Welcome <%= admin_username %></h1>
+<a href="/admin/logout"><button>Logout</button></a>
+
+<h2>Add a New Medicine</h2>
+<form id="medicineForm">
+    <label>Medicine Name:</label>
+    <input type="text" id="medicine_name" required>
+    
+    <label>Composition:</label>
+    <input type="text" id="medicine_composition" required>
+    
+    <label>Price:</label>
+    <input type="number" id="medicine_price" required>
+    
+    <label>Expiry Date:</label>
+    <input type="date" id="medicine_expiry_date" required>
+    
+    <label>Image URL:</label>
+    <input type="text" id="medicine_img_url">
+
+    <button type="submit">Add Medicine</button>
+</form>
+
+<p id="responseMessage"></p>
+
+<script>
+    document.getElementById('medicineForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const medicineData = {
+            medicine_name: document.getElementById('medicine_name').value.trim(),
+            medicine_composition: document.getElementById('medicine_composition').value.trim(),
+            medicine_price: document.getElementById('medicine_price').value.trim(),
+            medicine_expiry_date: document.getElementById('medicine_expiry_date').value.trim(),
+            medicine_img_url: document.getElementById('medicine_img_url').value.trim()
+        };
+
+        try {
+            const response = await fetch('/admin/add-medicine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(medicineData)
+            });
+
+              // Log the response text for debugging
+        const responseText = await response.text();
+        console.log("Server Response:", responseText);
+        
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error("Received non-JSON response. Possible server error.");
+            }
+
+            const result = JSON.parse(responseText);
+
+            if (!response.ok) {
+                throw new Error(result.message || "Failed to add medicine.");
+            }
+
+            document.getElementById('responseMessage').innerText = result.message || "Medicine added successfully!";
+            document.getElementById('responseMessage').style.color = "green";
+
+        } catch (error) {
+            console.error("Error:", error);
+            document.getElementById('responseMessage').innerText = "Error adding medicine! " + error.message;
+            document.getElementById('responseMessage').style.color = "red";
+        }
+    });
+</script>
+
+<%- include('includes/footer') %>
