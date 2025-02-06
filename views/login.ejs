@@ -2,7 +2,7 @@
 
 <div class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 class="text-2xl font-semibold text-center text-blue-600 mb-6">Admin Login</h2>
+        <h2 class="text-2xl font-semibold text-center text-blue-600 mb-6">Login</h2>
 
         <% if (error) { %>
             <p class="text-red-600 text-center mb-4">
@@ -10,9 +10,17 @@
             </p>
         <% } %>
 
-        <form action="/admin/login" method="POST" class="space-y-4">
+        <form action="/login" method="POST" class="space-y-4">
             <div>
-                <label for="username" class="block text-gray-700 font-medium">Username</label>
+                <label for="role" class="block text-gray-700 font-medium">Login as</label>
+                <select id="role" name="role" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="admin">Admin</option>
+                    <option value="customer">Customer</option>
+                </select>
+            </div>
+            <div>
+                <label for="username" class="block text-gray-700 font-medium">Username / Email</label>
                 <input type="text" id="username" name="username" required 
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
@@ -26,12 +34,9 @@
             </button>
         </form>
 
-        <% if (admin) { %>
-            <p class="text-green-600 text-center mt-4">Welcome, <%= admin.username %>!</p>
-            <div class="text-center mt-2">
-                <a href="/admin/logout" class="text-blue-500 hover:underline">Logout</a>
-            </div>
-        <% } %>
+        <div class="text-center mt-4">
+            <p>Don't have an account? <a href="customerRegister" class="text-blue-500 hover:underline">Create Account</a></p>
+        </div>
     </div>
 </div>
 

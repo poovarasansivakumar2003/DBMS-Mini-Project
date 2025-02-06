@@ -23,7 +23,9 @@
     <header class="bg-blue-600 shadow-lg fixed w-full top-0 left-0 z-50">
         <nav class="container mx-auto flex justify-between items-center py-4 px-6">
             <div class="text-white text-2xl font-bold">
-                <a href="/" class="hover:text-gray-300">Pharmacy</a>
+                <a href="/" class="hover:text-gray-300">
+                    <%= username ? username : 'Pharmacy' %>
+                </a>
             </div>
             <ul class="flex space-x-6">
                 <li>
@@ -31,15 +33,26 @@
                         Home
                     </a>
                 </li>
-                <li>
-                    <a href="/admin/login" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                        Login
+                <% if (profile === 'customer') { %><li>
+                    <a href="/customer/customerDashboard" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+                         Customer 
                     </a>
-                </li>
-                <li>
-                    <a href="/medicines" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                        Medicines
+                </li><% } %>
+                <% if (profile === 'admin') { %><li>
+                    <a href="/admin/adminDashboard" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+                         Admin 
                     </a>
+                </li><% } %>
+                <li>
+                    <% if (!username) { %>
+                        <a href="/login" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+                            Login
+                        </a>
+                    <% } else { %>
+                        <a href="/logout" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                            Logout
+                        </a>
+                    <% } %>
                 </li>
             </ul>
         </nav>

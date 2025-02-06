@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const cors = require("cors");
-const pool = require("./db");
 const session = require('express-session');
 require('dotenv').config();
 
@@ -26,16 +25,25 @@ app.set('view engine', 'ejs');
 app.set('views', 'views');
 
 // Import Routes
+const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');  
-const shopRoutes = require('./routes/shop');
+const customerRoutes = require('./routes/customer');
 
 // Use Routes
+app.use(authRoutes); 
+app.use('/customer', customerRoutes);
 app.use('/admin', adminRoutes);
-app.use(shopRoutes); 
+
+// homepage
+app.get('/', (req, res, next) => {
+    const profile = req.session.user ? req.session.user.role : undefined;
+    res.render('index',{ profile, pagetitle:'Home',  username: req.session.user ? req.session.user.username : null});
+});
 
 // Handle 404 Errors
 app.use((req, res) => {
-    res.status(404).render('404', { pagetitle: 'Page Not Found', path: 'err' });
+    const profile = req.session.user ? req.session.user.role : undefined;
+    res.status(404).render('404', {profile, pagetitle: 'Page Not Found', username: req.session.user ? req.session.user.username : null});
 });
 
 // Start Server

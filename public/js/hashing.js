@@ -6,4 +6,5 @@ async function generateHashedPassword(password) {
     console.log('Hashed Password:', hashedPassword);
 }
 
-generateHashedPassword('SecurePass'); // Change 'yourpassword123' to your actual password
+generateHashedPassword('super');
+
