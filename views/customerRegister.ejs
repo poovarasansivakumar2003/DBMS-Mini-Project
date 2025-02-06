@@ -1,0 +1,140 @@
+<%- include('includes/header') %>
+
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+
+        <!-- Logo/Icon -->
+        <div class="text-center">
+            <div class="mx-auto h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Create Account</h2>
+            <p class="mt-2 text-sm text-gray-600">Register for a new account</p>
+        </div>
+
+        <!-- Error Alert -->
+        <% if (typeof error !== "undefined" && error) { %>
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700"><%= error %></p>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+        
+
+        <form action="/customerRegister" method="POST" class="mt-8 space-y-6">
+            <!-- Full Name Field -->
+            <div class="group">
+                <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <input type="text" id="customer_name" name="customer_name" required
+                        class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
+                               text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 
+                               focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                        placeholder="Enter your full name">
+                </div>
+            </div>
+
+            <!-- Email Field -->
+            <div class="group">
+                <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                        </svg>
+                    </div>
+                    <input type="email" id="customer_email" name="customer_email" required
+                        class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
+                               text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 
+                               focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                        placeholder="Enter your email address">
+                </div>
+            </div>
+
+            <!-- Phone Number Field -->
+            <div class="group">
+                <label for="customer_ph_no" class="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                    </div>
+                    <input type="tel" id="customer_ph_no" name="customer_ph_no" required
+                        class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
+                               text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 
+                               focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                        placeholder="Enter your phone number">
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="group">
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+                    Password
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-lock text-gray-400"></i>
+                    </div>
+                    <input type="password" id="customer_password" name="customer_password" required
+                        class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
+                               placeholder-gray-500 focus:outline-none focus:ring-2 
+                               focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        placeholder="Enter your password">
+                    <button type="button" onclick="togglePassword()"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <i id="password-toggle" class="fas fa-eye text-gray-400 hover:text-gray-600 cursor-pointer"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div>
+                <button type="submit" 
+                    class="group relative w-full flex justify-center py-3 px-4 border border-transparent 
+                           text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
+                           transition-all duration-200">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <i class="fas fa-sign-in-alt text-blue-500 group-hover:text-blue-400"></i>
+                    </span>
+                    Create Account
+                </button>
+            </div>
+        </form>
+
+        <!-- Login Link -->
+        <div class="text-center mt-6">
+            <p class="text-sm text-gray-600">
+                Already have an account? 
+                <a href="/login" 
+                   class="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
+                    Sign In
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<%- include('includes/footer') %>

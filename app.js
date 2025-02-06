@@ -25,20 +25,16 @@ app.set('view engine', 'ejs');
 app.set('views', 'views');
 
 // Import Routes
-const authRoutes = require('./routes/auth');
-const adminRoutes = require('./routes/admin');  
-const customerRoutes = require('./routes/customer');
+const authRoutes = require('./routes/authRoutes');
+const homepageRoutes = require('./routes/homepageRoutes');
+const adminRoutes = require('./routes/adminRoutes');  
+const customerRoutes = require('./routes/customerRoutes');
 
 // Use Routes
 app.use(authRoutes); 
+app.use(homepageRoutes);
 app.use('/customer', customerRoutes);
 app.use('/admin', adminRoutes);
-
-// homepage
-app.get('/', (req, res, next) => {
-    const profile = req.session.user ? req.session.user.role : undefined;
-    res.render('index',{ profile, pagetitle:'Home',  username: req.session.user ? req.session.user.username : null});
-});
 
 // Handle 404 Errors
 app.use((req, res) => {

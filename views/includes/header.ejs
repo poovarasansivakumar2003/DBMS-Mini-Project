@@ -14,46 +14,119 @@
 </head>
 
 <body class="bg-gray-100">
-    <!-- Preloader -->
+    <!-- Improved Preloader -->
     <div id="loading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
-        <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div class="relative">
+            <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <div class="mt-4 text-blue-600 text-sm font-medium">Loading...</div>
+        </div>
     </div>
 
-    <!-- Main Content -->
-    <header class="bg-blue-600 shadow-lg fixed w-full top-0 left-0 z-50">
-        <nav class="container mx-auto flex justify-between items-center py-4 px-6">
-            <div class="text-white text-2xl font-bold">
-                <a href="/" class="hover:text-gray-300">
-                    <%= username ? username : 'Pharmacy' %>
-                </a>
-            </div>
-            <ul class="flex space-x-6">
-                <li>
-                    <a href="/" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+    <!-- Enhanced Header -->
+    <header class="bg-blue-600 shadow-lg fixed w-full top-0 left-0 z-40">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Brand -->
+                <div class="flex-shrink-0">
+                    <a href="/"
+                        class="flex items-center space-x-2 text-white hover:text-gray-200 transition duration-150">
+                        <i class="fas fa-clinic-medical text-2xl"></i>
+                        <span class="text-xl font-bold">
+                            <%= username ? username : 'Pharmacy' %>
+                        </span>
+                    </a>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex md:items-center md:space-x-4">
+                    <a href="/"
+                        class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-150">
                         Home
                     </a>
-                </li>
-                <% if (profile === 'customer') { %><li>
-                    <a href="/customer/customerDashboard" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                         Customer 
+
+                    <a href="/customerRegister"
+                        class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-150">
+                        Register
                     </a>
-                </li><% } %>
-                <% if (profile === 'admin') { %><li>
-                    <a href="/admin/adminDashboard" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                         Admin 
+
+                    <% if (profile==='customer' ) { %>
+                        <a href="/customer/customerDashboard"
+                            class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-150">
+                            Customer
+                        </a>
+                        <% } %>
+
+                            <% if (profile==='admin' ) { %>
+                                <a href="/admin/adminDashboard"
+                                    class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-150">
+                                    Admin
+                                </a>
+                                <% } %>
+
+                                    <% if (!username) { %>
+                                        <a href="/login"
+                                            class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-150">
+                                            Login
+                                        </a>
+                                        <% } else { %>
+                                            <a href="/logout"
+                                                class="bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-600 transition duration-150">
+                                                Logout
+                                            </a>
+                                            <% } %>
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button type="button" onclick="toggleMobileMenu()"
+                        class="inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-blue-700 focus:outline-none">
+                        <i class="fas fa-bars text-xl" id="menu-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Navigation -->
+            <div class="md:hidden hidden" id="mobile-menu">
+                <div class="px-2 pt-2 pb-3 space-y-1">
+                    <a href="/"
+                        class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition duration-150">
+                        Home
                     </a>
-                </li><% } %>
-                <li>
-                    <% if (!username) { %>
-                        <a href="/login" class="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                            Login
+
+                    <a href="/customerRegister"
+                        class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition duration-150">
+                        Register
+                    </a>
+
+                    <% if (profile==='customer' ) { %>
+                        <a href="/customer/customerDashboard"
+                            class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition duration-150">
+                            Customer
                         </a>
-                    <% } else { %>
-                        <a href="/logout" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                            Logout
-                        </a>
-                    <% } %>
-                </li>
-            </ul>
+                        <% } %>
+
+                            <% if (profile==='admin' ) { %>
+                                <a href="/admin/adminDashboard"
+                                    class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition duration-150">
+                                    Admin
+                                </a>
+                                <% } %>
+
+                                    <% if (!username) { %>
+                                        <a href="/login"
+                                            class="block bg-blue-500 text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition duration-150">
+                                            Login
+                                        </a>
+                                        <% } else { %>
+                                            <a href="/logout"
+                                                class="block bg-red-500 text-white px-3 py-2 rounded-md text-base font-medium hover:bg-red-600 transition duration-150">
+                                                Logout
+                                            </a>
+                                            <% } %>
+                </div>
+            </div>
         </nav>
     </header>
+
+    <!-- Add padding for fixed header -->
+    <div class="pt-16"></div>
