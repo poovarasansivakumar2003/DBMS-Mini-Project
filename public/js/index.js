@@ -1,8 +1,8 @@
 // Preloader
-window.addEventListener('load', function() {
-    const loader = document.getElementById('loading');
-    loader.style.display = 'none';
-});
+// window.addEventListener('load', function() {
+//     const loader = document.getElementById('loading');
+//     loader.style.display = 'none';
+// });
 
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {

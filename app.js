@@ -15,31 +15,33 @@ app.use(session({
 }));
 
 // Middleware
-app.use(express.json()); 
-app.use(express.urlencoded({ extended: false })); 
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(cors());
-app.use(express.static(path.join(__dirname, 'public'))); 
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'private')));
 
 // Set View Engine
 app.set('view engine', 'ejs');
 app.set('views', 'views');
 
 // Import Routes
-const authRoutes = require('./routes/authRoutes');
 const homepageRoutes = require('./routes/homepageRoutes');
-const adminRoutes = require('./routes/adminRoutes');  
+const adminRoutes = require('./routes/adminRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 
 // Use Routes
-app.use(authRoutes); 
 app.use(homepageRoutes);
 app.use('/customer', customerRoutes);
 app.use('/admin', adminRoutes);
 
-// Handle 404 Errors
 app.use((req, res) => {
     const profile = req.session.user ? req.session.user.role : undefined;
-    res.status(404).render('404', {profile, pagetitle: 'Page Not Found', username: req.session.user ? req.session.user.username : null});
+    res.status(404).render('404', {
+        profile: req.session.user?.role,
+        username: req.session.user?.username, 
+        pagetitle: 'Page Not Found'
+    });
 });
 
 // Start Server

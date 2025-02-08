@@ -1,0 +1,89 @@
+<%- include('includes/header') %>
+
+    <div
+        class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center space-y-6">
+            <!-- Success Icon -->
+            <div class="flex justify-center">
+                <div
+                    class="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center transform transition-transform hover:scale-110 duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-green-600" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 5.707 8.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l7-7a1 1 0 000-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <div class="space-y-3">
+                <h2 class="text-3xl font-extrabold text-gray-900">Success!</h2>
+                <p class="text-gray-600">Your account has been created successfully.</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+                <a href="/" class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg font-medium 
+                      hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all duration-200 shadow-sm">
+                    <span>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                    </span>
+                    Home
+                </a>
+
+                <a href="../private/customerCards/<%= pdfName %>" class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg font-medium 
+                    hover:bg-green-700 transform hover:-translate-y-0.5 transition-all duration-200 shadow-sm">
+                    <span>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                    </span>
+                    Download Card
+                </a>
+
+
+                <a href="/login"
+                    class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg 
+                      font-medium hover:bg-gray-50 transform hover:-translate-y-0.5 transition-all duration-200 shadow-sm">
+                    <span>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                    </span>
+                    Login Now
+                </a>
+            </div>
+
+            <!-- Auto-redirect Notice -->
+            <div class="mt-8 text-sm text-gray-500">
+                <p>You will be redirected to the login page in <span id="countdown" class="font-medium">10</span>
+                    seconds</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-redirect countdown
+        let timeLeft = 10;
+        const countdownElement = document.getElementById('countdown');
+
+        if (countdownElement) {
+            const countdown = setInterval(() => {
+                timeLeft--;
+                countdownElement.textContent = timeLeft;
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    window.location.href = '/login';
+                }
+            }, 1000);
+        }
+    </script>
+
+    <%- include('includes/footer') %>
