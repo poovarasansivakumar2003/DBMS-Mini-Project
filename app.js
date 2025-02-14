@@ -19,7 +19,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'private')));
 
 // Set View Engine
 app.set('view engine', 'ejs');
@@ -36,11 +35,26 @@ app.use('/customer', customerRoutes);
 app.use('/admin', adminRoutes);
 
 app.use((req, res) => {
-    const profile = req.session.user ? req.session.user.role : undefined;
     res.status(404).render('404', {
         profile: req.session.user?.role,
         username: req.session.user?.username, 
         pagetitle: 'Page Not Found'
+    });
+});
+
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).render("500", {
+        profile: req.session.user?.role,
+        username: req.session.user?.username,
+        pagetitle: "Internal Server Error",
+        error: 'An unexpected error occurred.'
+    });
+    res.status(400).render("400", {
+        profile: req.session.user?.role,
+        username: req.session.user?.username,
+        pagetitle: "Bad Request",
+        error: 'An unexpected error occurred.'
     });
 });
 

@@ -5,7 +5,6 @@ exports.getLoginPage = (req, res) => {
     res.render('login', {
         pagetitle: 'Login',
         profile: "login",
-        error: req.query.error || null,
         user: req.session ? req.session.user : null,
         username: req.session.user ? req.session.user.username : null
     });
@@ -18,14 +17,14 @@ exports.handleLogin = async (req, res) => {
         const [rows] = await pool.query(query, [username]);
         
         if (rows.length === 0) {
-            return res.redirect('/login?error=Invalid credentials');
+            return res.status(500).render("500", { error: "Invalid credentials" });
         }
 
         const user = rows[0];
         const passwordField = role === 'admin' ? 'admin_password' : 'customer_password';
 
         if (!await bcrypt.compare(password.trim(), user[passwordField].trim())) {
-            return res.redirect('/login?error=Invalid credentials');
+            return res.status(500).render("500", { error: "Invalid credentials" });
         }
 
         req.session.user = { 
@@ -33,9 +32,16 @@ exports.handleLogin = async (req, res) => {
         };
         
         res.redirect(role === 'admin' ? '/admin/adminDashboard' : '/customer/customerDashboard');
+
     } catch (err) {
         console.error("Login error:", err);
-        res.redirect('/login?error=Server error');
+        res.render('login', {
+            pagetitle: 'Login',
+            profile: "login",
+            error: 'Failed to send message. Please try again later.',
+            user: req.session ? req.session.user : null,
+            username: req.session.user ? req.session.user.username : null
+        });
     }
 };
 

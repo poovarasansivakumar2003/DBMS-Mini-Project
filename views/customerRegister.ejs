@@ -7,36 +7,29 @@
             <!-- Logo/Icon -->
             <div class="text-center">
                 <div class="mx-auto h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" viewBox="0 0 20 20"
-                        fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                            clip-rule="evenodd" />
-                    </svg>
+                    <i class="fas fa-clinic-medical text-blue-600 text-2xl"></i>
                 </div>
                 <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Create Account</h2>
                 <p class="mt-2 text-sm text-gray-600">Register for a new account</p>
             </div>
 
-            <!-- Error Alert -->
+            <!-- Error Message -->
             <% if (typeof error !=="undefined" && error) { %>
-                <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
                     <div class="flex items-center">
-                        <i class="fas fa-exclamation-circle text-red-500"></i>
-                        <div class="ml-3">
-                            <p class="text-sm text-red-700">
-                                <%= error %>
-                            </p>
-                        </div>
+                        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                        <p class="text-sm text-red-700">
+                            <%= error %>
+                        </p>
                     </div>
                 </div>
                 <% } %>
 
-
                     <form action="/customerRegister" method="POST" class="mt-8 space-y-6">
                         <!-- Full Name Field -->
-                        <div class="group">
+                        <div>
                             <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-1">
-                                Full Name
+                                Your Name <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -50,9 +43,9 @@
                         </div>
 
                         <!-- Email Field -->
-                        <div class="group">
+                        <div>
                             <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-1">
-                                Email Address
+                                Email Address <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -66,9 +59,9 @@
                         </div>
 
                         <!-- Phone Number Field -->
-                        <div class="group">
+                        <div>
                             <label for="customer_ph_no" class="block text-sm font-medium text-gray-700 mb-1">
-                                Phone Number
+                                Phone Number <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -81,26 +74,28 @@
                             </div>
                         </div>
 
-                        <!-- Photo Field -->
-                        <div class="group">
-                            <label for="customer_photo" class="block text-sm font-medium text-gray-700 mb-1">
-                                Upload Photo
-                            </label>
+                        <!-- Photo Upload Field -->
+                        <div>
+                            <label for="customer_photo" class="block text-sm font-medium text-gray-700 mb-1">Upload
+                                Photo</label>
                             <div class="relative">
-                                <input type="file" id="customer_photo" name="customer_photo" accept="image/*" class="block w-full py-3 border border-gray-300 rounded-lg text-gray-900 
-                       placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 
-                       focus:border-transparent transition-all duration-200" onchange="previewImage(event)">
+                                <input type="file" id="customer_photo" name="customer_photo" accept="image/*"
+                                    class="block w-full py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                                    onchange="previewImage(event)">
                             </div>
                             <!-- Image Preview -->
-                            <div class="mt-3">
+                            <div class="mt-3 flex items-center gap-4">
                                 <img id="image-preview"
-                                    class="w-24 h-24 rounded-full border border-gray-300 object-cover hidden"
+                                    class="w-24 h-24 rounded-full border border-gray-300 object-cover hidden shadow-md"
                                     alt="Profile Preview">
+                                <button type="button" id="remove-image"
+                                    class="hidden text-sm text-red-500 hover:text-red-700 font-medium"
+                                    onclick="removeImage()">Remove</button>
                             </div>
                         </div>
 
                         <!-- Address Field -->
-                        <div class="group">
+                        <div>
                             <label for="customer_address" class="block text-sm font-medium text-gray-700 mb-1">
                                 Address
                             </label>
@@ -116,9 +111,9 @@
                         </div>
 
                         <!-- Password Field -->
-                        <div class="group">
+                        <div>
                             <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
-                                Password
+                                Password <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -142,10 +137,21 @@
                            text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 
                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
                            transition-all duration-200">
-                                <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                                    <i class="fas fa-sign-in-alt text-blue-500 group-hover:text-blue-400"></i>
+                           <div class="flex items-center">
+
+                                <i class="fas fa-sign-in-alt mr-2"></i>
+                                <span id="submitText">Create Account</span>
+                            </div>
+                                <span id="loadingSpinner" class="hidden ml-2">
+                                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                                        fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
                                 </span>
-                                Create Account
                             </button>
                         </div>
                     </form>
@@ -164,19 +170,58 @@
     </div>
     <script>
 
-function previewImage(event) {
-    const imagePreview = document.getElementById("image-preview");
-    const file = event.target.files[0];
+        // togglePassword for customer registration 
+        function togglePassword() {
+            const passwordInput = document.getElementById('customer_password');
+            const passwordToggle = document.getElementById('password-toggle');
 
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            imagePreview.src = e.target.result;
-            imagePreview.classList.remove("hidden");
-        };
-        reader.readAsDataURL(file);
-    }
-}
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordToggle.classList.remove('fa-eye');
+                passwordToggle.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                passwordToggle.classList.remove('fa-eye-slash');
+                passwordToggle.classList.add('fa-eye');
+            }
+        }
+
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const imgElement = document.getElementById("image-preview");
+                    const removeButton = document.getElementById("remove-image");
+                    imgElement.src = e.target.result;
+                    imgElement.classList.remove("hidden");
+                    removeButton.classList.remove("hidden");
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeImage() {
+            const imgElement = document.getElementById("image-preview");
+            const removeButton = document.getElementById("remove-image");
+            const fileInput = document.getElementById("customer_photo");
+            imgElement.src = "";
+            imgElement.classList.add("hidden");
+            removeButton.classList.add("hidden");
+            fileInput.value = "";
+        }
+
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitText.textContent = 'Creating Profile...';
+            loadingSpinner.classList.remove('hidden');
+        });
 
 
     </script>

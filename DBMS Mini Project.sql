@@ -138,7 +138,7 @@ VALUES
 ('Cough Syrup', 'Dextromethorphan, Guaifenesin', 80, '2026-09-10','./public/img/coughSyrup.jpg'),
 ('Vitamin C', 'Ascorbic Acid 500mg', 25, '2025-06-20','./public/img/vitaminC.webp');
 
-INSERT INTO stocks (medicine_id, supplier_id, medicine_quantity)
+INSERT INTO stocks (medicine_id, supplier_id, stock_quantity)
 VALUES 
 (1, 1, 100), 
 (1, 2, 50),  
