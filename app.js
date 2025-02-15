@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require("fs");
 const path = require('path');
 const cors = require("cors");
 const session = require('express-session');
@@ -8,10 +9,14 @@ const app = express();
 
 // sign and encrypt session data
 app.use(session({
-    secret: process.env.SESSION_SECRET, // Uses the secret key from .env
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false }
+    cookie: { 
+        secure: process.env.NODE_ENV,
+        httpOnly: true, 
+        maxAge: 24 * 60 * 60 * 1000 
+    }
 }));
 
 // Middleware
@@ -34,29 +39,32 @@ app.use(homepageRoutes);
 app.use('/customer', customerRoutes);
 app.use('/admin', adminRoutes);
 
-app.use((req, res) => {
-    res.status(404).render('404', {
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+
+    if (err.status === 400) {
+        return res.status(400).render("400", {
+            profile: req.session.user?.role,
+            username: req.session.user?.username,
+            pagetitle: "Bad Request"
+        });
+    }
+
+    if (err.status === 404) {
+        return res.status(404).render("404", {
+            profile: req.session.user?.role,
+            username: req.session.user?.username, 
+            pagetitle: 'Page Not Found'
+        });
+    }
+
+    return res.status(500).render("500", {
         profile: req.session.user?.role,
-        username: req.session.user?.username, 
-        pagetitle: 'Page Not Found'
+        username: req.session.user?.username,
+        pagetitle: "Internal Server Error"
     });
 });
 
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).render("500", {
-        profile: req.session.user?.role,
-        username: req.session.user?.username,
-        pagetitle: "Internal Server Error",
-        error: 'An unexpected error occurred.'
-    });
-    res.status(400).render("400", {
-        profile: req.session.user?.role,
-        username: req.session.user?.username,
-        pagetitle: "Bad Request",
-        error: 'An unexpected error occurred.'
-    });
-});
 
 // Start Server
 const PORT = process.env.PORT || 3000;

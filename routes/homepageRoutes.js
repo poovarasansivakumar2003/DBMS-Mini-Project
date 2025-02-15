@@ -12,6 +12,7 @@ router.post('/login', authController.handleLogin);
 router.get('/logout', authController.logout);
 router.get("/customerRegister", customerRegistrationController.getCustomerRegister);
 router.post("/customerRegister", customerRegistrationController.customerRegister);
+router.get("/customer/downloadCard/:filename", customerRegistrationController.downloadCustomerCard);
 router.get('/contact', contactController.getContactPage);
 router.post('/contact', contactController.postContactForm);
 

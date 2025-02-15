@@ -28,6 +28,8 @@ create table customers(
 describe customers;
 select * from customers;
 
+ALTER TABLE customers ADD CONSTRAINT unique_customer UNIQUE (customer_email, customer_ph_no);
+
 -- Medicines Table
 create table medicines(
 	medicine_id int auto_increment primary key,

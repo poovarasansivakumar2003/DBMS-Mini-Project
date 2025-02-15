@@ -1,4 +1,10 @@
+const express = require("express");
+const path = require("path");
 const pool = require("../db");
+
+// Serve static files
+const app = express();
+app.use("/private/uploads/customersPhotos", express.static(path.join(__dirname, "../private/uploads/customersPhotos")));
 
 exports.getDashboard = async (req, res) => {
     const profile = req.session.user ? req.session.user.role : undefined;

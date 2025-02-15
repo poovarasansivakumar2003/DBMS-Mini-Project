@@ -3,12 +3,12 @@ const pool = require("../db");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const PDFDocument = require("pdfkit");
-const fs = require("fs");
 const multer = require("multer");
 const QRCode = require("qrcode");
 
-const app = express();
-app.use(express.static(path.join(__dirname, "private")));
+// Ensure private directories exist
+const privateDirs = ["../private/uploads/customersPhotos", "../private/customerCards", "../private/customerQrcodes"];
+privateDirs.forEach((dir) => fs.mkdirSync(path.join(__dirname, dir), { recursive: true }));
 
 // Configure Multer for File Uploads
 const uploadDir = path.join(__dirname, "../private/uploads/customersPhotos");
@@ -18,7 +18,12 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => cb(null, `${Date.now()}${path.extname(file.originalname)}`),
 });
+
 const upload = multer({ storage });
+
+// Serve static files
+const app = express();
+app.use("/private/customerCards", express.static(path.join(__dirname, "../private/customerCards")));
 
 // Render Customer Registration Page
 exports.getCustomerRegister = (req, res) => {
@@ -39,35 +44,46 @@ exports.customerRegister = async (req, res) => {
 
         try {
             const { customer_name, customer_email, customer_ph_no, customer_address, customer_password } = req.body;
-            
-            // Check if phone number already exists
+
+            // Check if email or phone number already exists
             const [existingCustomer] = await pool.query(
-                "SELECT customer_id FROM customers WHERE customer_ph_no = ?",
-                [customer_ph_no]
+                "SELECT customer_id FROM customers WHERE customer_email = ? OR customer_ph_no = ?",
+                [customer_email, customer_ph_no]
             );
+            
             if (existingCustomer.length > 0) {
-                return res.status(400).render("400", { error: "Customer already exists" });
+                return res.status(400).render("400", {
+                    error: "Customer with this email or phone number already exists"
+                });
             }
 
             // Hash password
             const hashedPassword = await bcrypt.hash(customer_password.trim(), 10);
 
-            // Insert customer data
+            // Insert customer data without photo initially
             const [result] = await pool.query(
-                `INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_photo, customer_address, customer_password)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-                [customer_name, customer_email, customer_ph_no, "", customer_address || null, hashedPassword]
+                `INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_address, customer_password)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [customer_name, customer_email, customer_ph_no, customer_address || null, hashedPassword]
             );
+
             const customer_id = result.insertId;
-            
-            // Rename customer photo file
-            let customer_photo = null;
+
+            // Rename customer photo file correctly
+            let customer_photo = "";
             if (req.file) {
-                customer_photo = path.join(uploadDir, `${customer_id}_photo${path.extname(req.file.originalname)}`);
-                fs.renameSync(req.file.path, customer_photo);
+                const ext = path.extname(req.file.originalname);
+                const newFileName = `${customer_id}_photo${ext}`;
+                const newFilePath = path.join(uploadDir, newFileName);
+                try {
+                    fs.renameSync(req.file.path, newFilePath);
+                    customer_photo = newFilePath;  
+                } catch (renameErr) {
+                    console.error("Error renaming file:", renameErr);
+                }
             }
 
-            // Update database with the new photo path
+            // Update photo path in the database
             await pool.query("UPDATE customers SET customer_photo = ? WHERE customer_id = ?", [customer_photo, customer_id]);
 
             // Generate PDF
@@ -86,6 +102,7 @@ exports.customerRegister = async (req, res) => {
 
             res.render("success", {
                 pdfName: `${customer_id}_card.pdf`,
+                pdfPath: `/private/customerCards/${customer_id}_card.pdf`,
                 profile: req.session.user?.role,
                 username: req.session.user?.username,
                 pagetitle: "Success"
@@ -108,19 +125,22 @@ async function generateCustomerPDF(customerData, filePath) {
     return new Promise(async (resolve, reject) => {
         const doc = new PDFDocument({ size: "A4", margin: 40 });
         const stream = fs.createWriteStream(filePath);
+
         doc.pipe(stream);
 
         // Header
-        doc.rect(0, 0, doc.page.width, 120).fill("#0D6EFD");
-        doc.fill("#ffffff").fontSize(26).font("Helvetica-Bold").text("PHARMACY CUSTOMER CARD", 50, 50, { align: "center" });
+        doc.rect(0, 0, doc.page.width, 100).fill("#0D6EFD");
+        doc.fill("#ffffff").fontSize(24).font("Helvetica-Bold").text("Mediverse", 50, 40, { align: "center" });
 
-        // Customer Details Card
-        const cardY = 150;
-        doc.roundedRect(50, cardY, doc.page.width - 100, 450, 10).fill("#ffffff").stroke("#D1D5DB");
+        // Customer Photo
+        if (customerData.customer_photo) {
+            const customerPhotoPath = path.resolve(customerData.customer_photo);  
 
-        // Add Customer Photo
-        if (customerData.customer_photo && fs.existsSync(customerData.customer_photo)) {
-            doc.image(customerData.customer_photo, 70, cardY + 30, { width: 100, height: 100 });
+            if (fs.existsSync(customerPhotoPath) && fs.lstatSync(customerPhotoPath).isFile()) {
+                doc.image(customerPhotoPath, 50, 120, { width: 100, height: 100 });
+            } else {
+                console.warn("Customer photo not found:", customerPhotoPath);
+            }
         }
 
         // Generate QR Code
@@ -130,36 +150,40 @@ async function generateCustomerPDF(customerData, filePath) {
 
         await QRCode.toFile(qrCodePath, qrCodeData);
         if (fs.existsSync(qrCodePath)) {
-            doc.image(qrCodePath, doc.page.width - 170, cardY + 30, { width: 100, height: 100 });
+            doc.image(qrCodePath, doc.page.width - 150, 120, { width: 100, height: 100 });
         }
 
         // Customer Details
-        const detailsStart = cardY + 160;
-        doc.font("Helvetica-Bold").fontSize(16).fill("#0D6EFD").text("Customer Details", 70, detailsStart);
-        doc.moveTo(70, detailsStart + 20).lineTo(doc.page.width - 70, detailsStart + 20).stroke("#D1D5DB");
+        doc.font("Helvetica-Bold").fontSize(14).fill("#333").text("Customer ID:", 50, 240);
+        doc.font("Helvetica").fontSize(14).text(customerData.customer_id, 200, 240);
 
-        const details = [
-            { label: "Customer ID", value: customerData.customer_id },
-            { label: "Name", value: customerData.customer_name },
-            { label: "Email", value: customerData.customer_email },
-            { label: "Phone", value: customerData.customer_ph_no },
-            { label: "Address", value: customerData.customer_address || "N/A" },
-        ];
+        doc.font("Helvetica-Bold").fontSize(14).text("Name:", 50, 270);
+        doc.font("Helvetica").fontSize(14).text(customerData.customer_name, 200, 270);
 
-        details.forEach((detail, index) => {
-            doc.font("Helvetica-Bold").fontSize(12).fill("#6B7280").text(`${detail.label}:`, 70, detailsStart + 40 + index * 40);
-            doc.font("Helvetica").fontSize(14).fill("#1F2937").text(detail.value, 200, detailsStart + 40 + index * 40);
-        });
+        doc.font("Helvetica-Bold").fontSize(14).text("Email:", 50, 300);
+        doc.font("Helvetica").fontSize(14).text(customerData.customer_email, 200, 300);
 
         doc.end();
-        stream.on("finish", resolve);
-        stream.on("error", reject);
+        stream.on("finish", () => { resolve();});
+        stream.on("error", (err) => { reject(err);});
     });
 }
 
 // Handle PDF Download
 exports.downloadCustomerCard = (req, res) => {
     const filePath = path.join(__dirname, "../private/customerCards", req.params.filename);
-    if (!fs.existsSync(filePath)) return res.status(404).send("File Not Found");
-    res.download(filePath);
+
+    // Debugging: Log file path before sending
+    console.log("📂 Attempting to download:", filePath);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+        console.error("❌ File Not Found:", filePath);
+        return res.status(404).send("File Not Found");
+    }
+
+    res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
+    res.download(filePath, (err) => {
+        if (err) console.error("❌ Download Error:", err);
+    });
 };
