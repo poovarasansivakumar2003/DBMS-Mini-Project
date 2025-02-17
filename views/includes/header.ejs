@@ -34,7 +34,7 @@
                 <!-- Logo -->
                 <a href="/" class="flex items-center space-x-2 text-white hover:text-gray-200 transition">
                     <i class="fas fa-clinic-medical text-2xl"></i>
-                    <span class="text-xl font-bold">Welcome to <%= username ? username : 'MediVerse' %></span>
+                    <span class="text-xl font-bold">Welcome <% if (username) { %> <%= username %> <% } else { %> to MediVerse <% } %></span>
                 </a>
 
                 <!-- Desktop Navigation -->

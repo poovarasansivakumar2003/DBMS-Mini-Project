@@ -73,8 +73,10 @@
                             <div class="p-6">
                                 <div class="flex items-center mb-4">
                                     <div class="bg-blue-100 rounded-full p-3">
-                                        <img src="/<%= fb.customer_photo %>" alt="Customer Photo"
-                                            class="w-10 h-10 rounded-full">
+                                        <!-- Ensure the path is correct and the file exists -->
+                                        <img src="<%= fb.customer_photo ? '/' + fb.customer_photo : '/default-avatar.jpg' %>"
+                                            alt="<%= fb.customer_name %>'s photo" class="w-10 h-10 rounded-full">
+
                                     </div>
                                     <div class="ml-4">
                                         <h3 class="text-lg font-semibold text-gray-800">
@@ -89,6 +91,7 @@
                         <% }); %>
                 </div>
             </div>
+
 
             <!-- FAQ Section -->
             <div class="max-w-4xl mx-auto mb-8">

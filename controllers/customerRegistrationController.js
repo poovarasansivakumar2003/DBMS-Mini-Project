@@ -1,4 +1,5 @@
 const express = require("express");
+const fs = require("fs");
 const pool = require("../db");
 const path = require("path");
 const bcrypt = require("bcryptjs");
@@ -45,76 +46,91 @@ exports.customerRegister = async (req, res) => {
         try {
             const { customer_name, customer_email, customer_ph_no, customer_address, customer_password } = req.body;
 
-            // Check if email or phone number already exists
+            // Check for existing customer email/phone in one query
             const [existingCustomer] = await pool.query(
                 "SELECT customer_id FROM customers WHERE customer_email = ? OR customer_ph_no = ?",
                 [customer_email, customer_ph_no]
             );
-            
+
             if (existingCustomer.length > 0) {
                 return res.status(400).render("400", {
                     error: "Customer with this email or phone number already exists"
                 });
             }
 
-            // Hash password
+            // Hash password and use transaction for multiple queries
             const hashedPassword = await bcrypt.hash(customer_password.trim(), 10);
 
-            // Insert customer data without photo initially
-            const [result] = await pool.query(
-                `INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_address, customer_password)
-                 VALUES (?, ?, ?, ?, ?)`,
-                [customer_name, customer_email, customer_ph_no, customer_address || null, hashedPassword]
-            );
+            // Using transaction to handle multiple database operations
+            const connection = await pool.getConnection();
+            await connection.beginTransaction();
 
-            const customer_id = result.insertId;
+            try {
+                const [result] = await connection.query(
+                    `INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_address, customer_password)
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [customer_name, customer_email, customer_ph_no, customer_address || null, hashedPassword]
+                );
 
-            // Rename customer photo file correctly
-            let customer_photo = "";
-            if (req.file) {
-                const ext = path.extname(req.file.originalname);
-                const newFileName = `${customer_id}_photo${ext}`;
-                const newFilePath = path.join(uploadDir, newFileName);
-                try {
+                const customer_id = result.insertId;
+
+                let customer_photo = "";
+                if (req.file) {
+                    const ext = path.extname(req.file.originalname);
+                    const newFileName = `${customer_id}_photo${ext}`;
+                    const newFilePath = path.join(uploadDir, newFileName);
+
+                    // Renaming file and update customer photo in database
                     fs.renameSync(req.file.path, newFilePath);
-                    customer_photo = newFilePath;  
-                } catch (renameErr) {
-                    console.error("Error renaming file:", renameErr);
+                    customer_photo = newFilePath;
+
+                    await connection.query("UPDATE customers SET customer_photo = ? WHERE customer_id = ?", [customer_photo, customer_id]);
                 }
+
+                // Generate PDF Card for the customer
+                const pdfDir = path.join(__dirname, "../private/customerCards");
+                const pdfPath = path.join(pdfDir, `${customer_id}_card.pdf`);
+                fs.mkdirSync(pdfDir, { recursive: true });
+
+                await generateCustomerPDF({
+                    customer_id,
+                    customer_name,
+                    customer_email,
+                    customer_ph_no,
+                    customer_photo,
+                    customer_address,
+                }, pdfPath);
+
+                await connection.commit();
+
+                // Render success page
+                res.render("success", {
+                    pdfName: `${customer_id}_card.pdf`,
+                    pdfPath: `/private/customerCards/${customer_id}_card.pdf`,
+                    profile: req.session.user?.role,
+                    username: req.session.user?.username,
+                    pagetitle: "Success"
+                });
+
+            } catch (err) {
+                console.error("Transaction error:", err);
+                await connection.rollback();
+                res.render("customerRegister", {
+                    profile: req.session.user?.role,
+                    username: req.session.user?.username,
+                    pagetitle: "Customer Register",
+                    error: 'Database error. Please try again.',
+                });
+            } finally {
+                connection.release();
             }
-
-            // Update photo path in the database
-            await pool.query("UPDATE customers SET customer_photo = ? WHERE customer_id = ?", [customer_photo, customer_id]);
-
-            // Generate PDF
-            const pdfDir = path.join(__dirname, "../private/customerCards");
-            fs.mkdirSync(pdfDir, { recursive: true });
-
-            const pdfPath = path.join(pdfDir, `${customer_id}_card.pdf`);
-            await generateCustomerPDF({
-                customer_id,
-                customer_name,
-                customer_email,
-                customer_ph_no,
-                customer_photo,
-                customer_address,
-            }, pdfPath);
-
-            res.render("success", {
-                pdfName: `${customer_id}_card.pdf`,
-                pdfPath: `/private/customerCards/${customer_id}_card.pdf`,
-                profile: req.session.user?.role,
-                username: req.session.user?.username,
-                pagetitle: "Success"
-            });
-
         } catch (err) {
-            console.error("Database error:", err);
+            console.error("Unexpected error:", err);
             res.render("customerRegister", {
                 profile: req.session.user?.role,
                 username: req.session.user?.username,
                 pagetitle: "Customer Register",
-                error: 'Database error.',
+                error: 'An unexpected error occurred. Please try again later.',
             });
         }
     });
@@ -128,9 +144,18 @@ async function generateCustomerPDF(customerData, filePath) {
 
         doc.pipe(stream);
 
-        // Header
+        // Header with Mediverse Brand and Symbol
         doc.rect(0, 0, doc.page.width, 100).fill("#0D6EFD");
-        doc.fill("#ffffff").fontSize(24).font("Helvetica-Bold").text("Mediverse", 50, 40, { align: "center" });
+        doc.fill("#ffffff").fontSize(24).font("Helvetica-Bold").text("MediVerse", doc.page.width / 2 - 50, 40, { align: "center" });
+        doc.fontSize(16).font("Helvetica").text("A Smarter, Faster, and Seamless Way to Manage Your Pharmacy.", doc.page.width / 2 - 200, 70, { align: "center" }); // Tagline
+
+        // Mediverse Brand Symbol (assuming you have a FontAwesome icon image)
+        const iconPath = path.join(__dirname, "path_to_fontawesome_icon_image.png"); // Replace with actual image path
+        if (fs.existsSync(iconPath)) {
+            doc.image(iconPath, doc.page.width - 60, 70, { width: 30, height: 30 });
+        } else {
+            console.warn("Mediverse symbol icon not found!");
+        }
 
         // Customer Photo
         if (customerData.customer_photo) {
@@ -143,6 +168,23 @@ async function generateCustomerPDF(customerData, filePath) {
             }
         }
 
+        // Customer Details Section (Properly aligned)
+        doc.font("Helvetica-Bold").fontSize(14).fill("#333").text("Customer ID:", 50, 240);
+        doc.font("Helvetica").fontSize(14).text(customerData.customer_id, 200, 240);
+
+        doc.font("Helvetica-Bold").fontSize(14).text("Name:", 50, 270);
+        doc.font("Helvetica").fontSize(14).text(customerData.customer_name, 200, 270);
+
+        doc.font("Helvetica-Bold").fontSize(14).text("Email:", 50, 300);
+        doc.font("Helvetica").fontSize(14).text(customerData.customer_email, 200, 300);
+
+        // Adding Customer Phone Number and Address
+        doc.font("Helvetica-Bold").fontSize(14).text("Phone Number:", 50, 330);
+        doc.font("Helvetica").fontSize(14).text(customerData.customer_ph_no, 200, 330);
+
+        doc.font("Helvetica-Bold").fontSize(14).text("Address:", 50, 360);
+        doc.font("Helvetica").fontSize(14).text(customerData.customer_address || "N/A", 200, 360);
+
         // Generate QR Code
         const qrCodeData = `Customer ID: ${customerData.customer_id}\nName: ${customerData.customer_name}\nPhone: ${customerData.customer_ph_no}`;
         const qrCodePath = path.join(__dirname, "../private/customerQrcodes", `${customerData.customer_id}.png`);
@@ -153,19 +195,16 @@ async function generateCustomerPDF(customerData, filePath) {
             doc.image(qrCodePath, doc.page.width - 150, 120, { width: 100, height: 100 });
         }
 
-        // Customer Details
-        doc.font("Helvetica-Bold").fontSize(14).fill("#333").text("Customer ID:", 50, 240);
-        doc.font("Helvetica").fontSize(14).text(customerData.customer_id, 200, 240);
+        // Footer Section (Aligned with name, email, and tagline)
+        doc.rect(0, doc.page.height - 80, doc.page.width, 80).fill("#0D6EFD");
+        doc.font("Helvetica").fill("#ffffff").fontSize(12).text("Created by Poovarasan S.", 50, doc.page.height - 60);
+        doc.font("Helvetica").fill("#ffffff").fontSize(12).text("Email: poovarasansivakumar2003@gmail.com", 50, doc.page.height - 40);
+        doc.font("Helvetica").fill("#ffffff").fontSize(12).text("A Smarter, Faster, and Seamless Way to Manage Your Pharmacy!", doc.page.width - 200, doc.page.height - 40, { align: "right" });
 
-        doc.font("Helvetica-Bold").fontSize(14).text("Name:", 50, 270);
-        doc.font("Helvetica").fontSize(14).text(customerData.customer_name, 200, 270);
-
-        doc.font("Helvetica-Bold").fontSize(14).text("Email:", 50, 300);
-        doc.font("Helvetica").fontSize(14).text(customerData.customer_email, 200, 300);
-
+        // Finalize the document
         doc.end();
-        stream.on("finish", () => { resolve();});
-        stream.on("error", (err) => { reject(err);});
+        stream.on("finish", () => { resolve(); });
+        stream.on("error", (err) => { reject(err); });
     });
 }
 
@@ -173,17 +212,14 @@ async function generateCustomerPDF(customerData, filePath) {
 exports.downloadCustomerCard = (req, res) => {
     const filePath = path.join(__dirname, "../private/customerCards", req.params.filename);
 
-    // Debugging: Log file path before sending
-    console.log("📂 Attempting to download:", filePath);
-
     // Check if file exists
     if (!fs.existsSync(filePath)) {
-        console.error("❌ File Not Found:", filePath);
+        console.error("File Not Found:", filePath);
         return res.status(404).send("File Not Found");
     }
 
     res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
     res.download(filePath, (err) => {
-        if (err) console.error("❌ Download Error:", err);
+        if (err) console.error("Download Error:", err);
     });
 };

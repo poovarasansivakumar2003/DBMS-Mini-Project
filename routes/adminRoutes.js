@@ -1,9 +1,12 @@
 const express = require('express');
-const adminController = require('../controllers/adminController');
 const router = express.Router();
+const adminController = require('../controllers/adminController');
 
-router.get('/adminDashboard', adminController.getAdminDashboard);
-router.post('/admin/add-medicine', adminController.addMedicine);
-router.delete('/admin/medicines/:id', adminController.deleteMedicine);
+router.get('/dashboard', adminController.showDashboard);
+router.get('/medicines', adminController.showMedicines);
+router.post('/add-medicine', adminController.addMedicine);
+router.get('/delete-medicine/:id', adminController.deleteMedicine);
+
+// Add routes for other features (customers, purchases, etc.)
 
 module.exports = router;

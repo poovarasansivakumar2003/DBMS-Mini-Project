@@ -1,6 +1,8 @@
-const pool = require("../db");
+const db = require('../db'); 
+const multer = require('multer');
+const path = require('path');
 
-exports.getAdminDashboard = (req, res) => {
+exports.showDashboard = (req, res) => {
     if (!req.session.user || req.session.user.role !== 'admin') {
         return res.redirect('/login');
     }
@@ -11,28 +13,49 @@ exports.getAdminDashboard = (req, res) => {
     });
 };
 
-exports.addMedicine = async (req, res) => {
-    try {
-        const { medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url } = req.body;
-        const [result] = await pool.query(
-            "INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url) VALUES (?, ?, ?, ?, ?)",
-            [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url]
-        );
-        res.status(201).json({ message: "Medicine added successfully", medicine_id: result.insertId });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+
+
+// Define storage for uploading images
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, './public/img/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
     }
+});
+
+const upload = multer({ storage: storage });
+
+// View medicines
+exports.showMedicines = (req, res) => {
+    db.query('SELECT * FROM medicines', (err, result) => {
+        if (err) throw err;
+        res.render('adminDashboard', { medicines: result });
+    });
 };
 
-exports.deleteMedicine = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const [result] = await pool.query("DELETE FROM medicines WHERE medicine_id = ?", [id]);
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "Medicine not found" });
-        }
-        res.json({ message: "Medicine deleted successfully!" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+// Add new medicine
+exports.addMedicine = upload.single('medicine_img_url'), (req, res) => {
+    const { medicine_name, medicine_composition, medicine_price, medicine_expiry_date } = req.body;
+    const imgUrl = req.file.path;
+
+    const query = `INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url) 
+                   VALUES (?, ?, ?, ?, ?)`;
+
+    db.query(query, [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, imgUrl], (err, result) => {
+        if (err) throw err;
+        res.redirect('/admin/medicines');
+    });
 };
+
+// Delete medicine
+exports.deleteMedicine = (req, res) => {
+    const { id } = req.params;
+    const query = `DELETE FROM medicines WHERE medicine_id = ?`;
+    db.query(query, [id], (err, result) => {
+        if (err) throw err;
+        res.redirect('/admin/medicines');
+    });
+};
+
