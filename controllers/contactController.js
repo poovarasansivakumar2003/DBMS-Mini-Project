@@ -47,7 +47,7 @@ exports.postContactForm = async (req, res) => {
     } catch (error) {
         console.error('Error sending email:', error);
         res.render('contact', {
-            error: 'Failed to send message. Please try again later.',
+            error: err.message,
             profile: req.session.user?.role,
             username: req.session.user?.username,
             pagetitle: 'Contact Us'

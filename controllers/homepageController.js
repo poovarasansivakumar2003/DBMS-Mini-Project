@@ -32,6 +32,7 @@ exports.getDashboard = async (req, res) => {
             pool.query(queries.suppliers),
             pool.query(queries.feedback)
         ]);
+
         res.render("dashboard", {
             admins: admins[0][0].count,
             customers: customers[0][0].count,
@@ -44,12 +45,12 @@ exports.getDashboard = async (req, res) => {
             pagetitle: 'Home',
         });
     } catch (err) {
-        console.error("Error fetching dashboard data:", err);
+        console.error("Database Error:", err);
         res.status(500).render('500', { 
             profile: req.session.user?.role,
             username: req.session.user?.username,
             pagetitle: 'Internal Server Error',
-            error: "Couldn't fetch from database. Try again later."
+            error: err.message
         });
     }
 };
@@ -61,10 +62,7 @@ exports.showMedicines = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM medicines');
-
         const [medicines] = await pool.query('SELECT * FROM medicines LIMIT ? OFFSET ?', [limit, offset]);
-
-        const totalPages = Math.ceil(total / limit);
 
         res.render("medicinesDetails", {
             profile: req.session.user?.role,
@@ -72,16 +70,16 @@ exports.showMedicines = async (req, res) => {
             pagetitle: "Medicines Details",
             medicines: medicines || [],
             currentPage: page,
-            totalPages
+            totalPages: Math.ceil(total / limit)
         });
 
     } catch (err) {
-        console.error(err);
+        console.error("Database Error:", err);
         return res.render("500", {
             profile: req.session.user?.role,
             username: req.session.user?.username,
             pagetitle: "Internal Server Error",
-            error: 'Database error. Please try again. ' + err.message
+            error: err.message
         });
     }
 };

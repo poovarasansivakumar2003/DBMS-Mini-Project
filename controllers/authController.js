@@ -57,7 +57,7 @@ exports.handleLogin = async (req, res) => {
             pagetitle: 'Login', 
             profile: req.session.user?.role || "login",
             username: req.session.user?.username,
-            error: "Something went wrong. Try again later." 
+            error: err.message
         });
     }
 };

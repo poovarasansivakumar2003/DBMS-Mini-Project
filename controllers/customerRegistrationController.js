@@ -120,7 +120,7 @@ exports.customerRegister = async (req, res) => {
                     profile: req.session.user?.role,
                     username: req.session.user?.username,
                     pagetitle: "Customer Register",
-                    error: 'Database error. Please try again.',
+                    error: err.message
                 });
             } finally {
                 connection.release();
@@ -131,7 +131,7 @@ exports.customerRegister = async (req, res) => {
                 profile: req.session.user?.role,
                 username: req.session.user?.username,
                 pagetitle: "Customer Register",
-                error: 'An unexpected error occurred. Please try again later.',
+                error: err.message
             });
         }
     });
@@ -221,6 +221,7 @@ exports.downloadCustomerCard = (req, res) => {
 
     res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
     res.download(filePath, (err) => {
-        if (err) console.error("Download Error:", err);
+        if (err) 
+            console.error("Download Error:", err);
     });
 };
