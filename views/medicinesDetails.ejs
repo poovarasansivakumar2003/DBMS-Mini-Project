@@ -6,7 +6,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 <% medicines.forEach(medicine=> { %>
                     <div class="border rounded-lg shadow-md p-4 bg-white hover:shadow-lg transition cursor-pointer">
-                        <img src="<%= medicine.medicine_img_url.replace('./public', '') %>"
+                        <img src="<%= medicine.medicine_img.replace('./public', '') %>"
                             alt="<%= medicine.medicine_name %>" class="w-full h-40 object-cover rounded-md mb-3">
 
                         <h2 class="text-lg font-semibold text-gray-800">

@@ -21,31 +21,19 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
-exports.getAdminDashboard = [isAdmin, (req, res) => {
-    res.render('adminDashboard', { 
-        pagetitle: `Admin Panel - ${req.session.user.username}`, 
-        username: req.session.user.username,
-        profile: "admin",
-    });
-}];
-
-// View Medicines with Pagination
-exports.showMedicines = [isAdmin, async (req, res) => {
+exports.getAdminDashboard = [isAdmin, async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = 4;
-        const offset = (page - 1) * limit;
 
-        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM medicines');
-        const [medicines] = await pool.query('SELECT * FROM medicines LIMIT ? OFFSET ?', [limit, offset]);
+        // Fetch paginated medicines and customers
+        const [medicines] = await pool.query('SELECT * FROM medicines');
+        const [customers] = await pool.query('SELECT * FROM customers'); 
 
-        res.render("medicinesDetails", {
+        res.render('adminDashboard', { 
+            pagetitle: `Admin Panel - ${req.session.user.username}`, 
             username: req.session.user.username,
             profile: "admin",
-            pagetitle: "Medicines Details",
             medicines,
-            currentPage: page,
-            totalPages: Math.ceil(total / limit)
+            customers
         });
     } catch (err) {
         console.error("Database Error:", err);
@@ -59,17 +47,17 @@ exports.showMedicines = [isAdmin, async (req, res) => {
 }];
 
 // Add New Medicine
-exports.addMedicine = [isAdmin, upload.single('medicine_img_url'), async (req, res) => {
+exports.addMedicine = [isAdmin, upload.single('medicine_img'), async (req, res) => {
     try {
         const { medicine_name, medicine_composition, medicine_price, medicine_expiry_date } = req.body;
         if (!medicine_name || !medicine_composition || !medicine_price || !medicine_expiry_date) {
             return res.status(400).send("All fields are required");
         }
 
-        const imgUrl = req.file ? `/img/medicinesImg/${req.file.filename}` : null;
+        const imgUrl = req.file ? `public/img/medicinesImg/${req.file.filename}` : null;
 
         await pool.query(
-            `INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url) 
+            `INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img) 
              VALUES (?, ?, ?, ?, ?)`, 
             [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, imgUrl]
         );
@@ -117,27 +105,6 @@ exports.deleteMedicine = [isAdmin, async (req, res) => {
 
         await pool.query('DELETE FROM medicines WHERE medicine_id = ?', [id]);
         res.redirect('/medicinesDetails');
-    } catch (err) {
-        console.error("Database Error:", err);
-        res.status(500).render("500", {
-            username: req.session.user?.username,
-            profile: "admin",
-            pagetitle: "Internal Server Error",
-            error: err.message
-        });
-    }
-}];
-
-// View Customers
-exports.showCustomers = [isAdmin, async (req, res) => {
-    try {
-        const [customers] = await pool.query('SELECT * FROM customers');  
-        res.render('adminDashboard', { 
-            pagetitle: `Admin Panel - ${req.session.user.username}`, 
-            username: req.session.user.username,
-            profile: "admin",
-            customers,
-        });
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).render("500", {

@@ -37,7 +37,7 @@ create table medicines(
     medicine_composition varchar(100) not null,
     medicine_price int not null, 
     medicine_expiry_date DATE NOT NULL, -- CHECK(medicine_expiry_date > CURRENT_DATE)
-    medicine_img_url VARCHAR(255)
+    medicine_img VARCHAR(255)
 );
 describe medicines;
 select * from medicines;
@@ -130,7 +130,7 @@ INSERT INTO suppliers (supplier_name, supplier_email, supplier_ph_no, supplier_a
 ('Pharma Inc.', 'contact@pharmainc.com', '8800112233', '789 Pharma St, City'),
 ('MediCo', 'support@medico.com', '8000223344', '321 Health Rd, City');
 
-INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url)
+INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img)
 VALUES 
 ('Paracetamol', 'Acetaminophen 500mg', 10, '2025-12-31','./public/img/medicinesImg/paracetamol.jpg'),
 ('Aspirin', 'Aspirin 100mg', 5, '2026-06-30','./public/img/medicinesImg/aspirin.jfif'),
