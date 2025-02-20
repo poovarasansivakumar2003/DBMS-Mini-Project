@@ -132,13 +132,13 @@ INSERT INTO suppliers (supplier_name, supplier_email, supplier_ph_no, supplier_a
 
 INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img_url)
 VALUES 
-('Paracetamol', 'Acetaminophen 500mg', 10, '2025-12-31','./public/img/paracetamol.jpg'),
-('Aspirin', 'Aspirin 100mg', 5, '2026-06-30','./public/img/aspirin.jfif'),
-('Amoxicillin', 'Amoxicillin 500mg', 15, '2026-04-30','./public/img/amoxicillin.jfif'),
-('Ibuprofen', 'Ibuprofen 400mg', 30, '2025-08-15','./public/img/ibuprofen.jfif'),
-('Amoxicillin', 'Amoxicillin 250mg', 50, '2024-05-01','./public/img/amoxicillin.jfif'), -- Expired
-('Cough Syrup', 'Dextromethorphan, Guaifenesin', 80, '2026-09-10','./public/img/coughSyrup.jpg'),
-('Vitamin C', 'Ascorbic Acid 500mg', 25, '2025-06-20','./public/img/vitaminC.webp');
+('Paracetamol', 'Acetaminophen 500mg', 10, '2025-12-31','./public/img/medicinesImg/paracetamol.jpg'),
+('Aspirin', 'Aspirin 100mg', 5, '2026-06-30','./public/img/medicinesImg/aspirin.jfif'),
+('Amoxicillin', 'Amoxicillin 500mg', 15, '2026-04-30','./public/img/medicinesImg/amoxicillin.jfif'),
+('Ibuprofen', 'Ibuprofen 400mg', 30, '2025-08-15','./public/img/medicinesImg/ibuprofen.jfif'),
+('Amoxicillin', 'Amoxicillin 250mg', 50, '2024-05-01','./public/img/medicinesImg/amoxicillin.jfif'), -- Expired
+('Cough Syrup', 'Dextromethorphan, Guaifenesin', 80, '2026-09-10','./public/img/medicinesImg/coughSyrup.jpg'),
+('Vitamin C', 'Ascorbic Acid 500mg', 25, '2025-06-20','./public/img/medicinesImg/vitaminC.webp');
 
 INSERT INTO stocks (medicine_id, supplier_id, stock_quantity)
 VALUES 

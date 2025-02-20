@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const pool = require('./db');
 const session = require('express-session');
 require('dotenv').config();
 
@@ -57,6 +58,12 @@ const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
+pool.query('SELECT 1')
+    .then(() => console.log('✅ MySQL Connection Successful'))
+    .catch(err => console.error('❌ MySQL Connection Error:', err));
+
 
 // Graceful shutdown handler
 function gracefulShutdown(signal) {

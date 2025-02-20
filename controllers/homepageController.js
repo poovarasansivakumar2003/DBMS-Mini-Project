@@ -7,8 +7,6 @@ const app = express();
 app.use("/private/uploads/customersPhotos", express.static(path.join(__dirname, "../private/uploads/customersPhotos")));
 
 exports.getDashboard = async (req, res) => {
-    const profile = req.session.user ? req.session.user.role : undefined;
-    const username = req.session.user ? req.session.user.username : null;
     try {
         const queries = {
             admins: "SELECT COUNT(*) AS count FROM admin",
@@ -41,17 +39,49 @@ exports.getDashboard = async (req, res) => {
             suppliers: suppliers[0][0].count,
             feedback: feedback[0],
             faqs,
-            profile,
-            username,
+            profile: req.session.user?.role,
+            username: req.session.user?.username,
             pagetitle: 'Home',
         });
     } catch (err) {
         console.error("Error fetching dashboard data:", err);
         res.status(500).render('500', { 
-            profile, 
-            username,
+            profile: req.session.user?.role,
+            username: req.session.user?.username,
             pagetitle: 'Internal Server Error',
             error: "Couldn't fetch from database. Try again later."
+        });
+    }
+};
+
+exports.showMedicines = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1; // Default to page 1
+        const limit = 4; // Medicines per page
+        const offset = (page - 1) * limit;
+
+        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM medicines');
+
+        const [medicines] = await pool.query('SELECT * FROM medicines LIMIT ? OFFSET ?', [limit, offset]);
+
+        const totalPages = Math.ceil(total / limit);
+
+        res.render("medicinesDetails", {
+            profile: req.session.user?.role,
+            username: req.session.user?.username,
+            pagetitle: "Medicines Details",
+            medicines: medicines || [],
+            currentPage: page,
+            totalPages
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.render("500", {
+            profile: req.session.user?.role,
+            username: req.session.user?.username,
+            pagetitle: "Internal Server Error",
+            error: 'Database error. Please try again. ' + err.message
         });
     }
 };

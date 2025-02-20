@@ -109,7 +109,8 @@ exports.customerRegister = async (req, res) => {
                     pdfPath: `/private/customerCards/${customer_id}_card.pdf`,
                     profile: req.session.user?.role,
                     username: req.session.user?.username,
-                    pagetitle: "Success"
+                    pagetitle: "Success",
+                    message: 'Your account has been created successfully.'
                 });
 
             } catch (err) {

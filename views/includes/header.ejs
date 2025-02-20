@@ -41,7 +41,7 @@
                 <div class="hidden md:flex items-center space-x-4">
                     <a href="/" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Home</a>
                     <a href="/customerRegister" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Register</a>
-
+                    <a href="/medicinesDetails" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Medicines</a>
                     <% if (profile === 'customer') { %>
                         <a href="/customer/customerDashboard" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Customer</a>
                     <% } %>
@@ -67,6 +67,7 @@
             <div id="mobile-menu" class="hidden md:hidden">
                 <a href="/" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Home</a>
                 <a href="/customerRegister" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Register</a>
+                <a href="/medicinesDetails" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Medicines</a>
 
                 <% if (profile === 'customer') { %>
                     <a href="/customer/customerDashboard" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Customer</a>
@@ -77,9 +78,9 @@
                 <% } %>
 
                 <% if (!username) { %>
-                    <a href="/login" class="block bg-blue-500 text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Login</a>
+                    <a href="/login" class="block bg-blue-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-blue-700 transition">Login</a>
                 <% } else { %>
-                    <a href="/logout" class="block bg-red-500 text-white px-3 py-2 rounded-md text-base font-medium hover:bg-red-600 transition">Logout</a>
+                    <a href="/logout" class="block bg-red-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-red-600 transition">Logout</a>
                 <% } %>
             </div>
         </nav>

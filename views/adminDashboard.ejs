@@ -1,84 +1,37 @@
 <%- include('includes/header') %>
 
-<div class="container mx-auto px-4 py-8">
-    <h2 class="text-2xl font-semibold mb-4">Add a New Medicine</h2>
+<div class="container mx-auto p-6">
+    <h1 class="text-3xl font-semibold text-gray-700 text-center mb-6">Admin Panel</h1>
 
-    <form id="medicineForm" class="bg-white p-6 rounded-lg shadow-md">
-        <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="medicine_name">Medicine Name:</label>
-            <input type="text" id="medicine_name" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-        </div>
+    <h2 class="text-2xl font-semibold text-gray-600">Manage Medicines</h2>
 
-        <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="medicine_composition">Composition:</label>
-            <input type="text" id="medicine_composition" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-        </div>
-
-        <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="medicine_price">Price:</label>
-            <input type="number" id="medicine_price" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-        </div>
-
-        <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="medicine_expiry_date">Expiry Date:</label>
-            <input type="date" id="medicine_expiry_date" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-        </div>
-
-        <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="medicine_img_url">Image URL:</label>
-            <input type="text" id="medicine_img_url" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-
-        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">Add Medicine</button>
+    <!-- Add Medicine Form -->
+    <form action="/admin/addMedicine" method="POST" enctype="multipart/form-data" class="mt-4">
+        <input type="text" name="medicine_name" placeholder="Medicine Name" required>
+        <input type="text" name="medicine_composition" placeholder="Composition" required>
+        <input type="number" name="medicine_price" placeholder="Price" required>
+        <input type="date" name="medicine_expiry_date" required>
+        <input type="file" name="medicine_img_url" accept="image/*">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Add Medicine</button>
     </form>
 
-    <p id="responseMessage" class="mt-4 text-center"></p>
+    <h2 class="text-xl font-semibold text-gray-700">Customers</h2>
+
+    <% if (customers && customers.length > 0) { %>
+        <% customers.forEach((customer) => { %>
+            <tr class="border-t">
+                <td class="p-2"><%= customer.customer_id || 'N/A' %></td>
+                <td class="p-2"><%= customer.customer_name || 'N/A' %></td>
+                <td class="p-2"><%= customer.customer_email || 'N/A' %></td>
+                <td class="p-2"><%= customer.customer_ph_no || 'N/A' %></td>
+            </tr>
+        <% }) %>
+    <% } else { %>
+        <tr>
+            <td colspan="4" class="text-center text-gray-500">No customers found.</td>
+        </tr>
+    <% } %>    
+
 </div>
-
-<script>
-    document.getElementById('medicineForm').addEventListener('submit', async function(event) {
-        event.preventDefault(); // Prevent default form submission
-
-        const medicineData = {
-            medicine_name: document.getElementById('medicine_name').value.trim(),
-            medicine_composition: document.getElementById('medicine_composition').value.trim(),
-            medicine_price: document.getElementById('medicine_price').value.trim(),
-            medicine_expiry_date: document.getElementById('medicine_expiry_date').value.trim(),
-            medicine_img_url: document.getElementById('medicine_img_url').value.trim()
-        };
-
-        try {
-            const response = await fetch('/admin/add-medicine', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(medicineData)
-            });
-
-              // Log the response text for debugging
-        const responseText = await response.text();
-        console.log("Server Response:", responseText);
-        
-            // Check if response is JSON
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                throw new Error("Received non-JSON response. Possible server error.");
-            }
-
-            const result = JSON.parse(responseText);
-
-            if (!response.ok) {
-                throw new Error(result.message || "Failed to add medicine.");
-            }
-
-            document.getElementById('responseMessage').innerText = result.message || "Medicine added successfully!";
-            document.getElementById('responseMessage').style.color = "green";
-
-        } catch (error) {
-            console.error("Error:", error);
-            document.getElementById('responseMessage').innerText = "Error adding medicine! " + error.message;
-            document.getElementById('responseMessage').style.color = "red";
-        }
-    });
-</script>
 
 <%- include('includes/footer') %>

@@ -7,6 +7,7 @@ const contactController = require('../controllers/contactController');
 const customerRegistrationController = require("../controllers/customerRegistrationController");
 
 router.get("/", homepageController.getDashboard);
+router.get("/medicinesDetails", homepageController.showMedicines);
 router.get('/login', authController.getLoginPage);
 router.post('/login', authController.handleLogin);
 router.get('/logout', authController.logout);
