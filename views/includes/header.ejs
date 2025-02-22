@@ -4,20 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= pagetitle %></title>
-    
+    <title>
+        <%= pagetitle %>
+    </title>
+
     <!-- External Stylesheets -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../../public/css/main.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- External Scripts -->
-    <script defer src="../../public/js/index.js"></script>
+    <script defer src="/js/index.js"></script>
 
 </head>
 
 <body class="bg-gray-100">
-    
+
     <!-- Preloader -->
     <div id="loading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
         <div class="relative">
@@ -30,31 +35,40 @@
     <header class="bg-blue-600 shadow-lg fixed w-full top-0 left-0 z-40">
         <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                
+
                 <!-- Logo -->
                 <a href="/" class="flex items-center space-x-2 text-white hover:text-gray-200 transition">
                     <i class="fas fa-clinic-medical text-2xl"></i>
-                    <span class="text-xl font-bold">Welcome <% if (username) { %> <%= username %> <% } else { %> to MediVerse <% } %></span>
+                    <span class="text-xl font-bold">Welcome <% if (username) { %>
+                            <%= username %>
+                                <% } else { %> to MediVerse <% } %></span>
                 </a>
 
                 <!-- Desktop Navigation -->
                 <div class="hidden md:flex items-center space-x-4">
-                    <a href="/" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Home</a>
-                    <a href="/customerRegister" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Register</a>
-                    <a href="/medicinesDetails" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Medicines</a>
-                    <% if (profile === 'customer') { %>
-                        <a href="/customer/customerDashboard" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Customer</a>
-                    <% } %>
+                    <a href="/"
+                        class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Home</a>
+                    <a href="/customerRegister"
+                        class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Register</a>
+                    <a href="/medicinesDetails"
+                        class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Medicines</a>
+                    <% if (profile==='customer' ) { %>
+                        <a href="/customer/customerDashboard"
+                            class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Customer</a>
+                        <% } %>
 
-                    <% if (profile === 'admin') { %>
-                        <a href="/admin/adminDashboard" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Admin</a>
-                    <% } %>
+                            <% if (profile==='admin' ) { %>
+                                <a href="/admin/adminDashboard"
+                                    class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Admin</a>
+                                <% } %>
 
-                    <% if (!username) { %>
-                        <a href="/login" class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Login</a>
-                    <% } else { %>
-                        <a href="/logout" class="bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-600 transition">Logout</a>
-                    <% } %>
+                                    <% if (!username) { %>
+                                        <a href="/login"
+                                            class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Login</a>
+                                        <% } else { %>
+                                            <a href="/logout"
+                                                class="bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-600 transition">Logout</a>
+                                            <% } %>
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -65,23 +79,30 @@
 
             <!-- Mobile Navigation -->
             <div id="mobile-menu" class="hidden md:hidden">
-                <a href="/" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Home</a>
-                <a href="/customerRegister" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Register</a>
-                <a href="/medicinesDetails" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Medicines</a>
+                <a href="/"
+                    class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Home</a>
+                <a href="/customerRegister"
+                    class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Register</a>
+                <a href="/medicinesDetails"
+                    class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Medicines</a>
 
-                <% if (profile === 'customer') { %>
-                    <a href="/customer/customerDashboard" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Customer</a>
-                <% } %>
+                <% if (profile==='customer' ) { %>
+                    <a href="/customer/customerDashboard"
+                        class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Customer</a>
+                    <% } %>
 
-                <% if (profile === 'admin') { %>
-                    <a href="/admin/adminDashboard" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Admin</a>
-                <% } %>
+                        <% if (profile==='admin' ) { %>
+                            <a href="/admin/adminDashboard"
+                                class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Admin</a>
+                            <% } %>
 
-                <% if (!username) { %>
-                    <a href="/login" class="block bg-blue-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-blue-700 transition">Login</a>
-                <% } else { %>
-                    <a href="/logout" class="block bg-red-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-red-600 transition">Logout</a>
-                <% } %>
+                                <% if (!username) { %>
+                                    <a href="/login"
+                                        class="block bg-blue-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-blue-700 transition">Login</a>
+                                    <% } else { %>
+                                        <a href="/logout"
+                                            class="block bg-red-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-red-600 transition">Logout</a>
+                                        <% } %>
             </div>
         </nav>
     </header>
@@ -100,8 +121,8 @@
 
             menuBtn.addEventListener("click", () => {
                 mobileMenu.classList.toggle("hidden");
-                menuBtn.innerHTML = mobileMenu.classList.contains("hidden") 
-                    ? '<i class="fas fa-bars text-xl"></i>' 
+                menuBtn.innerHTML = mobileMenu.classList.contains("hidden")
+                    ? '<i class="fas fa-bars text-xl"></i>'
                     : '<i class="fas fa-times text-xl"></i>';
             });
 

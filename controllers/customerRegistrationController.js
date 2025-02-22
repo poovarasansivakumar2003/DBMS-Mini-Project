@@ -1,4 +1,5 @@
 const express = require("express");
+const app = express();
 const fs = require("fs");
 const pool = require("../db");
 const path = require("path");
@@ -6,6 +7,7 @@ const bcrypt = require("bcryptjs");
 const PDFDocument = require("pdfkit");
 const multer = require("multer");
 const QRCode = require("qrcode");
+require("dotenv").config();
 
 // Ensure private directories exist
 const privateDirs = ["../private/uploads/customersPhotos", "../private/customerCards", "../private/customerQrcodes"];
@@ -20,10 +22,19 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => cb(null, `${Date.now()}${path.extname(file.originalname)}`),
 });
 
-const upload = multer({ storage });
+// File Filters (Restrict to Images Only)
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    if (!allowedTypes.includes(file.mimetype)) {
+        return cb(new Error("Only images (JPEG, JPG, PNG) are allowed!"), false);
+    }
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`);
+};
+
+// Initialize Multer for Both Uploads
+const upload = multer({storage,fileFilter});
 
 // Serve static files
-const app = express();
 app.use("/private/customerCards", express.static(path.join(__dirname, "../private/customerCards")));
 
 // Render Customer Registration Page
@@ -40,7 +51,12 @@ exports.customerRegister = async (req, res) => {
     upload.single("customer_photo")(req, res, async (err) => {
         if (err) {
             console.error("Multer error:", err);
-            return res.status(500).render("500", { error: "Multer error" });
+            return res.status(500).render("500", {
+                profile: req.session.user?.role,
+                username: req.session.user?.username,
+                pagetitle: "Internal Server Error",
+                error: "Multer error"
+            });
         }
 
         try {
@@ -54,6 +70,9 @@ exports.customerRegister = async (req, res) => {
 
             if (existingCustomer.length > 0) {
                 return res.status(400).render("400", {
+                    profile: req.session.user?.role,
+                    username: req.session.user?.username,
+                    pagetitle: "Bad Request",
                     error: "Customer with this email or phone number already exists"
                 });
             }
@@ -73,22 +92,22 @@ exports.customerRegister = async (req, res) => {
                 );
 
                 const customer_id = result.insertId;
-
                 let customer_photo = "";
                 if (req.file) {
                     const ext = path.extname(req.file.originalname);
                     const newFileName = `${customer_id}_photo${ext}`;
+                    const relativePath = `./private/uploads/customersPhotos/${newFileName}`;
                     const newFilePath = path.join(uploadDir, newFileName);
 
-                    // Renaming file and update customer photo in database
                     fs.renameSync(req.file.path, newFilePath);
-                    customer_photo = newFilePath;
+                    customer_photo = relativePath;
 
+                    // Store relative path in the database
                     await connection.query("UPDATE customers SET customer_photo = ? WHERE customer_id = ?", [customer_photo, customer_id]);
                 }
 
                 // Generate PDF Card for the customer
-                const pdfDir = path.join(__dirname, "../private/customerCards");
+                const pdfDir = path.join(process.cwd(), "private/customerCards");
                 const pdfPath = path.join(pdfDir, `${customer_id}_card.pdf`);
                 fs.mkdirSync(pdfDir, { recursive: true });
 
@@ -140,72 +159,117 @@ exports.customerRegister = async (req, res) => {
 // Generate Customer PDF
 async function generateCustomerPDF(customerData, filePath) {
     return new Promise(async (resolve, reject) => {
-        const doc = new PDFDocument({ size: "A4", margin: 40 });
-        const stream = fs.createWriteStream(filePath);
+        // Create PDF with smaller margins to maximize space
+        const doc = new PDFDocument({
+            size: "A4",
+            margin: 20,
+            autoFirstPage: false
+        });
 
+        const stream = fs.createWriteStream(filePath);
         doc.pipe(stream);
 
-        // Header with Mediverse Brand and Symbol
-        doc.rect(0, 0, doc.page.width, 100).fill("#0D6EFD");
-        doc.fill("#ffffff").fontSize(24).font("Helvetica-Bold").text("MediVerse", doc.page.width / 2 - 50, 40, { align: "center" });
-        doc.fontSize(16).font("Helvetica").text("A Smarter, Faster, and Seamless Way to Manage Your Pharmacy.", doc.page.width / 2 - 200, 70, { align: "center" }); // Tagline
+        // Add a single page with specific dimensions
+        doc.addPage({
+            size: "A4",
+            margin: 20
+        });
 
-        // Mediverse Brand Symbol (assuming you have a FontAwesome icon image)
-        const iconPath = path.join(__dirname, "path_to_fontawesome_icon_image.png"); // Replace with actual image path
+        const pageWidth = doc.page.width;
+        const pageHeight = doc.page.height;
+
+        // **Header Section** - Reduced height
+        const headerHeight = 40;
+        doc.rect(20, 20, pageWidth - 40, headerHeight)
+            .fill("#2563eb");
+
+        doc.fill("#ffffff")
+            .font("Helvetica-Bold")
+            .fontSize(20)
+            .text("MediVerse", 40, 30);
+
+        // **Mediverse Logo**
+        const iconPath = path.join(__dirname, "../public/img/favicon.png");
         if (fs.existsSync(iconPath)) {
-            doc.image(iconPath, doc.page.width - 60, 70, { width: 30, height: 30 });
-        } else {
-            console.warn("Mediverse symbol icon not found!");
+            doc.image(iconPath, pageWidth - 90, 25, { width: 30 });
         }
 
-        // Customer Photo
-        if (customerData.customer_photo) {
-            const customerPhotoPath = path.resolve(customerData.customer_photo);  
+        let yPosition = headerHeight + 40;
 
+        // **Customer Photo** 
+        if (customerData.customer_photo) {
+            const customerPhotoPath = path.resolve(customerData.customer_photo);
             if (fs.existsSync(customerPhotoPath) && fs.lstatSync(customerPhotoPath).isFile()) {
-                doc.image(customerPhotoPath, 50, 120, { width: 100, height: 100 });
-            } else {
-                console.warn("Customer photo not found:", customerPhotoPath);
+                doc.image(customerPhotoPath, 40, yPosition, { width: 60, height: 60 });
             }
         }
 
-        // Customer Details Section (Properly aligned)
-        doc.font("Helvetica-Bold").fontSize(14).fill("#333").text("Customer ID:", 50, 240);
-        doc.font("Helvetica").fontSize(14).text(customerData.customer_id, 200, 240);
+        // **Customer Details** - Optimized spacing
+        const textStartX = 120;
+        const labelWidth = 100;
+        const fontSize = 12;
 
-        doc.font("Helvetica-Bold").fontSize(14).text("Name:", 50, 270);
-        doc.font("Helvetica").fontSize(14).text(customerData.customer_name, 200, 270);
+        doc.fontSize(fontSize).fillColor("#000000");
 
-        doc.font("Helvetica-Bold").fontSize(14).text("Email:", 50, 300);
-        doc.font("Helvetica").fontSize(14).text(customerData.customer_email, 200, 300);
+        // Function to add customer detail rows
+        const addDetailRow = (label, value) => {
+            doc.font("Helvetica-Bold").text(label, textStartX, yPosition);
+            doc.font("Helvetica").text(value, textStartX + labelWidth, yPosition);
+            yPosition += 20;
+        };
 
-        // Adding Customer Phone Number and Address
-        doc.font("Helvetica-Bold").fontSize(14).text("Phone Number:", 50, 330);
-        doc.font("Helvetica").fontSize(14).text(customerData.customer_ph_no, 200, 330);
+        addDetailRow("Customer ID:", customerData.customer_id);
+        addDetailRow("Name:", customerData.customer_name);
+        addDetailRow("Email:", customerData.customer_email);
+        addDetailRow("Phone Number:", customerData.customer_ph_no);
 
-        doc.font("Helvetica-Bold").fontSize(14).text("Address:", 50, 360);
-        doc.font("Helvetica").fontSize(14).text(customerData.customer_address || "N/A", 200, 360);
+        // Address with controlled width
+        doc.font("Helvetica-Bold").text("Address:", textStartX, yPosition);
+        doc.font("Helvetica").text(
+            customerData.customer_address || "N/A",
+            textStartX + labelWidth,
+            yPosition,
+            { width: 250 }
+        );
 
-        // Generate QR Code
+        // **QR Code** - Moved to the right side
         const qrCodeData = `Customer ID: ${customerData.customer_id}\nName: ${customerData.customer_name}\nPhone: ${customerData.customer_ph_no}`;
         const qrCodePath = path.join(__dirname, "../private/customerQrcodes", `${customerData.customer_id}.png`);
         fs.mkdirSync(path.dirname(qrCodePath), { recursive: true });
 
         await QRCode.toFile(qrCodePath, qrCodeData);
         if (fs.existsSync(qrCodePath)) {
-            doc.image(qrCodePath, doc.page.width - 150, 120, { width: 100, height: 100 });
+            doc.image(qrCodePath, pageWidth - 130, yPosition - 60, { width: 80, height: 80 });
         }
 
-        // Footer Section (Aligned with name, email, and tagline)
-        doc.rect(0, doc.page.height - 80, doc.page.width, 80).fill("#0D6EFD");
-        doc.font("Helvetica").fill("#ffffff").fontSize(12).text("Created by Poovarasan S.", 50, doc.page.height - 60);
-        doc.font("Helvetica").fill("#ffffff").fontSize(12).text("Email: poovarasansivakumar2003@gmail.com", 50, doc.page.height - 40);
-        doc.font("Helvetica").fill("#ffffff").fontSize(12).text("A Smarter, Faster, and Seamless Way to Manage Your Pharmacy!", doc.page.width - 200, doc.page.height - 40, { align: "right" });
+        // **Footer Section** - Positioned at bottom
+        const footerHeight = 40;
+        const footerMargin = 20;
+        const footerY = pageHeight - footerHeight - footerMargin;
+        const footerX = footerMargin;
+        const footerWidth = pageWidth - 2 * footerMargin;
 
-        // Finalize the document
+        // Draw footer background
+        doc.rect(footerX, footerY, footerWidth, footerHeight).fill("#2563eb");
+
+        // Set text color and font
+        doc.fillColor("#ffffff").font("Helvetica").fontSize(10);
+
+        // Left-aligned footer text
+        doc.text("Created by Poovarasan S.", footerX + 10, footerY + 12);
+        doc.text("Email: poovarasansivakumar2003@gmail.com", footerX + 10, footerY + 24);
+
+        // Right-aligned footer text (Ensure it fits in a single line)
+        const footerText = "A Smarter, Faster, and Seamless Way to Manage Your Pharmacy!";
+        const footerTextWidth = doc.widthOfString(footerText); // Get text width
+        const footerTextX = pageWidth - footerTextWidth - footerMargin - 10; // Calculate position
+
+        doc.text(footerText, footerTextX, footerY + 15);
+
+        // Finalize PDF
         doc.end();
-        stream.on("finish", () => { resolve(); });
-        stream.on("error", (err) => { reject(err); });
+        stream.on("finish", () => resolve());
+        stream.on("error", (err) => reject(err));
     });
 }
 
@@ -221,7 +285,7 @@ exports.downloadCustomerCard = (req, res) => {
 
     res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
     res.download(filePath, (err) => {
-        if (err) 
+        if (err)
             console.error("Download Error:", err);
     });
 };

@@ -1,5 +1,5 @@
 <%- include('includes/header') %>
-    <div class="container mx-auto p-6">
+    <div class="container bg-gradient-to-br from-blue-50 to-white mx-auto p-6">
         <h1 class="text-3xl font-semibold text-gray-700 text-center mb-6">Available Medicines</h1>
 
         <% if (medicines.length> 0) { %>
@@ -20,10 +20,6 @@
                         <p class="text-red-500 text-sm">Expiry: <%= new
                                 Date(medicine.medicine_expiry_date).toDateString() %>
                         </p>
-
-                        <button class="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                            Select
-                        </button>
                     </div>
                     <% }) %>
             </div>

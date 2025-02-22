@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const pool = require('./db');
 const session = require('express-session');
+const rateLimit = require("express-rate-limit");
 require('dotenv').config();
 
 const app = express();
@@ -20,6 +21,18 @@ app.use(session({
 }));
 
 // Middleware
+
+// Rate limiting configuration
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    message: "Too many requests from this IP, please try again later.",
+    standardHeaders: true, // Send rate limit info in `RateLimit-*` headers
+    legacyHeaders: false, // Disable `X-RateLimit-*` headers (deprecated)
+});
+
+// Basic routes
+app.use(apiLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -42,7 +55,7 @@ function renderErrorPage(res, statusCode, template, pagetitle, session) {
 }
 
 // Handle 404 Not Found
-app.use((req, res) => renderErrorPage(res, 404, "404", "Page Not Found", req.session));
+app.use((req, res) => renderErrorPage(res, 404, "404", "Page Not Found", req.session || {}));
 
 // Handle Other Errors
 app.use((err, req, res, next) => {
@@ -50,7 +63,8 @@ app.use((err, req, res, next) => {
     const status = err.status || 500;
     const template = status === 400 ? "400" : "500";
     const pagetitle = status === 400 ? "Bad Request" : "Internal Server Error";
-    return renderErrorPage(res, status, template, pagetitle, req.session);
+    
+    return renderErrorPage(res, status, template, pagetitle, req.session || {});
 });
 
 // Start Server
