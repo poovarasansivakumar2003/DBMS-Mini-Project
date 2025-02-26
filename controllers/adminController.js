@@ -2,8 +2,6 @@ const fs = require('fs');
 const pool = require('../db');
 const multer = require('multer');
 const path = require('path');
-const express = require("express");
-const app = express();
 
 // Medicine Image Storage
 const medicineStorage = multer.diskStorage({
@@ -50,21 +48,26 @@ const isAdmin = (req, res, next) => {
 // Serve Customer Photos Securely
 exports.getCustomerPhoto = [isAdmin, (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, '../private/uploads/customersPhotos', filename);
+    const filePath = path.resolve(__dirname, "../private/uploads/customersPhotos", filename);
+    const defaultPhotoPath = path.resolve(__dirname, "../private/uploads/customersPhotos/default_photo.jpg");
 
-    if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
-    } else {
-        res.status(404).render("404", {
-            username: req.session.user.username,
+    // Validate filename to prevent directory traversal attacks
+    if (!filename || !/^[a-zA-Z0-9._-]+$/.test(filename)) {
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
             profile: "admin",
-            pagetitle: "Not Found",
-            error: "Image not found"
+            pagetitle: "Bad Request",
+            error: "Invalid file request"
         });
     }
-}];
 
-app.use("/private/uploads/customersPhotos", express.static(path.join(__dirname, "../private/uploads/customersPhotos")));
+    // Check if the requested file exists
+    if (!fs.existsSync(filePath)) {
+        return res.sendFile(defaultPhotoPath);
+    }
+
+    res.sendFile(filePath);
+}];
 
 exports.getAdminDashboard = [isAdmin, async (req, res) => {
     try {
@@ -97,7 +100,7 @@ exports.addMedicine = [isAdmin, uploadMedicine.single('medicine_img'), async (re
                 username: req.session.user?.username,
                 profile: "admin",
                 pagetitle: "Bad Request",
-                error:"All fields are required"
+                error: "All fields are required"
             });
         }
 
@@ -125,7 +128,7 @@ exports.addMedicine = [isAdmin, uploadMedicine.single('medicine_img'), async (re
 exports.deleteOrEditMedicine = [isAdmin, uploadMedicine.single('medicine_img'), async (req, res) => {
     try {
         const { action, medicine_id, medicine_name, medicine_composition, medicine_price, medicine_expiry_date } = req.body;
-        
+
         if (action === "delete") {
             await pool.query('DELETE FROM medicines WHERE medicine_id = ?', [medicine_id]);
         } else if (action === "edit") {
@@ -160,22 +163,72 @@ exports.deleteOrEditCustomer = [isAdmin, uploadCustomer.single('customer_photo')
     try {
         const { action, customer_id, customer_name, customer_email, customer_ph_no, customer_address, customer_feedback, customer_balance_amt } = req.body;
 
-        if (action === "delete") {
-            await pool.query('DELETE FROM customers WHERE customer_id = ?', [customer_id]);
-        } else if (action === "edit") {
-            let imgUrl = req.file ? `uploads/customersPhotos/${req.file.filename}` : null;
+        // Check if customer exists before proceeding
+        const [existingCustomer] = await pool.query('SELECT customer_photo FROM customers WHERE customer_id = ?', [customer_id]);
+        if (!existingCustomer.length) {
+            return res.status(404).render("404", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Not Found",
+                error: "Customer not found"
+            });
+        }
 
-            if (imgUrl) {
-                await pool.query(
-                    `UPDATE customers SET customer_name = ?, customer_email = ?, customer_ph_no = ?, customer_address = ?, customer_feedback = ?, customer_balance_amt = ?, customer_photo = ? WHERE customer_id = ?`,
-                    [customer_name, customer_email, customer_ph_no, customer_address, customer_feedback, customer_balance_amt, imgUrl, customer_id]
-                );
-            } else {
-                await pool.query(
-                    `UPDATE customers SET customer_name = ?, customer_email = ?, customer_ph_no = ?, customer_address = ?, customer_feedback = ?, customer_balance_amt = ? WHERE customer_id = ?`,
-                    [customer_name, customer_email, customer_ph_no, customer_address, customer_feedback, customer_balance_amt, customer_id]
-                );
+        if (action === "delete") {
+            // Delete customer and remove image if not default
+            const oldPhoto = existingCustomer[0].customer_photo;
+            if (oldPhoto && oldPhoto !== 'uploads/customersPhotos/default_photo.jpg') {
+                fs.unlink(path.join(__dirname, '../private/', oldPhoto), (err) => {
+                    if (err) console.error("Error deleting old image:", err);
+                });
             }
+            await pool.query('DELETE FROM customers WHERE customer_id = ?', [customer_id]);
+
+        }else if (action === "edit") {
+
+            let imgUrl = req.file ? `../private/uploads/customersPhotos/${req.file.filename}` : null;
+        
+            if (req.file) {
+                // Define new file path with customer_id in filename
+                const ext = path.extname(req.file.originalname);
+                const newFileName = `${customer_id}_photo${ext}`;
+                const newImgPath = `./private/uploads/customersPhotos/${newFileName}`;
+        
+                // Remove old photo before updating (if it's not the default)
+                const oldPhoto = existingCustomer[0].customer_photo;
+                if (oldPhoto && oldPhoto !== '../private/uploads/customersPhotos/default_photo.jpg') {
+                    try {
+                        await fs.promises.unlink(path.join(__dirname, '..', oldPhoto));
+                    } catch (err) {
+                        console.error("Error deleting old image:", err);
+                    }
+                }
+        
+                // Rename uploaded file to match customer_id
+                try {
+                    await fs.promises.rename(req.file.path, path.join(__dirname, newImgPath));
+                } catch (err) {
+                    console.error("Error renaming file:", err);
+                    return res.status(500).render("500", {
+                        username: req.session.user?.username,
+                        profile: "admin",
+                        pagetitle: "Internal Server Error",
+                        error: err.message
+                    });
+                }
+        
+                imgUrl = newImgPath; 
+            }
+        
+            await pool.query(
+                `UPDATE customers SET customer_name = ?, customer_email = ?, customer_ph_no = ?, customer_address = ?, customer_feedback = ?, customer_balance_amt = ?, customer_photo = ? WHERE customer_id = ?`,
+                [customer_name, customer_email, customer_ph_no, customer_address, customer_feedback, customer_balance_amt, imgUrl, customer_id]
+            );
+        } else {
+            await pool.query(
+                `UPDATE customers SET customer_name = ?, customer_email = ?, customer_ph_no = ?, customer_address = ?, customer_feedback = ?, customer_balance_amt = ? WHERE customer_id = ?`,
+                [customer_name, customer_email, customer_ph_no, customer_address, customer_feedback, customer_balance_amt, customer_id]
+            );
         }
         res.redirect('/admin');
     } catch (err) {

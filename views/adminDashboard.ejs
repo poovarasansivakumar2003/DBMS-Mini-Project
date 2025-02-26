@@ -71,8 +71,7 @@
         <h2 class="text-2xl font-semibold text-gray-600 mt-6">Manage Customers</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             <% customers.forEach(customer => { %>
-                <div class="border rounded-lg shadow-md p-4 bg-white hover:shadow-lg transition">
-                    <img src="<%= customer.customer_photo.replace('./private', '') %>" alt="<%= customer.customer_name %>" class="w-full h-40 object-cover rounded-md mb-3">
+                <img src="/admin/customer/photo/<%= customer.customer_photo ? encodeURIComponent(customer.customer_photo.split('/').pop()) : 'default_photo.jpg' %>" alt="<%= customer.customer_name %>" class="w-40 h-40 object-cover rounded-md mb-3">
                     <h2 class="text-lg font-semibold text-gray-800"><%= customer.customer_id %>: <%= customer.customer_name %></h2>
                     <p class="text-gray-600 text-sm"><%= customer.customer_email %></p>
                     <p class="text-gray-600 text-sm"><%= customer.customer_ph_no %></p>

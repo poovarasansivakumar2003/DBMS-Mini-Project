@@ -1,10 +1,29 @@
-const express = require("express");
 const path = require("path");
 const pool = require("../db");
+const fs = require('fs');
 
-// Serve static files
-const app = express();
-app.use("/private/uploads/customersPhotos", express.static(path.join(__dirname, "../private/uploads/customersPhotos")));
+exports.getCustomerPhoto = (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.resolve(__dirname, "../private/uploads/customersPhotos", filename);
+    const defaultPhotoPath = path.resolve(__dirname, "../private/uploads/customersPhotos/default_photo.jpg");
+
+    // Validate filename to prevent directory traversal attacks
+    if (!filename || !/^[a-zA-Z0-9._-]+$/.test(filename)) {
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
+            profile: req.session.user?.role,
+            pagetitle: "Bad Request",
+            error: "Invalid file request"
+        });
+    }
+    
+    // Check if the requested file exists
+    if (!fs.existsSync(filePath)) {
+        return res.sendFile(defaultPhotoPath);
+    }
+
+    res.sendFile(filePath);
+};
 
 exports.getDashboard = async (req, res) => {
     try {
@@ -13,7 +32,7 @@ exports.getDashboard = async (req, res) => {
             customers: "SELECT COUNT(*) AS count FROM customers",
             medicines: "SELECT COUNT(*) AS count FROM medicines",
             suppliers: "SELECT COUNT(*) AS count FROM suppliers",
-            feedback: "SELECT customer_name, customer_feedback FROM customers WHERE customer_feedback IS NOT NULL LIMIT 5"
+            feedback: "SELECT customer_name, customer_feedback, customer_photo FROM customers WHERE customer_feedback IS NOT NULL"
         };
 
         const faqs = [

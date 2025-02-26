@@ -7,8 +7,7 @@ drop database DBMS_Mini_Project;
 -- Admin Table
 create table admin(
 	admin_username varchar(20) primary key,
-    admin_password VARCHAR(255) not null,
-    admin_logged_in BOOLEAN DEFAULT FALSE
+    admin_password VARCHAR(255) not null
 );
 describe admin;
 select * from admin;
