@@ -21,7 +21,7 @@ create table customers(
     customer_ph_no varchar(15) not null unique,
     customer_address varchar(255),
     customer_feedback varchar(255),
-    customer_photo varchar(255),
+    customer_photo LONGBLOB,
     customer_balance_amt DECIMAL(10, 2) DEFAULT 0
 );
 describe customers;
@@ -36,7 +36,7 @@ create table medicines(
     medicine_composition varchar(100) not null,
     medicine_price int not null, 
     medicine_expiry_date DATE NOT NULL, -- CHECK(medicine_expiry_date > CURRENT_DATE)
-    medicine_img VARCHAR(255)
+    medicine_img LONGBLOB
 );
 describe medicines;
 select * from medicines;
