@@ -21,7 +21,7 @@ create table customers(
     customer_ph_no varchar(15) not null unique,
     customer_address varchar(255),
     customer_feedback varchar(255),
-    customer_photo LONGBLOB,
+    customer_photo varchar(255),
     customer_balance_amt DECIMAL(10, 2) DEFAULT 0
 );
 describe customers;
@@ -36,7 +36,7 @@ create table medicines(
     medicine_composition varchar(100) not null,
     medicine_price int not null, 
     medicine_expiry_date DATE NOT NULL, -- CHECK(medicine_expiry_date > CURRENT_DATE)
-    medicine_img LONGBLOB
+    medicine_img varchar(255)
 );
 describe medicines;
 select * from medicines;
@@ -95,7 +95,6 @@ select * from invoice;
 CREATE TABLE stocks (
 	medicine_id INT,
     supplier_id INT,
-    purchase_id int,
     stock_quantity INT NOT NULL CHECK(stock_quantity >= 0),
     PRIMARY KEY (medicine_id, supplier_id),
     FOREIGN KEY (medicine_id) REFERENCES medicines(medicine_id) ON DELETE CASCADE,

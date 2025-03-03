@@ -169,7 +169,7 @@ exports.deleteOrEditCustomer = [isAdmin, uploadCustomer.single('customer_photo')
             return res.status(404).render("404", {
                 username: req.session.user?.username,
                 profile: "admin",
-                pagetitle: "Not Found",
+                pagetitle: "Page Not Found",
                 error: "Customer not found"
             });
         }

@@ -125,7 +125,6 @@ exports.customerRegister = async (req, res) => {
                 // Render success page
                 res.render("success", {
                     pdfName: `${customer_id}_card.pdf`,
-                    pdfPath: `/private/customerCards/${customer_id}_card.pdf`,
                     profile: req.session.user?.role,
                     username: req.session.user?.username,
                     pagetitle: "Success",
@@ -273,19 +272,35 @@ async function generateCustomerPDF(customerData, filePath) {
     });
 }
 
-// Handle PDF Download
+
+
 exports.downloadCustomerCard = (req, res) => {
     const filePath = path.join(__dirname, "../private/customerCards", req.params.filename);
 
     // Check if file exists
     if (!fs.existsSync(filePath)) {
         console.error("File Not Found:", filePath);
-        return res.status(404).send("File Not Found");
+        return res.status(404).render("404", {
+            profile: req.session.user?.role,
+            username: req.session.user?.username,
+            pagetitle: "Page Not Found",
+            error: "File Not Found"
+        });
     }
 
+    // Set headers for downloading the file
     res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
+    
+    // Send the file
     res.download(filePath, (err) => {
-        if (err)
+        if (err) {
             console.error("Download Error:", err);
+            res.status(500).render("404", {
+                profile: req.session.user?.role,
+                username: req.session.user?.username,
+                pagetitle: "Internal Server Error",
+                error: "Failed to download the file"
+            });
+        }
     });
 };
