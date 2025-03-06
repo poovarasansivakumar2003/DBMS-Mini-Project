@@ -73,8 +73,10 @@
                             <div class="p-6">
                                 <div class="flex items-center mb-4">
                                     <div class="bg-blue-100 rounded-full p-1">
-                                        <img src="/customer/photo/<%= fb.customer_photo ? encodeURIComponent(fb.customer_photo) : 'default_photo.jpg' %>" alt="<%= fb.customer_name %>" class="w-10 h-10 rounded-full">
-                                    </div>
+                                        <img src="/customer/photo/<%= fb.customer_photo ? encodeURIComponent(fb.customer_photo.split('/').pop()) : 'default_photo.jpg' %>" 
+                                            alt="<%= fb.customer_name %>" 
+                                            class="w-10 h-10 rounded-full">
+                                    </div>                                    
                                     <div class="ml-4">
                                         <h3 class="text-lg font-semibold text-gray-800">
                                             <%= fb.customer_name %>

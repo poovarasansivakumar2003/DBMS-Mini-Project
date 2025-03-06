@@ -10,7 +10,7 @@ const QRCode = require("qrcode");
 require("dotenv").config();
 
 // Ensure private directories exist
-const privateDirs = ["../private/uploads/customersPhotos", "../private/customerCards", "../private/customerQrcodes"];
+const privateDirs = ["../private/uploads/customersPhotos", "../private/customerCards"];
 privateDirs.forEach((dir) => fs.mkdirSync(path.join(__dirname, dir), { recursive: true }));
 
 // Configure Multer for File Uploads
@@ -233,13 +233,8 @@ async function generateCustomerPDF(customerData, filePath) {
 
         // **QR Code** - Moved to the right side
         const qrCodeData = `Customer ID: ${customerData.customer_id}\nName: ${customerData.customer_name}\nPhone: ${customerData.customer_ph_no}`;
-        const qrCodePath = path.join(__dirname, "../private/customerQrcodes", `${customerData.customer_id}.png`);
-        fs.mkdirSync(path.dirname(qrCodePath), { recursive: true });
-
-        await QRCode.toFile(qrCodePath, qrCodeData);
-        if (fs.existsSync(qrCodePath)) {
-            doc.image(qrCodePath, pageWidth - 130, yPosition - 60, { width: 80, height: 80 });
-        }
+        const qrCodeBuffer = await QRCode.toBuffer(qrCodeData);
+        doc.image(qrCodeBuffer, pageWidth - 130, yPosition - 60,  { width: 80, height: 80 });
 
         // **Footer Section** - Positioned at bottom
         const footerHeight = 40;

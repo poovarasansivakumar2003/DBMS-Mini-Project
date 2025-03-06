@@ -89,8 +89,6 @@ create table invoice(
 describe invoice;
 select * from invoice;
 
-
-
 -- Stocks Table
 CREATE TABLE stocks (
 	medicine_id INT,
@@ -112,14 +110,11 @@ INSERT INTO admin (admin_username, admin_password) VALUES
 update admin set admin_password =' $2a$10$nw35QHHaWQXowfPROS70A.mjbeYj8kPhpE5mBowZmJRHOg/G6/x8a' where admin_username = 'admin1' ; -- Admin@123
 update admin set admin_password ='$2a$10$rth0XhJlmKXXd.HuU948cuIrTGa1XRyVsp9HNEeq7rE7l8XnXPhea' where admin_username = 'admin2' ;-- SecurePass
 
-INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_address, customer_feedback, customer_password) VALUES 
-('John Doe', 'john.doe@example.com', '9876543210', '123 Main Street, NY', 'Great service, fast delivery and helpful staff.', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6'), -- password
-('Alice Smith', 'alice.smith@example.com', '9876543211', '456 Elm Street, LA', 'The medication arrived on time, and everything was as expected.', '$2a$10$ClmJYIzo8c15tO0oSP/WK.ZyUlrC7st9EZdPDinNKIrDnPv5Vat8'),-- 1234567890
-('Bob Johnson', 'bob.johnson@example.com', '9876543212', '789 Pine Street, TX', 'I had a smooth experience, and the quality of the product was good.', '$2a$10$.FGHozodkweJZOG4qFwQseKEhME20sdpQINxtJCgDwZSIxMhaEfl6'),-- 9876543210
-('Jane Smith', 'janesmith@yahoo.com', '9123456789', '456 Avenue, City', 'Excellent support and easy ordering process.', '$2a$10$1icoY.4NSVHxZHlrTZCRHOgZVath6i/Eb83pOvNsb1tfcV0tJioc');-- super
-
-update customers set customer_password ='$2a$10$1icoY.4NSVHxZHlrTZCRHOgZVath6i/Eb83pOvNsb1tfcV0tJioc' where customer_ph_no = '9123456789'; 
-
+INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_address, customer_feedback, customer_password, customer_photo) VALUES 
+('John Doe', 'john.doe@example.com', '9876543210', '123 Main Street, NY', 'Great service, fast delivery and helpful staff.', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6',null), -- password
+('Alice Smith', 'alice.smith@example.com', '9876543211', '456 Elm Street, LA', 'The medication arrived on time, and everything was as expected.', '$2a$10$ClmJYIzo8c15tO0oSP/WK.ZyUlrC7st9EZdPDinNKIrDnPv5Vat8',null),-- 1234567890
+('Bob Johnson', 'bob.johnson@example.com', '9876543212', '789 Pine Street, TX', 'I had a smooth experience, and the quality of the product was good.', '$2a$10$.FGHozodkweJZOG4qFwQseKEhME20sdpQINxtJCgDwZSIxMhaEfl6','./private/uploads/customersPhotos/3_photo.png'),-- 9876543210
+('Jane Smith', 'janesmith@yahoo.com', '9123456789', '456 Avenue, City', 'Excellent support and easy ordering process.', '$2a$10$1icoY.4NSVHxZHlrTZCRHOgZVath6i/Eb83pOvNsb1tfcV0tJioc',null);-- super
 
 INSERT INTO suppliers (supplier_name, supplier_email, supplier_ph_no, supplier_address) VALUES 
 ('MediSuppliers Inc.', 'contact@medisuppliers.com', '9988776655', '1st Avenue, NY'),
@@ -138,34 +133,28 @@ VALUES
 ('Cough Syrup', 'Dextromethorphan, Guaifenesin', 80, '2026-09-10','./public/img/medicinesImg/coughSyrup.jpg'),
 ('Vitamin C', 'Ascorbic Acid 500mg', 25, '2025-06-20','./public/img/medicinesImg/vitaminC.webp');
 
-INSERT INTO stocks (medicine_id, supplier_id, stock_quantity)
-VALUES 
-(1, 1, 100), 
-(1, 2, 50),  
-(2, 1, 200), 
-(3, 2, 150),
-(2, 1, 150), 
-(3, 2, 0),    
-(4, 3, 50), 
-(5, 2, 200);
+INSERT INTO stocks (medicine_id, supplier_id, stock_quantity) VALUES 
+(1, 1, 100),  -- 100 units of Paracetamol supplied by MediSuppliers Inc. (Supplier ID: 1)
+(1, 2, 50),   -- 50 units of Paracetamol supplied by Pharma Distributors (Supplier ID: 2)
+(2, 1, 200),  -- 200 units of Aspirin supplied by MediSuppliers Inc. (Supplier ID: 1)
+(3, 2, 0),    -- 0 units (out of stock) of Amoxicillin supplied by Pharma Distributors (Supplier ID: 2)
+(4, 3, 50),   -- 50 units of Ibuprofen supplied by Wellness Suppliers (Supplier ID: 3)
+(5, 2, 200);  -- 200 units of expired Amoxicillin supplied by Pharma Distributors (Supplier ID: 2)
 
 -- Insert purchase data
-INSERT INTO purchases (customer_id, medicine_id, supplier_id, purchase_quantity, total_amt)
-VALUES 
-(1, 1, 1, 10, 100),
-(2, 2, 1, 5, 25),  
-(2, 2, 1, 1, 30), 
-(3, 4, 3, 3, 240), 
-(1, 5, 2, 5, 125); 
-
+INSERT INTO purchases (admin_username, customer_id, medicine_id, supplier_id, purchased_quantity, total_amt) VALUES
+('admin1', 1, 1, 1, 10, 100.00),  -- John Doe bought 10 Paracetamol from MediSuppliers Inc.
+('admin2', 2, 2, 1, 5, 25.00),    -- Alice Smith bought 5 Aspirin from MediSuppliers Inc.
+('admin1', 3, 3, 2, 3, 45.00),    -- Bob Johnson bought 3 Amoxicillin from Pharma Distributors
+('admin2', 4, 4, 3, 2, 60.00),    -- Jane Smith bought 2 Ibuprofen from Wellness Suppliers
+('admin1', 1, 6, 2, 1, 80.00);    -- John Doe bought 1 Cough Syrup from Pharma Distributors
 
 -- Insert invoice data
-INSERT INTO invoice (purchase_id, total_amt, discount, paid)
-VALUES 
-(1, 100, 10, 90),
-(2, 25, 5, 20),   
-(3, 240, 20, 220),
-(4, 125, 10, 115);
+INSERT INTO invoice (purchase_id, total_amt, discount, paid) VALUES 
+(1, 100, 10, 90),  -- Invoice for Purchase ID 1: Total amount = 100, Discount = 10, Paid = 90, Balance = 0
+(2, 25, 5, 20),    -- Invoice for Purchase ID 2: Total amount = 25, Discount = 5, Paid = 20, Balance = 0
+(3, 240, 20, 220), -- Invoice for Purchase ID 3: Total amount = 240, Discount = 20, Paid = 220, Balance = 0
+(4, 125, 10, 115); -- Invoice for Purchase ID 4: Total amount = 125, Discount = 10, Paid = 115, Balance = 0
 
 
 
