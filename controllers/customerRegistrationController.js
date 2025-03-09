@@ -77,6 +77,16 @@ exports.customerRegister = async (req, res) => {
                 });
             }
 
+            // Validate password
+            if (!customer_password || customer_password.length < 8) {
+                return res.render("customerRegister", { 
+                    profile: req.session.user?.role,
+                    username: req.session.user?.username,
+                    pagetitle: "Customer Register",
+                    error: "Password must be at least 8 characters"
+                });
+            }
+
             // Hash password and use transaction for multiple queries
             const hashedPassword = await bcrypt.hash(customer_password.trim(), 10);
 

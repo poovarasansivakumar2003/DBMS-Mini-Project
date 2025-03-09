@@ -17,7 +17,7 @@ create table customers(
 	customer_id INT auto_increment PRIMARY KEY,
     customer_password varchar(255) not null,
     customer_name varchar(20) not null,
-	customer_email varchar(50) unique,
+	customer_email varchar(50) not null unique,
     customer_ph_no varchar(15) not null unique,
     customer_address varchar(255),
     customer_feedback varchar(255),
@@ -26,8 +26,6 @@ create table customers(
 );
 describe customers;
 select * from customers;
-
-ALTER TABLE customers ADD CONSTRAINT unique_customer UNIQUE (customer_email, customer_ph_no);
 
 -- Medicines Table
 create table medicines(

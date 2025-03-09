@@ -1,10 +1,15 @@
 const bcrypt = require('bcryptjs');
 
-async function generateHashedPassword(password) {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    console.log('Hashed Password:', hashedPassword);
+async function verifyPassword(inputPassword, storedHashedPassword) {
+    const isMatch = await bcrypt.compare(inputPassword, storedHashedPassword);
+    if (isMatch) {
+        console.log("Password matches!");
+    } else {
+        console.log("Invalid password!");
+    }
 }
 
-generateHashedPassword('super');
+// Example usage
+const storedHashedPassword = "$2a$10$1RJOmRAHDUaNjzFcrIxW7uQ9idYfSyS7xD5ZDzbRkHiSMwicOdfBO"; 
+verifyPassword("87654321", storedHashedPassword);
 

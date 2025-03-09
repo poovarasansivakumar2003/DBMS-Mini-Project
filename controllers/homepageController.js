@@ -77,7 +77,7 @@ exports.getDashboard = async (req, res) => {
 exports.showMedicines = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1; // Default to page 1
-        const limit = 4; // Medicines per page
+        const limit = 8; // Medicines per page
         const offset = (page - 1) * limit;
 
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM medicines');
