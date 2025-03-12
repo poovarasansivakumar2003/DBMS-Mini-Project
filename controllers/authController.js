@@ -70,7 +70,7 @@ exports.logout = (req, res) => {
     });
 };
 
-// Store OTP temporarily 
+// Store OTP temporarily
 const otpStore = new Map();
 
 exports.forgotPassword = async (req, res) => {
@@ -247,6 +247,24 @@ exports.resetPassword = async (req, res) => {
                 contact
             });
         }
+
+        // Send confirmation email if the contact is an email
+        if (contact.includes('@')) {
+            const transporter = nodemailer.createTransport({
+                service: process.env.EMAIL_SERVICE || 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: contact,
+                subject: 'Password Reset Confirmation',
+                text: `Your password has been successfully reset. If you did not request this change, please contact support immediately.`
+            });
+        } 
 
         return res.render("success", {
             profile: req.session.user?.role,

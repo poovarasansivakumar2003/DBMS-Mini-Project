@@ -2,140 +2,477 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= pagetitle %>
-    </title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pagetitle %></title>
 
-    <!-- External Stylesheets -->
-    <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
-    <% if (profile === 'admin') { %>
-        <link rel="icon" type="image/x-icon" href="/admin/img/favicon.ico">
-    <% } else if (profile === 'customer') { %>
-        <link rel="icon" type="image/x-icon" href="/customer/img/favicon.ico">
-    <% } %>    
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <!-- External Stylesheets -->
+  <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
+  <% if (profile === 'admin') { %>
+  <link rel="icon" type="image/x-icon" href="/admin/img/favicon.ico">
+  <% } else if (profile === 'customer') { %>
+  <link rel="icon" type="image/x-icon" href="/customer/img/favicon.ico">
+  <% } %>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-    <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- External Scripts -->
-    <script defer src="/js/index.js"></script>
+  <!-- External Scripts -->
+  <script defer src="/js/index.js"></script>
 
 </head>
 
 <body class="bg-gray-100">
 
-    <!-- Preloader -->
-    <div id="loading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
-        <div class="relative">
-            <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <div class="mt-4 text-blue-600 text-sm font-medium">Loading...</div>
-        </div>
+  <!-- Preloader -->
+  <div id="loading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
+    <div class="relative">
+      <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      <div class="mt-4 text-blue-600 text-sm font-medium">Loading...</div>
     </div>
+  </div>
 
-    <!-- Header -->
-    <header class="bg-blue-600 shadow-lg fixed w-full top-0 left-0 z-40">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+  <!-- Header -->
+  <header class="bg-blue-600 shadow-lg fixed w-full top-0 left-0 z-40">
+    <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
 
-                <!-- Logo -->
-                <a href="/" class="flex items-center space-x-2 text-white hover:text-gray-200 transition">
-                    <i class="fas fa-clinic-medical text-2xl"></i>
-                    <span class="text-xl font-bold">Welcome <% if (username) { %>
-                            <%= username %>
-                                <% } else { %> to MediVerse <% } %></span>
-                </a>
+        <!-- Logo -->
+        <a href="/" class="flex items-center space-x-2 text-white hover:text-gray-200 transition">
+          <i class="fas fa-clinic-medical text-2xl"></i>
+          <span class="text-xl font-bold">Welcome <% if (username) { %>
+            <%= username %>
+            <% } else { %> to MediVerse <% } %></span>
+        </a>
 
-                <!-- Desktop Navigation -->
-                <div class="hidden md:flex items-center space-x-4">
-                    <a href="/"
-                        class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Home</a>
-                    <a href="/customerRegister"
-                        class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Register</a>
-                    <a href="/medicinesDetails"
-                        class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Medicines</a>
-                    <% if (profile==='customer' ) { %>
-                        <a href="/customer/customerDashboard"
-                            class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Customer</a>
-                        <% } %>
-
-                            <% if (profile==='admin' ) { %>
-                                <a href="/admin/adminDashboard"
-                                    class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Admin</a>
-                                <% } %>
-
-                                    <% if (!username) { %>
-                                        <a href="/login"
-                                            class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Login</a>
-                                        <% } else { %>
-                                            <a href="/logout"
-                                                class="bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-600 transition">Logout</a>
-                                            <% } %>
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex items-center space-x-4">
+            <a href="/" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Home</a>
+            <a href="/customerRegister" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Register</a>
+            <a href="/medicinesDetails" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Medicines</a>
+            <% if (profile==='customer' ) { %>
+                <a href="/customer/customerDashboard" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Customer</a>            
+            <% } %>
+            <% if (profile === 'admin') { %>
+                <a href="/admin/adminDashboard" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Admin</a>
+            
+                <div class="relative ml-3">
+                    <!-- Notification Bell -->
+                    <div id="notificationBell" class="relative cursor-pointer flex items-center justify-center w-9 h-9 rounded-full hover:bg-blue-700 transition-colors duration-200">
+                        <i class="fas fa-bell text-white text-lg"></i>
+                        <!-- Badge Counter -->
+                        <span id="notificationCount" class="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] text-xs font-bold text-white bg-red-500 rounded-full border-2 border-blue-600 transform transition-transform duration-200"></span>
+                    </div>
+                    
+                    <!-- Dropdown -->
+                    <div id="notificationDropdown" class="hidden opacity-0 transform scale-95 transition-all duration-200 absolute right-0 mt-2 w-72 md:w-80 bg-blue-50 rounded-lg shadow-lg ring-1 ring-blue-200 ring-opacity-5 z-50 max-h-96 overflow-y-auto">
+                        <!-- Header -->
+                        <div class="flex justify-between items-center px-4 py-3 bg-blue-600 border-b border-blue-500 rounded-t-lg">
+                            <h3 class="text-sm font-semibold text-white">Notifications</h3>
+                            <button id="markAllRead" class="text-xs text-white hover:bg-blue-700 px-2 py-1 rounded transition-colors duration-150">Mark all as read</button>
+                        </div>
+                        
+                        <!-- Notification List -->
+                        <div id="notificationList" class="divide-y divide-blue-200">
+                            <!-- Empty State -->
+                            <div id="emptyNotification" class="py-5 px-4 text-center text-blue-600 italic text-sm">
+                                No new notifications
+                            </div>
+                            
+                            <!-- Notifications will be inserted here by JavaScript -->
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="bg-blue-600 border-t border-blue-500 rounded-b-lg px-4 py-2 text-center">
+                            <a href="/admin/allNotifications" class="text-sm text-white hover:underline transition-colors duration-150">View all notifications</a>
+                        </div>
+                    </div>
                 </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const notificationBell = document.getElementById('notificationBell');
+                        const notificationDropdown = document.getElementById('notificationDropdown');
+                        const notificationCount = document.getElementById('notificationCount');
+                        const notificationList = document.getElementById('notificationList');
+                        const emptyNotification = document.getElementById('emptyNotification');
+                        const markAllRead = document.getElementById('markAllRead');
+                        
+                        // Toggle dropdown
+                        notificationBell.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            if (notificationDropdown.classList.contains('hidden')) {
+                                // Show dropdown with animation
+                                notificationDropdown.classList.remove('hidden');
+                                setTimeout(() => {
+                                    notificationDropdown.classList.remove('opacity-0', 'scale-95');
+                                    notificationDropdown.classList.add('opacity-100', 'scale-100');
+                                }, 10);
+                            } else {
+                                // Hide dropdown with animation
+                                notificationDropdown.classList.remove('opacity-100', 'scale-100');
+                                notificationDropdown.classList.add('opacity-0', 'scale-95');
+                                setTimeout(() => {
+                                    notificationDropdown.classList.add('hidden');
+                                }, 200);
+                            }
+                        });
+                        
+                        // Close dropdown when clicking outside
+                        document.addEventListener('click', function(e) {
+                            if (!notificationBell.contains(e.target) && !notificationDropdown.contains(e.target) && !notificationDropdown.classList.contains('hidden')) {
+                                notificationDropdown.classList.remove('opacity-100', 'scale-100');
+                                notificationDropdown.classList.add('opacity-0', 'scale-95');
+                                setTimeout(() => {
+                                    notificationDropdown.classList.add('hidden');
+                                }, 200);
+                            }
+                        });
+                        
+                        // Mark all as read
+                        markAllRead.addEventListener('click', function() {
+                            const unreadItems = document.querySelectorAll('.notification-item.bg-blue-100');
+                            unreadItems.forEach(item => {
+                                item.classList.remove('bg-blue-100');
+                                item.classList.add('bg-white');
+                                
+                                // Update the notification data in memory
+                                const notificationId = item.dataset.id;
+                                notificationsData.forEach(notification => {
+                                    if (notification.notification_id == notificationId) {
+                                        notification.read = true;
+                                    }
+                                });
+                            });
+                            updateNotificationCount();
+                            
+                            // Form-based submission to mark all as read
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = '/admin/notifications/markAllRead';
+                            form.style.display = 'none';
+                            document.body.appendChild(form);
+                            form.submit();
+                        });
+                        
+                        // Function to update notification count
+                        function updateNotificationCount() {
+                            const count = document.querySelectorAll('.notification-item.bg-blue-100').length;
+                            
+                            if (count > 0) {
+                                notificationCount.textContent = count;
+                                notificationCount.classList.add('animate-pulse');
+                                emptyNotification.classList.add('hidden');
+                            } else {
+                                notificationCount.textContent = '';
+                                notificationCount.classList.remove('animate-pulse');
+                                if (notificationList.querySelectorAll('.notification-item').length === 0) {
+                                    emptyNotification.classList.remove('hidden');
+                                }
+                            }
+                        }
+                        
+                        // Store notifications data
+                        let notificationsData = [];
+                        
+                        // Function to fetch notifications
+                        function fetchNotifications() {
+                            // Create a script element
+                            const script = document.createElement('script');
+                            script.src = `/admin/notifications?t=${new Date().getTime()}`;
+                            
+                            // When the script loads, the server should inject a global variable with notification data
+                            script.onload = function() {
+                                // Server should inject a global variable like 'window.adminNotifications'
+                                if (window.adminNotifications && window.adminNotifications.length > 0) {
+                                    notificationsData = window.adminNotifications;
+                                    
+                                    const oldItems = notificationList.querySelectorAll('.notification-item');
+                                    oldItems.forEach(item => item.remove());
+                                    
+                                    notificationsData.forEach(notification => {
+                                        const notificationItem = createNotificationItem(notification);
+                                        notificationList.appendChild(notificationItem);
+                                    });
+                                    
+                                    emptyNotification.classList.add('hidden');
+                                } else {
+                                    notificationList.querySelectorAll('.notification-item').forEach(item => item.remove());
+                                    emptyNotification.classList.remove('hidden');
+                                    notificationsData = [];
+                                }
+                                
+                                updateNotificationCount();
+                                
+                                // Clean up
+                                script.remove();
+                            };
+                            
+                            document.head.appendChild(script);
+                        }
+                        
+                        // Function to create notification item
+                        function createNotificationItem(notification) {
+                            const item = document.createElement('div');
+                            item.className = `notification-item relative flex p-3 cursor-pointer transition-colors duration-150 ${notification.read ? 'bg-white' : 'bg-blue-100'}`;
+                            item.dataset.id = notification.notification_id;
+                            
+                            // Determine icon and background color based on notification type
+                            let iconClass, iconBgClass, iconColorClass;
+                            
+                            switch(notification.type) {
+                                case 'expired_medicine':
+                                    iconClass = 'fas fa-exclamation-circle';
+                                    iconBgClass = 'bg-red-100';
+                                    iconColorClass = 'text-red-600';
+                                    break;
+                                case 'low_stock':
+                                    iconClass = 'fas fa-box-open';
+                                    iconBgClass = 'bg-yellow-100';
+                                    iconColorClass = 'text-yellow-600';
+                                    break;
+                                default:
+                                    iconClass = 'fas fa-info-circle';
+                                    iconBgClass = 'bg-blue-100';
+                                    iconColorClass = 'text-blue-600';
+                            }
+                            
+                            const timeAgo = getTimeAgo(new Date(notification.created_at));
+                            
+                            // Add close button and content
+                            item.innerHTML = `
+                                <div class="mr-3 flex-shrink-0">
+                                    <div class="p-2 rounded-full ${iconBgClass} ${iconColorClass}">
+                                    <i class="${iconClass} text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-800 mb-1">${notification.message}</p>
+                                    <p class="text-xs text-gray-500">${timeAgo}</p>
+                                </div>
+                                <button class="notification-dismiss absolute top-2 right-2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                            `;
+                            
+                            // Mark notification as read when clicked (except on dismiss button)
+                            item.addEventListener('click', function(e) {
+                                // Don't trigger if clicking the dismiss button
+                                if (!e.target.closest('.notification-dismiss')) {
+                                    if (item.classList.contains('bg-blue-100')) {
+                                        item.classList.remove('bg-blue-100');
+                                        item.classList.add('bg-white');
+                                        updateNotificationCount();
+                                        
+                                        // Update in-memory data
+                                        const notificationId = item.dataset.id;
+                                        notificationsData.forEach(notification => {
+                                            if (notification.notification_id == notificationId) {
+                                                notification.read = true;
+                                            }
+                                        });
+                                        
+                                        // Form submission to mark as read
+                                        const form = document.createElement('form');
+                                        form.method = 'POST';
+                                        form.action = `/admin/notifications/markAsRead/${notificationId}`;
+                                        form.style.display = 'none';
+                                        document.body.appendChild(form);
+                                        form.submit();
+                                    }
+                                }
+                            });
+                            
+                            // Add dismiss functionality
+                            const dismissBtn = item.querySelector('.notification-dismiss');
+                            dismissBtn.addEventListener('click', function(e) {
+                                e.stopPropagation(); // Prevent triggering the parent click
+                                
+                                const notificationId = item.dataset.id;
+                                
+                                // Remove from UI
+                                item.classList.add('opacity-0');
+                                setTimeout(() => {
+                                    item.remove();
+                                    if (notificationList.querySelectorAll('.notification-item').length === 0) {
+                                        emptyNotification.classList.remove('hidden');
+                                    }
+                                    updateNotificationCount();
+                                    
+                                    // Remove from in-memory data
+                                    notificationsData = notificationsData.filter(notification => 
+                                        notification.notification_id != notificationId
+                                    );
+                                }, 300);
+                                
+                                // Form submission to dismiss
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = `/admin/notifications/dismiss/${notificationId}`;
+                                form.style.display = 'none';
+                                document.body.appendChild(form);
+                                form.submit();
+                            });
+                            
+                            return item;
+                        }
+                        
+                        // Helper function to format time ago
+                        function getTimeAgo(date) {
+                            const seconds = Math.floor((new Date() - date) / 1000);
+                            
+                            let interval = Math.floor(seconds / 31536000);
+                            if (interval >= 1) {
+                                return interval === 1 ? '1 year ago' : interval + ' years ago';
+                            }
+                            
+                            interval = Math.floor(seconds / 2592000);
+                            if (interval >= 1) {
+                                return interval === 1 ? '1 month ago' : interval + ' months ago';
+                            }
+                            
+                            interval = Math.floor(seconds / 86400);
+                            if (interval >= 1) {
+                                return interval === 1 ? '1 day ago' : interval + ' days ago';
+                            }
+                            
+                            interval = Math.floor(seconds / 3600);
+                            if (interval >= 1) {
+                                return interval === 1 ? '1 hour ago' : interval + ' hours ago';
+                            }
+                            
+                            interval = Math.floor(seconds / 60);
+                            if (interval >= 1) {
+                                return interval === 1 ? '1 minute ago' : interval + ' minutes ago';
+                            }
+                            
+                            return seconds < 10 ? 'just now' : seconds + ' seconds ago';
+                        }
+                        
+                        // Add animation class for notification count pulsing
+                        if (!document.querySelector('style#notification-pulse')) {
+                            const style = document.createElement('style');
+                            style.id = 'notification-pulse';
+                            style.textContent = `
+                                @keyframes pulse {
+                                    0% { transform: scale(1); }
+                                    50% { transform: scale(1.1); }
+                                    100% { transform: scale(1); }
+                                }
+                                .animate-pulse {
+                                    animation: pulse 1.5s infinite;
+                                }
+                                .notification-item {
+                                    transition: opacity 0.3s ease, background-color 0.2s ease;
+                                }
+                                .notification-dismiss {
+                                    opacity: 0;
+                                    transition: opacity 0.2s ease;
+                                }
+                                .notification-item:hover .notification-dismiss {
+                                    opacity: 1;
+                                }
+                            `;
+                            document.head.appendChild(style);
+                        }
+                        
+                        // Initial fetch and periodic refresh
+                        fetchNotifications();
+                        setInterval(fetchNotifications, 30000); // Refresh every 30 seconds
+                    });
+                </script>
+            <% } %>
 
-                <!-- Mobile Menu Button -->
-                <button id="menu-btn" class="md:hidden text-white">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-            </div>
+          <% if (!username) { %>
+          <a href="/login" class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Login</a>
+          <% } else { %>
+          <a href="/logout" class="bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-600 transition">Logout</a>
+          <% } %>
+        </div>
 
-            <!-- Mobile Navigation -->
-            <div id="mobile-menu" class="hidden md:hidden">
-                <a href="/"
-                    class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Home</a>
-                <a href="/customerRegister"
-                    class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Register</a>
-                <a href="/medicinesDetails"
-                    class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Medicines</a>
+        <!-- Mobile Menu Button -->
+        <button id="menu-btn" class="md:hidden text-white">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+      </div>
 
-                <% if (profile==='customer' ) { %>
-                    <a href="/customer/customerDashboard"
-                        class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Customer</a>
-                    <% } %>
+      <!-- Mobile Navigation -->
+      <div id="mobile-menu" class="hidden md:hidden">
+        <a href="/" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Home</a>
+        <a href="/customerRegister" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Register</a>
+        <a href="/medicinesDetails" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Medicines</a>
 
-                        <% if (profile==='admin' ) { %>
-                            <a href="/admin/adminDashboard"
-                                class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Admin</a>
-                            <% } %>
+        <% if (profile==='customer' ) { %>
+        <a href="/customer/customerDashboard" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Customer</a>
+        <% } %>
 
-                                <% if (!username) { %>
-                                    <a href="/login"
-                                        class="block bg-blue-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-blue-700 transition">Login</a>
-                                    <% } else { %>
-                                        <a href="/logout"
-                                            class="block bg-red-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-red-600 transition">Logout</a>
-                                        <% } %>
-            </div>
-        </nav>
-    </header>
+        <% if (profile==='admin' ) { %>
+        <a href="/admin/adminDashboard" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Admin</a>
 
-    <!-- Add padding for fixed header -->
-    <div class="pt-16"></div>
+        <div class="navbar">
+          <div class="notification">
+            <span id="notificationIcon">0</span> <!-- Notification count -->
+            <ul id="notificationDropdown" class="dropdown-menu"></ul>
+          </div>
+        </div>
 
-    <!-- Scripts -->
-    <script defer>
-        document.addEventListener("DOMContentLoaded", () => {
-            const loader = document.getElementById("loading");
-            loader.style.display = "none";
+        <script>
+          async function fetchNotifications() {
+            try {
+              const response = await fetch('/admin/notifications');
+              const data = await response.json();
 
-            const menuBtn = document.getElementById("menu-btn");
-            const mobileMenu = document.getElementById("mobile-menu");
+              let notificationIcon = document.getElementById('notificationIcon');
+              notificationIcon.innerHTML = data.length; // Show count in navbar
 
-            menuBtn.addEventListener("click", () => {
-                mobileMenu.classList.toggle("hidden");
-                menuBtn.innerHTML = mobileMenu.classList.contains("hidden")
-                    ? '<i class="fas fa-bars text-xl"></i>'
-                    : '<i class="fas fa-times text-xl"></i>';
-            });
+              let dropdown = document.getElementById('notificationDropdown');
+              dropdown.innerHTML = data.length > 0 ?
+                data.map(n => `<li>[${n.type.toUpperCase()}] ${n.message}</li>`).join('') :
+                '<li>No notifications</li>';
+            } catch (error) {
+              console.error("Error fetching notifications:", error);
+            }
+          }
 
-            window.addEventListener("resize", () => {
-                if (window.innerWidth >= 768) {
-                    mobileMenu.classList.add("hidden");
-                    menuBtn.innerHTML = '<i class="fas fa-bars text-xl"></i>';
-                }
-            });
-        });
-    </script>
+          setInterval(fetchNotifications, 5000); // Refresh every 5 seconds
+          fetchNotifications();
+        </script>
+        <% } %>
+
+        <% if (!username) { %>
+        <a href="/login" class="block bg-blue-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-blue-700 transition">Login</a>
+        <% } else { %>
+        <a href="/logout" class="block bg-red-500 text-white px-3 py-2 rounded-md text-base font-medium mb-5 hover:bg-red-600 transition">Logout</a>
+        <% } %>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Add padding for fixed header -->
+  <div class="pt-16"></div>
+
+  <!-- Scripts -->
+  <script defer>
+    document.addEventListener("DOMContentLoaded", () => {
+      const loader = document.getElementById("loading");
+      loader.style.display = "none";
+
+      const menuBtn = document.getElementById("menu-btn");
+      const mobileMenu = document.getElementById("mobile-menu");
+
+      menuBtn.addEventListener("click", () => {
+        mobileMenu.classList.toggle("hidden");
+        menuBtn.innerHTML = mobileMenu.classList.contains("hidden") 
+            ? '<i class="fas fa-bars text-xl"></i>'
+            : '<i class="fas fa-times text-xl"></i>';
+      });
+
+      window.addEventListener("resize", () => {
+        if (window.innerWidth >= 768) {
+          mobileMenu.classList.add("hidden");
+          menuBtn.innerHTML = '<i class="fas fa-bars text-xl"></i>';
+        }
+      });
+    });
+  </script>

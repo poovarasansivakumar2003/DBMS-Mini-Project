@@ -2,7 +2,23 @@ show databases;
 create database DBMS_Mini_Project;
 use DBMS_Mini_Project;
 
-drop database DBMS_Mini_Project;
+-- Admin notifications
+CREATE TABLE admin_notifications (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+    message TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL,  -- Example: 'expired_medicine', 'low_stock', etc.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	seen BOOLEAN DEFAULT false
+);
+
+-- Customer notifications
+CREATE TABLE customer_notifications (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+    message TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL,  -- Example: 'expired_medicine', 'low_stock', etc.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    seen BOOLEAN DEFAULT false
+);
 
 -- Admin Table
 create table admin(
@@ -41,6 +57,20 @@ select * from medicines;
 
 ALTER TABLE medicines ADD CONSTRAINT unique_medicine UNIQUE (medicine_name, medicine_composition);
 
+DELIMITER $$
+
+CREATE TRIGGER medicine_expiry_trigger
+AFTER INSERT ON medicines
+FOR EACH ROW
+BEGIN
+    IF NEW.medicine_expiry_date < CURDATE() THEN
+        INSERT INTO admin_notifications (message, type)
+        VALUES (CONCAT('Medicine "', NEW.medicine_name, '" is expired!'), 'expired_medicine');
+    END IF;
+END$$
+
+DELIMITER ;
+
 -- Suppliers Table
 create table suppliers(
 	supplier_id int auto_increment primary key,
@@ -70,6 +100,20 @@ create table purchases(
 describe purchases;
 select * from purchases;
 
+DELIMITER $$
+
+CREATE TRIGGER prevent_negative_purchase
+BEFORE INSERT ON purchases
+FOR EACH ROW
+BEGIN
+    IF NEW.purchased_quantity <= 0 THEN
+		INSERT INTO customer_notifications (message, type)
+        VALUES (CONCAT('Purchase from  "', NEW.purchase_id, '" lesser than zero!'), 'not_purchased');
+    END IF;
+END$$
+
+DELIMITER ;
+
 -- Invoice Table
 create table invoice(
 	invoice_no INT AUTO_INCREMENT PRIMARY KEY,
@@ -87,6 +131,43 @@ create table invoice(
 describe invoice;
 select * from invoice;
 
+DELIMITER $$
+
+CREATE PROCEDURE update_invoice_total_amt()
+BEGIN
+    UPDATE invoice i
+    JOIN purchases p ON i.purchase_id = p.purchase_id
+    JOIN customers c ON p.customer_id = c.customer_id
+    SET i.total_amt = p.total_amt + c.customer_balance_amt;
+END $$
+
+DELIMITER ;
+
+SET SQL_SAFE_UPDATES = 0;
+CALL update_invoice_total_amt();
+SET SQL_SAFE_UPDATES = 1; -- Re-enable safe mode
+
+
+DELIMITER $$
+
+CREATE TRIGGER only_admin_can_invoice
+BEFORE INSERT ON invoice
+FOR EACH ROW
+BEGIN
+    DECLARE admin_username_val VARCHAR(20);
+    
+    SELECT admin_username INTO admin_username_val 
+    FROM purchases 
+    WHERE purchase_id = NEW.purchase_id;
+    
+    IF admin_username_val IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Only admins can generate invoices!';
+    END IF;
+END$$
+
+DELIMITER ;
+
 -- Stocks Table
 CREATE TABLE stocks (
 	medicine_id INT,
@@ -99,14 +180,54 @@ CREATE TABLE stocks (
 describe stocks;
 select * from stocks;
 
+DELIMITER $$
+
+CREATE TRIGGER low_stock_trigger
+AFTER INSERT ON stocks
+FOR EACH ROW
+BEGIN
+    IF NEW.stock_quantity < 5 THEN
+        INSERT INTO admin_notifications (message, type)
+        VALUES (CONCAT('Low stock: Medicine ID ', NEW.medicine_id, ' has only ', NEW.stock_quantity, ' left!'), 'low_stock');
+    END IF;
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE TRIGGER reduce_stock_on_purchase
+AFTER INSERT ON purchases
+FOR EACH ROW
+BEGIN
+    DECLARE remaining_stock INT;
+
+    -- Reduce stock quantity
+    UPDATE stocks
+    SET stock_quantity = stock_quantity - NEW.purchased_quantity
+    WHERE medicine_id = NEW.medicine_id 
+    AND supplier_id = NEW.supplier_id;
+
+    -- Get the updated stock quantity
+    SELECT stock_quantity INTO remaining_stock 
+    FROM stocks 
+    WHERE medicine_id = NEW.medicine_id 
+    AND supplier_id = NEW.supplier_id;
+
+    -- Insert notification if stock is low
+    IF remaining_stock < 5 THEN
+        INSERT INTO admin_notifications (message, type)
+        VALUES (CONCAT('Low stock: Medicine ID ', NEW.medicine_id, ' has only ', remaining_stock, ' left!'), 'low_stock');
+    END IF;
+END$$
+
+DELIMITER ;
+
 show tables;
 
 INSERT INTO admin (admin_username, admin_password) VALUES 
 ('admin1', '$2a$10$nw35QHHaWQXowfPROS70A.mjbeYj8kPhpE5mBowZmJRHOg/G6/x8a'),-- Admin@123
 ('admin2', '$2a$10$rth0XhJlmKXXd.HuU948cuIrTGa1XRyVsp9HNEeq7rE7l8XnXPhea');-- SecurePass
-
-update admin set admin_password =' $2a$10$nw35QHHaWQXowfPROS70A.mjbeYj8kPhpE5mBowZmJRHOg/G6/x8a' where admin_username = 'admin1' ; -- Admin@123
-update admin set admin_password ='$2a$10$rth0XhJlmKXXd.HuU948cuIrTGa1XRyVsp9HNEeq7rE7l8XnXPhea' where admin_username = 'admin2' ;-- SecurePass
 
 INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_address, customer_feedback, customer_password, customer_photo) VALUES 
 ('John Doe', 'john.doe@example.com', '9876543210', '123 Main Street, NY', 'Great service, fast delivery and helpful staff.', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6',null), -- password
@@ -124,12 +245,12 @@ INSERT INTO suppliers (supplier_name, supplier_email, supplier_ph_no, supplier_a
 INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img)
 VALUES 
 ('Paracetamol', 'Acetaminophen 500mg', 10, '2025-12-31','./public/img/medicinesImg/paracetamol.jpg'),
-('Aspirin', 'Aspirin 100mg', 5, '2026-06-30','./public/img/medicinesImg/aspirin.jfif'),
-('Amoxicillin', 'Amoxicillin 500mg', 15, '2026-04-30','./public/img/medicinesImg/amoxicillin.jfif'),
-('Ibuprofen', 'Ibuprofen 400mg', 30, '2025-08-15','./public/img/medicinesImg/ibuprofen.jfif'),
-('Amoxicillin', 'Amoxicillin 250mg', 50, '2024-05-01','./public/img/medicinesImg/amoxicillin.jfif'), -- Expired
+('Aspirin', 'Aspirin 100mg', 5, '2026-06-30','./public/img/medicinesImg/aspirin.jpg'),
+('Amoxicillin', 'Amoxicillin 500mg', 15, '2026-04-30','./public/img/medicinesImg/amoxicillin.jpg'),
+('Ibuprofen', 'Ibuprofen 400mg', 30, '2025-08-15','./public/img/medicinesImg/ibuprofen.jpg'),
+('Amoxicillin', 'Amoxicillin 250mg', 50, '2024-05-01','./public/img/medicinesImg/amoxicillin.jpg'), -- Expired
 ('Cough Syrup', 'Dextromethorphan, Guaifenesin', 80, '2026-09-10','./public/img/medicinesImg/coughSyrup.jpg'),
-('Vitamin C', 'Ascorbic Acid 500mg', 25, '2025-06-20','./public/img/medicinesImg/vitaminC.webp');
+('Vitamin C', 'Ascorbic Acid 500mg', 25, '2025-06-20','./public/img/medicinesImg/vitaminC.jpg');
 
 INSERT INTO stocks (medicine_id, supplier_id, stock_quantity) VALUES 
 (1, 1, 100),  -- 100 units of Paracetamol supplied by MediSuppliers Inc. (Supplier ID: 1)
@@ -154,150 +275,36 @@ INSERT INTO invoice (purchase_id, total_amt, discount, paid) VALUES
 (3, 240, 20, 220), -- Invoice for Purchase ID 3: Total amount = 240, Discount = 20, Paid = 220, Balance = 0
 (4, 125, 10, 115); -- Invoice for Purchase ID 4: Total amount = 125, Discount = 10, Paid = 115, Balance = 0
 
+SHOW TRIGGERS;
 
+SELECT * FROM admin_notifications ORDER BY created_at DESC;
+SELECT * FROM customer_notifications ORDER BY created_at DESC;
+
+SHOW GRANTS FOR CURRENT_USER;
+
+-- Grant TRIGGER privilege on a specific database
+GRANT TRIGGER ON dbms_mini_project.* TO 'root'@'localhost';
+
+-- Grant SUPER privilege globally
+GRANT SUPER ON *.* TO 'root'@'localhost';
+
+-- Apply the changes
+FLUSH PRIVILEGES;
+
+drop database DBMS_Mini_Project;
 
 -- How Can Suppliers View Their Stock?
-SELECT 
-    s.supplier_name, 
-    m.medicine_name, 
-    st.medicine_quantity
-FROM 
-    stocks st
-JOIN 
-    suppliers s ON st.supplier_id = s.supplier_id
-JOIN 
-    medicines m ON st.medicine_id = m.medicine_id
-WHERE 
-    s.supplier_id = 1;
-
 -- How Can Suppliers Update Their Stock?
-UPDATE stocks 
-SET medicine_quantity = medicine_quantity + 50
-WHERE medicine_id = 1 AND supplier_id = 1;
-
 -- Show Medicine Stock for Each Supplier
-SELECT 
-    s.supplier_name, 
-    m.medicine_name, 
-    st.medicine_quantity
-FROM 
-    stocks st
-JOIN 
-    suppliers s ON st.supplier_id = s.supplier_id
-JOIN 
-    medicines m ON st.medicine_id = m.medicine_id;
-
 -- How to See All Suppliers for a Medicine?
-SELECT 
-    m.medicine_name, 
-    s.supplier_name
-FROM 
-    stocks st
-JOIN 
-    medicines m ON st.medicine_id = m.medicine_id
-JOIN 
-    suppliers s ON st.supplier_id = s.supplier_id
-WHERE 
-    m.medicine_name = 'Paracetamol';
-
 -- How to Get the Combined Stock of Each Medicine?
-SELECT 
-    m.medicine_name, 
-    SUM(st.medicine_quantity) AS total_stock
-FROM 
-    stocks st
-JOIN 
-    medicines m ON st.medicine_id = m.medicine_id
-GROUP BY 
-    m.medicine_name;
-
 -- How to Get Stock per Supplier for a Medicine?
-SELECT 
-    m.medicine_name, 
-    s.supplier_name, 
-    st.medicine_quantity
-FROM 
-    stocks st
-JOIN 
-    medicines m ON st.medicine_id = m.medicine_id
-JOIN 
-    suppliers s ON st.supplier_id = s.supplier_id
-WHERE 
-    m.medicine_name = 'Paracetamol';
-
 -- How to Get Supplier of Medicine Purchased by a Customer?
-SELECT 
-    c.customer_name, 
-    m.medicine_name, 
-    s.supplier_name
-FROM 
-    purchases p
-JOIN 
-    customers c ON p.customer_id = c.customer_id
-JOIN 
-    medicines m ON p.medicine_id = m.medicine_id
-JOIN 
-    suppliers s ON p.supplier_id = s.supplier_id
-WHERE 
-    c.customer_name = 'John Doe';
-
 -- How to See All Suppliers for a Customer’s Purchased Medicines?
-SELECT 
-    c.customer_name, 
-    m.medicine_name, 
-    s.supplier_name
-FROM 
-    purchases p
-JOIN 
-    customers c ON p.customer_id = c.customer_id
-JOIN 
-    medicines m ON p.medicine_id = m.medicine_id
-JOIN 
-    suppliers s ON p.supplier_id = s.supplier_id
-WHERE 
-    c.customer_name = 'Jane Smith';
-
 -- How to Fetch Only Non-Expired Medicines for Purchase?
-SELECT 
-    medicine_name, 
-    medicine_expiry_date
-FROM 
-    medicines
-WHERE 
-    medicine_expiry_date > CURRENT_DATE;
-
 -- How to Prevent Expired Medicines from Being Purchased?
-SELECT * FROM medicines WHERE medicine_expiry_date > CURRENT_DATE;
-
 -- Query to Get Total Amount Spent by Each Customer
-SELECT 
-    c.customer_name, 
-    SUM(p.total_amt) AS total_spent
-FROM 
-    purchases p
-JOIN 
-    customers c ON p.customer_id = c.customer_id
-GROUP BY 
-    c.customer_name;
-
 -- make invoice
-SELECT i.invoice_no, 
-       i.invoice_date, 
-       c.customer_name, 
-       m.medicine_name, 
-       p.quantity, 
-       p.total_amt, 
-       i.discount, 
-       (p.total_amt - i.discount) AS net_total, 
-       i.paid, 
-       i.balance
-FROM invoice i
-JOIN purchases p ON i.purchase_id = p.purchase_id
-JOIN customers c ON p.customer_id = c.customer_id
-JOIN medicines m ON p.medicine_id = m.medicine_id
-ORDER BY i.invoice_date DESC;
-
-
 -- reduce stock as purchase happens
 -- only admin can generate bill
 

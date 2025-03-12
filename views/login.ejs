@@ -1,26 +1,26 @@
 <%- include('includes/header') %>
 
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
 
-            <!-- Logo/Icon -->
-            <div class="text-center">
-                <div class="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-clinic-medical text-blue-600 text-2xl"></i>
-                </div>
-                <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Welcome Back</h2>
-                <p class="mt-2 text-sm text-gray-600">Sign in to your account</p>
+        <!-- Logo/Icon -->
+        <div class="text-center">
+            <div class="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-clinic-medical text-blue-600 text-2xl"></i>
             </div>
-
-    <!-- Error Message -->
-    <% if (typeof error !== "undefined" && error) { %>
-        <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-            <div class="flex items-center">
-                <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
-                <p class="text-sm text-red-700"><%= error %></p>
-            </div>
+            <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Welcome Back</h2>
+            <p class="mt-2 text-sm text-gray-600">Sign in to your account</p>
         </div>
-    <% } %>
+
+        <!-- Error Message -->
+        <% if (typeof error !== "undefined" && error) { %>
+            <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                    <p class="text-sm text-red-700"><%= error %></p>
+                </div>
+            </div>
+        <% } %>
 
         <form action="/login" method="POST" class="mt-8 space-y-6">
             <!-- Role Selection -->
@@ -30,9 +30,9 @@
                 </label>
                 <div class="relative">
                     <select id="role" name="role" required
-                        class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg 
-                               bg-white placeholder-gray-500 focus:outline-none focus:ring-2 
-                               focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg
+                            bg-white placeholder-gray-500 focus:outline-none focus:ring-2 
+                            focus:ring-blue-500 focus:border-transparent transition-all duration-200">
                         <option value="admin">Administrator</option>
                         <option value="customer">Customer</option>
                     </select>
@@ -70,16 +70,23 @@
                     </div>
                     <input type="password" id="password" name="password" required
                         class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
-                               placeholder-gray-500 focus:outline-none focus:ring-2 
-                               focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                            placeholder-gray-500 focus:outline-none focus:ring-2 
+                            focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         placeholder="Enter your password">
                     <button type="button" onclick="togglePassword()"
                         class="absolute inset-y-0 right-0 pr-3 flex items-center">
                         <i id="password-toggle" class="fas fa-eye text-gray-400 hover:text-gray-600 cursor-pointer"></i>
                     </button>
                 </div>
-                <!-- Forgot Password Link -->
-                <div class="text-center mt-4">
+            </div>
+
+            <!-- Remember Me & Forgot Password -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input type="checkbox" id="rememberMe" name="rememberMe" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                    <label for="rememberMe" class="ml-2 block text-sm text-gray-700">Remember Me</label>
+                </div>
+                <div>
                     <a href="/forgotPassword" class="text-sm text-blue-600 hover:text-blue-500 transition-colors duration-200">
                         Forgot Password?
                     </a>
@@ -88,15 +95,13 @@
 
             <!-- Submit Button -->
             <div>
-                <button type="submit" 
+                <button id="submitBtn" type="submit" 
                     class="group relative w-full flex justify-center py-3 px-4 border border-transparent 
-                           text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 
-                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
-                           transition-all duration-200">
-                           <div class="flex items-center">
-        
+                    text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
+                    transition-all duration-200">
+                    <div class="flex items-center">
                         <i class="fas fa-sign-in-alt mr-2"></i>
-                   
                         <span id="submitText">Sign in</span>
                     </div>
                     <span id="loadingSpinner" class="hidden ml-2">
@@ -113,8 +118,7 @@
         <div class="text-center mt-6">
             <p class="text-sm text-gray-600">
                 Don't have an account? 
-                <a href="customerRegister" 
-                   class="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
+                <a href="customerRegister" class="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
                     Create Account
                 </a>
             </p>
@@ -140,15 +144,43 @@
     }
 
     document.querySelector('form').addEventListener('submit', function (e) {
-            const submitBtn = document.getElementById('submitBtn');
-            const submitText = document.getElementById('submitText');
-            const loadingSpinner = document.getElementById('loadingSpinner');
+        const submitBtn = document.getElementById('submitBtn');
+        const submitText = document.getElementById('submitText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
 
-            // Show loading state
-            submitBtn.disabled = true;
-            submitText.textContent = 'Fetching...';
-            loadingSpinner.classList.remove('hidden');
+        // Show loading state
+        submitBtn.disabled = true;
+        submitText.textContent = 'Fetching...';
+        loadingSpinner.classList.remove('hidden');
+    });
+    
+    document.addEventListener("DOMContentLoaded", function () {
+        const usernameInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
+        const rememberMeCheckbox = document.getElementById("rememberMe");
+
+        // Check if login details exist in localStorage
+        if (localStorage.getItem("rememberMe") === "true") {
+            usernameInput.value = localStorage.getItem("savedUsername") || "";
+            passwordInput.value = localStorage.getItem("savedPassword") || "";
+            rememberMeCheckbox.checked = true;
+        }
+
+        document.querySelector("form").addEventListener("submit", function () {
+            if (rememberMeCheckbox.checked) {
+                // Store username & password
+                localStorage.setItem("savedUsername", usernameInput.value);
+                localStorage.setItem("savedPassword", passwordInput.value);
+                localStorage.setItem("rememberMe", "true");
+            } else {
+                // Clear stored data
+                localStorage.removeItem("savedUsername");
+                localStorage.removeItem("savedPassword");
+                localStorage.removeItem("rememberMe");
+            }
         });
-    </script>
+    });
+
+</script>
 
 <%- include('includes/footer') %>
