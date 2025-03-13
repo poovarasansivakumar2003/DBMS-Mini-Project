@@ -49,199 +49,188 @@
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center space-x-4">
-            <a href="/" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Home</a>
-            <a href="/customerRegister" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Register</a>
-            <a href="/medicinesDetails" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Medicines</a>
-            <% if (profile==='customer' ) { %>
-                <a href="/customer/customerDashboard" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Customer</a>            
-            <% } %>
-            <% if (profile === 'admin') { %>
-                <a href="/admin/adminDashboard" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Admin</a>
-            
-                <div class="relative ml-3">
-                    <!-- Notification Bell -->
-                    <div id="notificationBell" class="relative cursor-pointer flex items-center justify-center w-9 h-9 rounded-full hover:bg-blue-700 transition-colors duration-200">
-                        <i class="fas fa-bell text-white text-lg"></i>
-                        <!-- Badge Counter -->
-                        <span id="notificationCount" class="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] text-xs font-bold text-white bg-red-500 rounded-full border-2 border-blue-600 transform transition-transform duration-200"></span>
-                    </div>
-                    
-                    <!-- Dropdown -->
-                    <div id="notificationDropdown" class="hidden opacity-0 transform scale-95 transition-all duration-200 absolute right-0 mt-2 w-72 md:w-80 bg-blue-50 rounded-lg shadow-lg ring-1 ring-blue-200 ring-opacity-5 z-50 max-h-96 overflow-y-auto">
-                        <!-- Header -->
-                        <div class="flex justify-between items-center px-4 py-3 bg-blue-600 border-b border-blue-500 rounded-t-lg">
-                            <h3 class="text-sm font-semibold text-white">Notifications</h3>
-                            <button id="markAllRead" class="text-xs text-white hover:bg-blue-700 px-2 py-1 rounded transition-colors duration-150">Mark all as read</button>
-                        </div>
-                        
-                        <!-- Notification List -->
-                        <div id="notificationList" class="divide-y divide-blue-200">
-                            <!-- Empty State -->
-                            <div id="emptyNotification" class="py-5 px-4 text-center text-blue-600 italic text-sm">
-                                No new notifications
-                            </div>
-                            
-                            <!-- Notifications will be inserted here by JavaScript -->
-                        </div>
-                        
-                        <!-- Footer -->
-                        <div class="bg-blue-600 border-t border-blue-500 rounded-b-lg px-4 py-2 text-center">
-                            <a href="/admin/allNotifications" class="text-sm text-white hover:underline transition-colors duration-150">View all notifications</a>
-                        </div>
-                    </div>
+          <a href="/" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Home</a>
+          <a href="/customerRegister" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Register</a>
+          <a href="/medicinesDetails" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Medicines</a>
+          <% if (profile==='customer' ) { %>
+          <a href="/customer/customerDashboard" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Customer</a>
+          <% } %>
+          <% if (profile === 'admin') { %>
+          <a href="/admin/adminDashboard" class="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Admin</a>
+
+          <!-- <div class="relative ml-3">
+            <div id="notificationBell" class="relative cursor-pointer flex items-center justify-center w-9 h-9 rounded-full hover:bg-blue-700 transition-colors duration-200">
+              <i class="fas fa-bell text-white text-lg"></i>
+              <span id="notificationCount" class="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] text-xs font-bold text-white bg-red-500 rounded-full border-2 border-blue-600 transform transition-transform duration-200"></span>
+            </div>
+
+            <div id="notificationDropdown" class="hidden opacity-0 transform scale-95 transition-all duration-200 absolute right-0 mt-2 w-72 md:w-80 bg-blue-50 rounded-lg shadow-lg ring-1 ring-blue-200 ring-opacity-5 z-50 max-h-96 overflow-y-auto">
+              <div class="flex justify-between items-center px-4 py-3 bg-blue-600 border-b border-blue-500 rounded-t-lg">
+                <h3 class="text-sm font-semibold text-white">Notifications</h3>
+                <button id="markAllRead" class="text-xs text-white hover:bg-blue-700 px-2 py-1 rounded transition-colors duration-150">Mark all as read</button>
+              </div>
+              <div id="notificationList" class="divide-y divide-blue-200">
+                <div id="emptyNotification" class="py-5 px-4 text-center text-blue-600 italic text-sm">
+                  No new notifications
                 </div>
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const notificationBell = document.getElementById('notificationBell');
-                        const notificationDropdown = document.getElementById('notificationDropdown');
-                        const notificationCount = document.getElementById('notificationCount');
-                        const notificationList = document.getElementById('notificationList');
-                        const emptyNotification = document.getElementById('emptyNotification');
-                        const markAllRead = document.getElementById('markAllRead');
-                        
-                        // Toggle dropdown
-                        notificationBell.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            if (notificationDropdown.classList.contains('hidden')) {
-                                // Show dropdown with animation
-                                notificationDropdown.classList.remove('hidden');
-                                setTimeout(() => {
-                                    notificationDropdown.classList.remove('opacity-0', 'scale-95');
-                                    notificationDropdown.classList.add('opacity-100', 'scale-100');
-                                }, 10);
-                            } else {
-                                // Hide dropdown with animation
-                                notificationDropdown.classList.remove('opacity-100', 'scale-100');
-                                notificationDropdown.classList.add('opacity-0', 'scale-95');
-                                setTimeout(() => {
-                                    notificationDropdown.classList.add('hidden');
-                                }, 200);
-                            }
-                        });
-                        
-                        // Close dropdown when clicking outside
-                        document.addEventListener('click', function(e) {
-                            if (!notificationBell.contains(e.target) && !notificationDropdown.contains(e.target) && !notificationDropdown.classList.contains('hidden')) {
-                                notificationDropdown.classList.remove('opacity-100', 'scale-100');
-                                notificationDropdown.classList.add('opacity-0', 'scale-95');
-                                setTimeout(() => {
-                                    notificationDropdown.classList.add('hidden');
-                                }, 200);
-                            }
-                        });
-                        
-                        // Mark all as read
-                        markAllRead.addEventListener('click', function() {
-                            const unreadItems = document.querySelectorAll('.notification-item.bg-blue-100');
-                            unreadItems.forEach(item => {
-                                item.classList.remove('bg-blue-100');
-                                item.classList.add('bg-white');
-                                
-                                // Update the notification data in memory
-                                const notificationId = item.dataset.id;
-                                notificationsData.forEach(notification => {
-                                    if (notification.notification_id == notificationId) {
-                                        notification.read = true;
-                                    }
-                                });
-                            });
-                            updateNotificationCount();
-                            
-                            // Form-based submission to mark all as read
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.action = '/admin/notifications/markAllRead';
-                            form.style.display = 'none';
-                            document.body.appendChild(form);
-                            form.submit();
-                        });
-                        
-                        // Function to update notification count
-                        function updateNotificationCount() {
-                            const count = document.querySelectorAll('.notification-item.bg-blue-100').length;
-                            
-                            if (count > 0) {
-                                notificationCount.textContent = count;
-                                notificationCount.classList.add('animate-pulse');
-                                emptyNotification.classList.add('hidden');
-                            } else {
-                                notificationCount.textContent = '';
-                                notificationCount.classList.remove('animate-pulse');
-                                if (notificationList.querySelectorAll('.notification-item').length === 0) {
-                                    emptyNotification.classList.remove('hidden');
-                                }
-                            }
-                        }
-                        
-                        // Store notifications data
-                        let notificationsData = [];
-                        
-                        // Function to fetch notifications
-                        function fetchNotifications() {
-                            // Create a script element
-                            const script = document.createElement('script');
-                            script.src = `/admin/notifications?t=${new Date().getTime()}`;
-                            
-                            // When the script loads, the server should inject a global variable with notification data
-                            script.onload = function() {
-                                // Server should inject a global variable like 'window.adminNotifications'
-                                if (window.adminNotifications && window.adminNotifications.length > 0) {
-                                    notificationsData = window.adminNotifications;
-                                    
-                                    const oldItems = notificationList.querySelectorAll('.notification-item');
-                                    oldItems.forEach(item => item.remove());
-                                    
-                                    notificationsData.forEach(notification => {
-                                        const notificationItem = createNotificationItem(notification);
-                                        notificationList.appendChild(notificationItem);
-                                    });
-                                    
-                                    emptyNotification.classList.add('hidden');
-                                } else {
-                                    notificationList.querySelectorAll('.notification-item').forEach(item => item.remove());
-                                    emptyNotification.classList.remove('hidden');
-                                    notificationsData = [];
-                                }
-                                
-                                updateNotificationCount();
-                                
-                                // Clean up
-                                script.remove();
-                            };
-                            
-                            document.head.appendChild(script);
-                        }
-                        
-                        // Function to create notification item
-                        function createNotificationItem(notification) {
-                            const item = document.createElement('div');
-                            item.className = `notification-item relative flex p-3 cursor-pointer transition-colors duration-150 ${notification.read ? 'bg-white' : 'bg-blue-100'}`;
-                            item.dataset.id = notification.notification_id;
-                            
-                            // Determine icon and background color based on notification type
-                            let iconClass, iconBgClass, iconColorClass;
-                            
-                            switch(notification.type) {
-                                case 'expired_medicine':
-                                    iconClass = 'fas fa-exclamation-circle';
-                                    iconBgClass = 'bg-red-100';
-                                    iconColorClass = 'text-red-600';
-                                    break;
-                                case 'low_stock':
-                                    iconClass = 'fas fa-box-open';
-                                    iconBgClass = 'bg-yellow-100';
-                                    iconColorClass = 'text-yellow-600';
-                                    break;
-                                default:
-                                    iconClass = 'fas fa-info-circle';
-                                    iconBgClass = 'bg-blue-100';
-                                    iconColorClass = 'text-blue-600';
-                            }
-                            
-                            const timeAgo = getTimeAgo(new Date(notification.created_at));
-                            
-                            // Add close button and content
-                            item.innerHTML = `
+              </div>
+              <div class="bg-blue-600 border-t border-blue-500 rounded-b-lg px-4 py-2 text-center">
+                <a href="/admin/allNotifications" class="text-sm text-white hover:underline transition-colors duration-150">View all notifications</a>
+              </div>
+            </div>
+          </div>
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              const notificationBell = document.getElementById('notificationBell');
+              const notificationDropdown = document.getElementById('notificationDropdown');
+              const notificationCount = document.getElementById('notificationCount');
+              const notificationList = document.getElementById('notificationList');
+              const emptyNotification = document.getElementById('emptyNotification');
+              const markAllRead = document.getElementById('markAllRead');
+
+              // Toggle dropdown
+              notificationBell.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (notificationDropdown.classList.contains('hidden')) {
+                  // Show dropdown with animation
+                  notificationDropdown.classList.remove('hidden');
+                  setTimeout(() => {
+                    notificationDropdown.classList.remove('opacity-0', 'scale-95');
+                    notificationDropdown.classList.add('opacity-100', 'scale-100');
+                  }, 10);
+                } else {
+                  // Hide dropdown with animation
+                  notificationDropdown.classList.remove('opacity-100', 'scale-100');
+                  notificationDropdown.classList.add('opacity-0', 'scale-95');
+                  setTimeout(() => {
+                    notificationDropdown.classList.add('hidden');
+                  }, 200);
+                }
+              });
+
+              // Close dropdown when clicking outside
+              document.addEventListener('click', function(e) {
+                if (!notificationBell.contains(e.target) && !notificationDropdown.contains(e.target) && !notificationDropdown.classList.contains('hidden')) {
+                  notificationDropdown.classList.remove('opacity-100', 'scale-100');
+                  notificationDropdown.classList.add('opacity-0', 'scale-95');
+                  setTimeout(() => {
+                    notificationDropdown.classList.add('hidden');
+                  }, 200);
+                }
+              });
+
+              // Mark all as read
+              markAllRead.addEventListener('click', function() {
+                const unreadItems = document.querySelectorAll('.notification-item.bg-blue-100');
+                unreadItems.forEach(item => {
+                  item.classList.remove('bg-blue-100');
+                  item.classList.add('bg-white');
+
+                  // Update the notification data in memory
+                  const notificationId = item.dataset.id;
+                  notificationsData.forEach(notification => {
+                    if (notification.notification_id == notificationId) {
+                      notification.read = true;
+                    }
+                  });
+                });
+                updateNotificationCount();
+
+                // Form-based submission to mark all as read
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/admin/notifications/markAllRead';
+                form.style.display = 'none';
+                document.body.appendChild(form);
+                form.submit();
+              });
+
+              // Function to update notification count
+              function updateNotificationCount() {
+                const count = document.querySelectorAll('.notification-item.bg-blue-100').length;
+
+                if (count > 0) {
+                  notificationCount.textContent = count;
+                  notificationCount.classList.add('animate-pulse');
+                  emptyNotification.classList.add('hidden');
+                } else {
+                  notificationCount.textContent = '';
+                  notificationCount.classList.remove('animate-pulse');
+                  if (notificationList.querySelectorAll('.notification-item').length === 0) {
+                    emptyNotification.classList.remove('hidden');
+                  }
+                }
+              }
+
+              // Store notifications data
+              let notificationsData = [];
+
+              // Function to fetch notifications
+              function fetchNotifications() {
+                // Create a script element
+                const script = document.createElement('script');
+                script.src = `/admin/notifications?t=${new Date().getTime()}`;
+
+                // When the script loads, the server should inject a global variable with notification data
+                script.onload = function() {
+                  // Server should inject a global variable like 'window.adminNotifications'
+                  if (window.adminNotifications && window.adminNotifications.length > 0) {
+                    notificationsData = window.adminNotifications;
+
+                    const oldItems = notificationList.querySelectorAll('.notification-item');
+                    oldItems.forEach(item => item.remove());
+
+                    notificationsData.forEach(notification => {
+                      const notificationItem = createNotificationItem(notification);
+                      notificationList.appendChild(notificationItem);
+                    });
+
+                    emptyNotification.classList.add('hidden');
+                  } else {
+                    notificationList.querySelectorAll('.notification-item').forEach(item => item.remove());
+                    emptyNotification.classList.remove('hidden');
+                    notificationsData = [];
+                  }
+
+                  updateNotificationCount();
+
+                  // Clean up
+                  script.remove();
+                };
+
+                document.head.appendChild(script);
+              }
+
+              // Function to create notification item
+              function createNotificationItem(notification) {
+                const item = document.createElement('div');
+                item.className = `notification-item relative flex p-3 cursor-pointer transition-colors duration-150 ${notification.read ? 'bg-white' : 'bg-blue-100'}`;
+                item.dataset.id = notification.notification_id;
+
+                // Determine icon and background color based on notification type
+                let iconClass, iconBgClass, iconColorClass;
+
+                switch (notification.type) {
+                  case 'expired_medicine':
+                    iconClass = 'fas fa-exclamation-circle';
+                    iconBgClass = 'bg-red-100';
+                    iconColorClass = 'text-red-600';
+                    break;
+                  case 'low_stock':
+                    iconClass = 'fas fa-box-open';
+                    iconBgClass = 'bg-yellow-100';
+                    iconColorClass = 'text-yellow-600';
+                    break;
+                  default:
+                    iconClass = 'fas fa-info-circle';
+                    iconBgClass = 'bg-blue-100';
+                    iconColorClass = 'text-blue-600';
+                }
+
+                const timeAgo = getTimeAgo(new Date(notification.created_at));
+
+                // Add close button and content
+                item.innerHTML = `
                                 <div class="mr-3 flex-shrink-0">
                                     <div class="p-2 rounded-full ${iconBgClass} ${iconColorClass}">
                                     <i class="${iconClass} text-sm"></i>
@@ -255,106 +244,106 @@
                                     <i class="fas fa-times text-xs"></i>
                                 </button>
                             `;
-                            
-                            // Mark notification as read when clicked (except on dismiss button)
-                            item.addEventListener('click', function(e) {
-                                // Don't trigger if clicking the dismiss button
-                                if (!e.target.closest('.notification-dismiss')) {
-                                    if (item.classList.contains('bg-blue-100')) {
-                                        item.classList.remove('bg-blue-100');
-                                        item.classList.add('bg-white');
-                                        updateNotificationCount();
-                                        
-                                        // Update in-memory data
-                                        const notificationId = item.dataset.id;
-                                        notificationsData.forEach(notification => {
-                                            if (notification.notification_id == notificationId) {
-                                                notification.read = true;
-                                            }
-                                        });
-                                        
-                                        // Form submission to mark as read
-                                        const form = document.createElement('form');
-                                        form.method = 'POST';
-                                        form.action = `/admin/notifications/markAsRead/${notificationId}`;
-                                        form.style.display = 'none';
-                                        document.body.appendChild(form);
-                                        form.submit();
-                                    }
-                                }
-                            });
-                            
-                            // Add dismiss functionality
-                            const dismissBtn = item.querySelector('.notification-dismiss');
-                            dismissBtn.addEventListener('click', function(e) {
-                                e.stopPropagation(); // Prevent triggering the parent click
-                                
-                                const notificationId = item.dataset.id;
-                                
-                                // Remove from UI
-                                item.classList.add('opacity-0');
-                                setTimeout(() => {
-                                    item.remove();
-                                    if (notificationList.querySelectorAll('.notification-item').length === 0) {
-                                        emptyNotification.classList.remove('hidden');
-                                    }
-                                    updateNotificationCount();
-                                    
-                                    // Remove from in-memory data
-                                    notificationsData = notificationsData.filter(notification => 
-                                        notification.notification_id != notificationId
-                                    );
-                                }, 300);
-                                
-                                // Form submission to dismiss
-                                const form = document.createElement('form');
-                                form.method = 'POST';
-                                form.action = `/admin/notifications/dismiss/${notificationId}`;
-                                form.style.display = 'none';
-                                document.body.appendChild(form);
-                                form.submit();
-                            });
-                            
-                            return item;
+
+                // Mark notification as read when clicked (except on dismiss button)
+                item.addEventListener('click', function(e) {
+                  // Don't trigger if clicking the dismiss button
+                  if (!e.target.closest('.notification-dismiss')) {
+                    if (item.classList.contains('bg-blue-100')) {
+                      item.classList.remove('bg-blue-100');
+                      item.classList.add('bg-white');
+                      updateNotificationCount();
+
+                      // Update in-memory data
+                      const notificationId = item.dataset.id;
+                      notificationsData.forEach(notification => {
+                        if (notification.notification_id == notificationId) {
+                          notification.read = true;
                         }
-                        
-                        // Helper function to format time ago
-                        function getTimeAgo(date) {
-                            const seconds = Math.floor((new Date() - date) / 1000);
-                            
-                            let interval = Math.floor(seconds / 31536000);
-                            if (interval >= 1) {
-                                return interval === 1 ? '1 year ago' : interval + ' years ago';
-                            }
-                            
-                            interval = Math.floor(seconds / 2592000);
-                            if (interval >= 1) {
-                                return interval === 1 ? '1 month ago' : interval + ' months ago';
-                            }
-                            
-                            interval = Math.floor(seconds / 86400);
-                            if (interval >= 1) {
-                                return interval === 1 ? '1 day ago' : interval + ' days ago';
-                            }
-                            
-                            interval = Math.floor(seconds / 3600);
-                            if (interval >= 1) {
-                                return interval === 1 ? '1 hour ago' : interval + ' hours ago';
-                            }
-                            
-                            interval = Math.floor(seconds / 60);
-                            if (interval >= 1) {
-                                return interval === 1 ? '1 minute ago' : interval + ' minutes ago';
-                            }
-                            
-                            return seconds < 10 ? 'just now' : seconds + ' seconds ago';
-                        }
-                        
-                        // Add animation class for notification count pulsing
-                        if (!document.querySelector('style#notification-pulse')) {
-                            const style = document.createElement('style');
-                            style.id = 'notification-pulse';
-                            style.textContent = `
+                      });
+
+                      // Form submission to mark as read
+                      const form = document.createElement('form');
+                      form.method = 'POST';
+                      form.action = `/admin/notifications/markAsRead/${notificationId}`;
+                      form.style.display = 'none';
+                      document.body.appendChild(form);
+                      form.submit();
+                    }
+                  }
+                });
+
+                // Add dismiss functionality
+                const dismissBtn = item.querySelector('.notification-dismiss');
+                dismissBtn.addEventListener('click', function(e) {
+                  e.stopPropagation(); // Prevent triggering the parent click
+
+                  const notificationId = item.dataset.id;
+
+                  // Remove from UI
+                  item.classList.add('opacity-0');
+                  setTimeout(() => {
+                    item.remove();
+                    if (notificationList.querySelectorAll('.notification-item').length === 0) {
+                      emptyNotification.classList.remove('hidden');
+                    }
+                    updateNotificationCount();
+
+                    // Remove from in-memory data
+                    notificationsData = notificationsData.filter(notification =>
+                      notification.notification_id != notificationId
+                    );
+                  }, 300);
+
+                  // Form submission to dismiss
+                  const form = document.createElement('form');
+                  form.method = 'POST';
+                  form.action = `/admin/notifications/dismiss/${notificationId}`;
+                  form.style.display = 'none';
+                  document.body.appendChild(form);
+                  form.submit();
+                });
+
+                return item;
+              }
+
+              // Helper function to format time ago
+              function getTimeAgo(date) {
+                const seconds = Math.floor((new Date() - date) / 1000);
+
+                let interval = Math.floor(seconds / 31536000);
+                if (interval >= 1) {
+                  return interval === 1 ? '1 year ago' : interval + ' years ago';
+                }
+
+                interval = Math.floor(seconds / 2592000);
+                if (interval >= 1) {
+                  return interval === 1 ? '1 month ago' : interval + ' months ago';
+                }
+
+                interval = Math.floor(seconds / 86400);
+                if (interval >= 1) {
+                  return interval === 1 ? '1 day ago' : interval + ' days ago';
+                }
+
+                interval = Math.floor(seconds / 3600);
+                if (interval >= 1) {
+                  return interval === 1 ? '1 hour ago' : interval + ' hours ago';
+                }
+
+                interval = Math.floor(seconds / 60);
+                if (interval >= 1) {
+                  return interval === 1 ? '1 minute ago' : interval + ' minutes ago';
+                }
+
+                return seconds < 10 ? 'just now' : seconds + ' seconds ago';
+              }
+
+              // Add animation class for notification count pulsing
+              if (!document.querySelector('style#notification-pulse')) {
+                const style = document.createElement('style');
+                style.id = 'notification-pulse';
+                style.textContent = `
                                 @keyframes pulse {
                                     0% { transform: scale(1); }
                                     50% { transform: scale(1.1); }
@@ -374,15 +363,15 @@
                                     opacity: 1;
                                 }
                             `;
-                            document.head.appendChild(style);
-                        }
-                        
-                        // Initial fetch and periodic refresh
-                        fetchNotifications();
-                        setInterval(fetchNotifications, 30000); // Refresh every 30 seconds
-                    });
-                </script>
-            <% } %>
+                document.head.appendChild(style);
+              }
+
+              // Initial fetch and periodic refresh
+              fetchNotifications();
+              setInterval(fetchNotifications, 30000); // Refresh every 30 seconds
+            });
+          </script> -->
+          <% } %>
 
           <% if (!username) { %>
           <a href="/login" class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition">Login</a>
@@ -463,9 +452,9 @@
 
       menuBtn.addEventListener("click", () => {
         mobileMenu.classList.toggle("hidden");
-        menuBtn.innerHTML = mobileMenu.classList.contains("hidden") 
-            ? '<i class="fas fa-bars text-xl"></i>'
-            : '<i class="fas fa-times text-xl"></i>';
+        menuBtn.innerHTML = mobileMenu.classList.contains("hidden") ?
+          '<i class="fas fa-bars text-xl"></i>' :
+          '<i class="fas fa-times text-xl"></i>';
       });
 
       window.addEventListener("resize", () => {

@@ -28,5 +28,7 @@ router.use(checkSession);
 router.use(checkCustomer);
 
 router.get('/customerDashboard', customerController.getCustomerDashboard);
+router.post('/update', customerController.updateCustomer);
+router.post('/purchase', customerController.purchaseMedicine);
 
 module.exports = router;

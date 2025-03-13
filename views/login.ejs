@@ -1,186 +1,178 @@
 <%- include('includes/header') %>
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+  <div class="max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
 
-        <!-- Logo/Icon -->
-        <div class="text-center">
-            <div class="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
-                <i class="fas fa-clinic-medical text-blue-600 text-2xl"></i>
-            </div>
-            <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Welcome Back</h2>
-            <p class="mt-2 text-sm text-gray-600">Sign in to your account</p>
-        </div>
+    <!-- Logo/Icon -->
+    <div class="text-center">
+      <div class="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
+        <i class="fas fa-clinic-medical text-blue-600 text-2xl"></i>
+      </div>
+      <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Welcome Back</h2>
+      <p class="mt-2 text-sm text-gray-600">Sign in to your account</p>
+    </div>
 
-        <!-- Error Message -->
-        <% if (typeof error !== "undefined" && error) { %>
-            <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-                <div class="flex items-center">
-                    <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
-                    <p class="text-sm text-red-700"><%= error %></p>
-                </div>
-            </div>
-        <% } %>
+    <!-- Error Message -->
+    <% if (typeof error !== "undefined" && error) { %>
+    <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+      <div class="flex items-center">
+        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+        <p class="text-sm text-red-700"><%= error %></p>
+      </div>
+    </div>
+    <% } %>
 
-        <form action="/login" method="POST" class="mt-8 space-y-6">
-            <!-- Role Selection -->
-            <div>
-                <label for="role" class="block text-sm font-medium text-gray-700 mb-1">
-                    Login as <span class="text-red-500">*</span>
-                </label>
-                <div class="relative">
-                    <select id="role" name="role" required
-                        class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg
+    <form action="/login" method="POST" class="mt-8 space-y-6">
+      <!-- Role Selection -->
+      <div>
+        <label for="role" class="block text-sm font-medium text-gray-700 mb-1">
+          Login as <span class="text-red-500">*</span>
+        </label>
+        <div class="relative">
+          <select id="role" name="role" required class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg
                             bg-white placeholder-gray-500 focus:outline-none focus:ring-2 
                             focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                        <option value="admin">Administrator</option>
-                        <option value="customer">Customer</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                        <i class="fas fa-chevron-down text-gray-400"></i>
-                    </div>
-                </div>
-            </div>
+            <option value="admin">Administrator</option>
+            <option value="customer">Customer</option>
+          </select>
+          <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+            <i class="fas fa-chevron-down text-gray-400"></i>
+          </div>
+        </div>
+      </div>
 
-            <!-- Username/Email Field -->
-            <div>
-                <label for="username" class="block text-sm font-medium text-gray-700 mb-1">
-                    Username / Email <span class="text-red-500">*</span>
-                </label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-user text-gray-400"></i>
-                    </div>
-                    <input type="text" id="username" name="username" required
-                        class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
+      <!-- Username/Email Field -->
+      <div>
+        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">
+          Username / Email <span class="text-red-500">*</span>
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-user text-gray-400"></i>
+          </div>
+          <input type="text" id="username" name="username" required class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
                                placeholder-gray-500 focus:outline-none focus:ring-2 
-                               focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="Enter your username or email">
-                </div>
-            </div>
+                               focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter your username or email">
+        </div>
+      </div>
 
-            <!-- Password Field -->
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
-                    Password <span class="text-red-500">*</span>
-                </label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-lock text-gray-400"></i>
-                    </div>
-                    <input type="password" id="password" name="password" required
-                        class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
+      <!-- Password Field -->
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+          Password <span class="text-red-500">*</span>
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-lock text-gray-400"></i>
+          </div>
+          <input type="password" id="password" name="password" required class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
                             placeholder-gray-500 focus:outline-none focus:ring-2 
-                            focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="Enter your password">
-                    <button type="button" onclick="togglePassword()"
-                        class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                        <i id="password-toggle" class="fas fa-eye text-gray-400 hover:text-gray-600 cursor-pointer"></i>
-                    </button>
-                </div>
-            </div>
+                            focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter your password">
+          <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <i id="password-toggle" class="fas fa-eye text-gray-400 hover:text-gray-600 cursor-pointer"></i>
+          </button>
+        </div>
+      </div>
 
-            <!-- Remember Me & Forgot Password -->
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <input type="checkbox" id="rememberMe" name="rememberMe" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
-                    <label for="rememberMe" class="ml-2 block text-sm text-gray-700">Remember Me</label>
-                </div>
-                <div>
-                    <a href="/forgotPassword" class="text-sm text-blue-600 hover:text-blue-500 transition-colors duration-200">
-                        Forgot Password?
-                    </a>
-                </div>
-            </div>
+      <!-- Remember Me & Forgot Password -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <input type="checkbox" id="rememberMe" name="rememberMe" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+          <label for="rememberMe" class="ml-2 block text-sm text-gray-700">Remember Me</label>
+        </div>
+        <div>
+          <a href="/forgotPassword" class="text-sm text-blue-600 hover:text-blue-500 transition-colors duration-200">
+            Forgot Password?
+          </a>
+        </div>
+      </div>
 
-            <!-- Submit Button -->
-            <div>
-                <button id="submitBtn" type="submit" 
-                    class="group relative w-full flex justify-center py-3 px-4 border border-transparent 
+      <!-- Submit Button -->
+      <div>
+        <button id="submitBtn" type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent 
                     text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700
                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
                     transition-all duration-200">
-                    <div class="flex items-center">
-                        <i class="fas fa-sign-in-alt mr-2"></i>
-                        <span id="submitText">Sign in</span>
-                    </div>
-                    <span id="loadingSpinner" class="hidden ml-2">
-                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </span>
-                </button>
-            </div>
-        </form>
+          <div class="flex items-center">
+            <i class="fas fa-sign-in-alt mr-2"></i>
+            <span id="submitText">Sign in</span>
+          </div>
+          <span id="loadingSpinner" class="hidden ml-2">
+            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </form>
 
-        <!-- Registration Link -->
-        <div class="text-center mt-6">
-            <p class="text-sm text-gray-600">
-                Don't have an account? 
-                <a href="customerRegister" class="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
-                    Create Account
-                </a>
-            </p>
-        </div>
+    <!-- Registration Link -->
+    <div class="text-center mt-6">
+      <p class="text-sm text-gray-600">
+        Don't have an account?
+        <a href="customerRegister" class="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
+          Create Account
+        </a>
+      </p>
     </div>
+  </div>
 </div>
 
 <!-- togglePassword for login -->
 <script>
-    function togglePassword() {
-        const passwordInput = document.getElementById('password');
-        const passwordToggle = document.getElementById('password-toggle');
-        
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            passwordToggle.classList.remove('fa-eye');
-            passwordToggle.classList.add('fa-eye-slash');
-        } else {
-            passwordInput.type = 'password';
-            passwordToggle.classList.remove('fa-eye-slash');
-            passwordToggle.classList.add('fa-eye');
-        }
+  function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const passwordToggle = document.getElementById('password-toggle');
+
+    if (passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      passwordToggle.classList.remove('fa-eye');
+      passwordToggle.classList.add('fa-eye-slash');
+    } else {
+      passwordInput.type = 'password';
+      passwordToggle.classList.remove('fa-eye-slash');
+      passwordToggle.classList.add('fa-eye');
+    }
+  }
+
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    // Show loading state
+    submitBtn.disabled = true;
+    submitText.textContent = 'Fetching...';
+    loadingSpinner.classList.remove('hidden');
+  });
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const rememberMeCheckbox = document.getElementById("rememberMe");
+
+    // Check if login details exist in localStorage
+    if (localStorage.getItem("rememberMe") === "true") {
+      usernameInput.value = localStorage.getItem("savedUsername") || "";
+      passwordInput.value = localStorage.getItem("savedPassword") || "";
+      rememberMeCheckbox.checked = true;
     }
 
-    document.querySelector('form').addEventListener('submit', function (e) {
-        const submitBtn = document.getElementById('submitBtn');
-        const submitText = document.getElementById('submitText');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-
-        // Show loading state
-        submitBtn.disabled = true;
-        submitText.textContent = 'Fetching...';
-        loadingSpinner.classList.remove('hidden');
+    document.querySelector("form").addEventListener("submit", function() {
+      if (rememberMeCheckbox.checked) {
+        // Store username & password
+        localStorage.setItem("savedUsername", usernameInput.value);
+        localStorage.setItem("savedPassword", passwordInput.value);
+        localStorage.setItem("rememberMe", "true");
+      } else {
+        // Clear stored data
+        localStorage.removeItem("savedUsername");
+        localStorage.removeItem("savedPassword");
+        localStorage.removeItem("rememberMe");
+      }
     });
-    
-    document.addEventListener("DOMContentLoaded", function () {
-        const usernameInput = document.getElementById("username");
-        const passwordInput = document.getElementById("password");
-        const rememberMeCheckbox = document.getElementById("rememberMe");
-
-        // Check if login details exist in localStorage
-        if (localStorage.getItem("rememberMe") === "true") {
-            usernameInput.value = localStorage.getItem("savedUsername") || "";
-            passwordInput.value = localStorage.getItem("savedPassword") || "";
-            rememberMeCheckbox.checked = true;
-        }
-
-        document.querySelector("form").addEventListener("submit", function () {
-            if (rememberMeCheckbox.checked) {
-                // Store username & password
-                localStorage.setItem("savedUsername", usernameInput.value);
-                localStorage.setItem("savedPassword", passwordInput.value);
-                localStorage.setItem("rememberMe", "true");
-            } else {
-                // Clear stored data
-                localStorage.removeItem("savedUsername");
-                localStorage.removeItem("savedPassword");
-                localStorage.removeItem("rememberMe");
-            }
-        });
-    });
-
+  });
 </script>
 
 <%- include('includes/footer') %>

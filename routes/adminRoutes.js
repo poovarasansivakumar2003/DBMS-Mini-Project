@@ -32,9 +32,10 @@ router.get('/adminDashboard', adminController.getAdminDashboard);
 router.post('/adminDashboard/addMedicine', adminController.addMedicine);
 router.post('/adminDashboard/editDeleteMedicine', adminController.deleteOrEditMedicine);
 router.post('/adminDashboard/editDeleteCustomer', adminController.deleteOrEditCustomer);
-router.get('/notifications', adminController.getNotifications);
-router.post("/notifications/dismiss/:id", adminController.dismissNotification);
-router.post("/notifications/markAsRead/:id", adminController.markNotificationAsRead);
-router.post("/notifications/markAllRead", adminController.markAllNotificationsAsRead);
+// router.get('/notifications', adminController.getNotifications);
+// router.post("/notifications/dismiss/:id", adminController.dismissNotification);
+// router.post("/notifications/markAsRead/:id", adminController.markNotificationAsRead);
+// router.post("/notifications/markAllRead", adminController.markAllNotificationsAsRead);
+router.post('/processOrder', adminController.processOrder);
 
 module.exports = router;

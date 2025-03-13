@@ -106,4 +106,30 @@
   }, 3000); // 3 seconds delay
 </script>
 <% } %>
+<% if (message==="Your Profile updated successfully!." ) { %>
+  <p class="text-gray-600 text-sm sm:text-base mb-12">
+    <%= message %>
+  </p>
+  </div>
+  </div>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.href = "/customer/CustomerDashboard";
+    }, 3000); // 3 seconds delay
+  </script>
+  <% } %>
+  <% if (message==="Added to cart, wait for admin approval" ) { %>
+    <p class="text-gray-600 text-sm sm:text-base mb-12">
+      <%= message %>
+    </p>
+    </div>
+    </div>
+    </div>
+    <script>
+      setTimeout(() => {
+        window.location.href = "/customer/CustomerDashboard";
+      }, 3000); // 3 seconds delay
+    </script>
+    <% } %>
 <%- include('includes/footer') %>

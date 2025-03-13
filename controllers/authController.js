@@ -46,8 +46,10 @@ exports.handleLogin = async (req, res) => {
         }
 
         // Store session data
+        req.session.customerId = user.customer_id; 
         req.session.user = {
             username: role === 'admin' ? user.admin_username : user.customer_name,
+            id: role === 'admin' ? user.admin_username : user.customer_id,
             role
         };
 

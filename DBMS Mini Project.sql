@@ -120,11 +120,11 @@ create table invoice(
     purchase_id INT,
     discount DECIMAL(10, 2) DEFAULT 0,
     paid DECIMAL(10, 2) DEFAULT 0,
-    total_amt DECIMAL(10, 2),--  GENERATED ALWAYS AS (
+    total_amt_to_pay DECIMAL(10, 2), GENERATED ALWAYS AS (
 --         (SELECT total_amt FROM purchases WHERE purchase_id = invoice.purchase_id) + 
 --         (SELECT customer_balance FROM customers WHERE customer_id = (SELECT customer_id FROM purchases WHERE purchase_id = invoice.purchase_id))
 --     ) STORED,
-    net_total DECIMAL(10, 2) GENERATED ALWAYS AS (total_amt - discount) STORED,
+    net_total DECIMAL(10, 2) GENERATED ALWAYS AS (total_amt_to_pay - discount) STORED,
     balance DECIMAL(10, 2) GENERATED ALWAYS AS (net_total - paid) STORED,
     FOREIGN KEY (purchase_id) REFERENCES purchases(purchase_id) ON DELETE CASCADE
 );
