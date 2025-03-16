@@ -306,6 +306,3 @@ drop database DBMS_Mini_Project;
 -- make invoice
 -- reduce stock as purchase happens
 -- only admin can generate bill
-
-
-
