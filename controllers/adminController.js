@@ -71,29 +71,34 @@ exports.getCustomerPhoto = [isAdmin, (req, res) => {
 
 exports.getAdminDashboard = [isAdmin, async (req, res) => {
     try {
-        const [medicines] = await pool.query('SELECT * FROM medicines');
+        const [medicines] = await pool.query('SELECT * FROM medicines;');
 
-        const [customers] = await pool.query('SELECT * FROM customers');
+        const [customers] = await pool.query('SELECT * FROM customers;');
 
         const [purchases] = await pool.execute(`
-            SELECT p.purchase_id, c.customer_name, m.medicine_name, s.supplier_name, p.purchased_quantity, p.total_amt, p.purchase_date 
+            SELECT p.purchase_id, c.customer_name, m.medicine_name, s.supplier_name, m.medicine_price 
+                   p.purchased_quantity, p.total_amt
             FROM purchases p 
             JOIN customers c ON p.customer_id = c.customer_id
             JOIN medicines m ON p.medicine_id = m.medicine_id
-            JOIN suppliers s ON p.supplier_id = s.supplier_id
-            ORDER BY p.purchase_date DESC;
+            LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
+            ORDER BY p.purchase_id DESC;
         `);
 
         const [suppliers] = await pool.execute(`SELECT * FROM suppliers;`);
 
         const [stocks] = await pool.execute(`
-            SELECT m.medicine_name, s.supplier_name, st.stock_quantity FROM stocks st 
+            SELECT m.medicine_name, s.supplier_name, st.stock_quantity 
+            FROM stocks st 
             JOIN medicines m ON st.medicine_id = m.medicine_id 
             JOIN suppliers s ON st.supplier_id = s.supplier_id;
         `);
 
         const [invoices] = await pool.execute(`
-            SELECT i.invoice_no, i.purchase_id, i.discount, i.paid, i.net_total, i.balance, CASE WHEN i.balance > 0 THEN 'Pending' ELSE 'Paid' END AS status FROM invoice i;
+            SELECT i.invoice_no, i.purchase_id, i.discount, i.paid, 
+                   i.net_total, i.balance, 
+                   CASE WHEN i.balance > 0 THEN 'Pending' ELSE 'Paid' END AS status 
+            FROM invoice i;
         `);
 
         const [medicineStockForEachSupplier] = await pool.execute(`
@@ -117,12 +122,13 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             GROUP BY c.customer_name;
         `);
 
-        const [approvalForPurchase] = await pool.execute (`
+        const [approvalForPurchase] = await pool.execute(`
             SELECT p.purchase_id, p.customer_id, m.medicine_name, p.purchased_quantity, p.total_amt 
             FROM purchases p
             JOIN medicines m ON p.medicine_id = m.medicine_id
-            WHERE p.supplier_id IS NULL
+            WHERE p.supplier_id IS NULL;
         `);
+
 
         // Render EJS page with data
         res.render('adminDashboard', {
@@ -369,148 +375,8 @@ exports.deleteOrEditCustomer = [isAdmin, uploadCustomer.single('customer_photo')
     }
 }];
 
-// exports.getNotifications = [isAdmin, async (req, res) => {
-//     try {
-//         const [results] = await pool.query("SELECT * FROM admin_notifications ORDER BY created_at DESC");
-
-//         // Return JavaScript that sets a global variable
-//         res.setHeader('Content-Type', 'application/javascript');
-//         res.send(`window.adminNotifications = ${JSON.stringify(results)};`);
-//         res.render('adminDashboard', {
-//             pagetitle: `Admin Panel - ${req.session.user.username}`,
-//             username: req.session.user.username,
-//             profile: "admin",
-//             medicines, customers, purchases, suppliers, stocks, invoices,
-//             medicineStockForEachSupplier,
-//             combinedStockOfEachMedicine,
-//             totalAmountSpentByEachCustomer,
-//             approvalForPurchase
-//         });
-//     } catch (err) {
-//         console.error("Database Error:", err);
-//         res.setHeader('Content-Type', 'application/javascript');
-//         res.status(500).render("500", {
-//             username: req.session.user?.username,
-//             profile: "admin",
-//             pagetitle: "Internal Server Error",
-//             error: err.message
-//         });
-//     }
-// }];
-
-// exports.dismissNotification = [isAdmin, async (req, res) => {
-//     try {
-//         const notificationId = req.params.id;
-        
-//         // Verify the notification exists
-//         const [notification] = await pool.query(
-//             "SELECT * FROM admin_notifications WHERE notification_id = ?", 
-//             [notificationId]
-//         );
-        
-//         if (notification.length === 0) {
-//             return res.status(404).json({ 
-//                 success: false, 
-//                 message: "Notification not found" 
-//             });
-//         }
-        
-//         await pool.query(
-//             "DELETE FROM admin_notifications WHERE notification_id = ?", 
-//             [notificationId]
-//         );
-        
-//         res.render('adminDashboard', {
-//             pagetitle: `Admin Panel - ${req.session.user.username}`,
-//             username: req.session.user.username,
-//             profile: "admin",
-//             medicines, customers, purchases, suppliers, stocks, invoices,
-//             medicineStockForEachSupplier,
-//             combinedStockOfEachMedicine,
-//             totalAmountSpentByEachCustomer,
-//             approvalForPurchase
-//         });
-//     } catch (err) {
-//         console.error("Database Error:", err);
-//         res.status(500).render("500", {
-//             username: req.session.user?.username,
-//             profile: "admin",
-//             pagetitle: "Internal Server Error",
-//             error: err.message
-//         });
-//     }
-// }];
-
-// exports.markNotificationAsRead = [isAdmin, async (req, res) => {
-//     try {
-//         const notificationId = req.params.id;
-        
-//         // Verify the notification exists
-//         const [notification] = await pool.query(
-//             "SELECT * FROM admin_notifications WHERE notification_id = ?", 
-//             [notificationId]
-//         );
-        
-//         if (notification.length === 0) {
-//             return res.status(404).json({ 
-//                 success: false, 
-//                 message: "Notification not found" 
-//             });
-//         }
-        
-//         await pool.query(
-//             "UPDATE admin_notifications SET `read` = true WHERE notification_id = ?", 
-//             [notificationId]
-//         );
-        
-//         res.render('adminDashboard', {
-//             pagetitle: `Admin Panel - ${req.session.user.username}`,
-//             username: req.session.user.username,
-//             profile: "admin",
-//             medicines, customers, purchases, suppliers, stocks, invoices,
-//             medicineStockForEachSupplier,
-//             combinedStockOfEachMedicine,
-//             totalAmountSpentByEachCustomer,
-//             approvalForPurchase
-//         });
-//     } catch (err) {
-//         console.error("Database Error:", err);
-//         res.status(500).render("500", {
-//             username: req.session.user?.username,
-//             profile: "admin",
-//             pagetitle: "Internal Server Error",
-//             error: err.message
-//         });
-//     }
-// }];
-
-// exports.markAllNotificationsAsRead = [isAdmin, async (req, res) => {
-//     try {
-//         await pool.query("UPDATE admin_notifications SET `read` = true WHERE `read` = false");
-        
-//         res.render('adminDashboard', {
-//             pagetitle: `Admin Panel - ${req.session.user.username}`,
-//             username: req.session.user.username,
-//             profile: "admin",
-//             medicines, customers, purchases, suppliers, stocks, invoices,
-//             medicineStockForEachSupplier,
-//             combinedStockOfEachMedicine,
-//             totalAmountSpentByEachCustomer,
-//             approvalForPurchase
-//         });
-//     } catch (err) {
-//         console.error("Database Error:", err);
-//         res.status(500).render("500", {
-//             username: req.session.user?.username,
-//             profile: "admin",
-//             pagetitle: "Internal Server Error",
-//             error: err.message
-//         });
-//     }
-// }];
-
 exports.processOrder = [isAdmin, async (req, res) => {
-    try{
+    try {
         const { purchaseId, supplierId, discount, paid } = req.body;
 
         // Get purchase details
@@ -541,43 +407,19 @@ exports.processOrder = [isAdmin, async (req, res) => {
             [balance, customer_id]
         );
 
-        // Reduce stock for the particular supplier and medicine
-        const [stockResult] = await pool.query(
-            'SELECT stock_quantity FROM stocks WHERE supplier_id = ? AND medicine_id = ?',
-            [supplierId, medicine_id]
-        );
-
-        if (!stockResult.length) {
-            throw new Error("Stock not found for this supplier and medicine");
-        }
-
-        const currentStock = stockResult[0].stock_quantity;
-        if (currentStock < purchased_quantity) {
-            throw new Error("Insufficient stock available");
-        }
-
-        await connection.query(
+        // Reduce stock for the supplier
+        await pool.query(
             'UPDATE stocks SET stock_quantity = stock_quantity - ? WHERE supplier_id = ? AND medicine_id = ?',
             [purchased_quantity, supplierId, medicine_id]
         );
 
-        res.render('adminDashboard', {
-            pagetitle: `Admin Panel - ${req.session.user.username}`,
-            username: req.session.user.username,
-            profile: "admin",
-            medicines, customers, purchases, suppliers, stocks, invoices,
-            medicineStockForEachSupplier,
-            combinedStockOfEachMedicine,
-            totalAmountSpentByEachCustomer,
-            approvalForPurchase
-        });
+        // Emit event to notify customer
+        const io = req.app.get('io');
+        io.emit('orderApproved', { purchaseId, customerId, medicineId, net_total, balance });
+
+        res.json({ success: true, message: "Order approved successfully" });
     } catch (err) {
         console.error("Database Error:", err);
-        res.status(500).render("500", {
-            username: req.session.user?.username,
-            profile: "admin",
-            pagetitle: "Internal Server Error",
-            error: err.message
-        });
+        res.status(500).json({ success: false, error: err.message });
     }
 }];

@@ -469,6 +469,17 @@
     <h2>No pending approvals.</h2>
 <% } %>
 
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+    socket.on('newPurchase', (data) => {
+        alert(`New purchase request: Customer ${data.customerId} wants ${data.quantity} of Medicine ID ${data.medicineId}`);
+        location.reload(); // Refresh admin panel to show new orders
+    });
+</script>
+
+
 
   <!-- Add this script at the bottom of your page before the footer -->
   <script>

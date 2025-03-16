@@ -51,15 +51,14 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
         // Fetch available medicines
         const [medicines] = await pool.query('SELECT * FROM medicines');
 
-        const [purchases] = await pool.query(`
-            SELECT p.purchase_id, p.purchased_quantity, p.total_amt, p.purchase_date, 
-                   a.admin_username, m.medicine_name, s.supplier_name
-            FROM purchases p
+        const [invoice] = await pool.query(`
+            SELECT i.invoice_no, i.invoice_date, m.medicine_name, m.medicine_composition, s.supplier_name, m.medicine_expiry_date, m.medicine_price, p.purchased_quantity, p.total_amt, c.customer_balance_amt, p.total_amt_to_pay, i.discount, i.net_total, i.balance FROM invoice i
+            JOIN purchases p ON i.purchase_id = p.purchase_id
             JOIN medicines m ON p.medicine_id = m.medicine_id
-            JOIN admin a ON p.admin_username = a.admin_username
             JOIN suppliers s ON p.supplier_id = s.supplier_id
+            JOIN customers c ON p.customer_id = c.customer_id
             WHERE p.customer_id = ?
-            ORDER BY p.purchase_date DESC
+            ORDER BY i.invoice_date DESC
         `, [customerId]);
         
 
@@ -69,7 +68,7 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
             profile: "customer",
             medicines,
             customer,
-            purchases
+            invoice
         });
     } catch (err) {
         console.error("Database Error:", err);
@@ -148,16 +147,20 @@ exports.purchaseMedicine = [isCustomer, async (req, res) => {
 
         // Fetch medicine price
         const [medicine] = await pool.query('SELECT medicine_price FROM medicines WHERE medicine_id = ?', [medicineId]);
-        if (!medicine.length) {
-            return res.status(400).send("Invalid medicine ID");
-        }
 
-        const total_amt = medicine[0].medicine_price * quantity;
+        if (!medicine.length) {
+            return res.status(404).render("400", {
+                profile: req.session.user?.role,
+                username: req.session.user?.username,
+                pagetitle:"Bad Request",
+                error: "Invalid medicine ID"
+            });
+        }
 
         // Insert purchase record
         await pool.query(
-            'INSERT INTO purchases (customer_id, medicine_id, purchased_quantity, total_amt) VALUES (?, ?, ?, ?)',
-            [customerId, medicineId, quantity, total_amt]
+            'INSERT INTO purchases (customer_id, medicine_id, purchased_quantity) VALUES (?, ?, ?)',
+            [customerId, medicineId, quantity]
         );
 
         res.render("success", {
