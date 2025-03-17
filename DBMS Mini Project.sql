@@ -17,7 +17,6 @@ CREATE TABLE customers (
     customer_name VARCHAR(20) NOT NULL,
     customer_email VARCHAR(50) NOT NULL UNIQUE,
     customer_ph_no VARCHAR(15) NOT NULL UNIQUE,
-    customer_address VARCHAR(255),
     customer_feedback VARCHAR(255),
     customer_photo VARCHAR(255),
     customer_balance_amt DECIMAL(10, 2) DEFAULT 0
@@ -25,12 +24,36 @@ CREATE TABLE customers (
 describe customers;
 select * from customers;
 
+-- Customers Addresses Table
+CREATE TABLE customers_addresses (
+    address_id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT,
+    street VARCHAR(100),
+    city VARCHAR(50),
+    state VARCHAR(50),
+    zip_code VARCHAR(10),
+    address_type ENUM('Home', 'Work', 'Other'),  -- Categorizing addresses
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
+);
+describe customers_addresses;
+select * from customers_addresses;
+
+-- Customers feedbacks Table
+CREATE TABLE feedbacks (
+    feedback_id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT, 
+    feedback_text TEXT NOT NULL,
+    feedback_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
+);
+
 -- Medicines Table
 CREATE TABLE medicines (
     medicine_id INT AUTO_INCREMENT PRIMARY KEY,
     medicine_name VARCHAR(50) NOT NULL,
     medicine_composition VARCHAR(100) NOT NULL,
     medicine_price DECIMAL(10, 2) NOT NULL,
+    medicine_type ENUM('Tablet', 'Syrup', 'Capsule', 'Injection', 'Ointment') NOT NULL,
     medicine_expiry_date DATE NOT NULL,
     medicine_img VARCHAR(255),
     CONSTRAINT unique_medicine UNIQUE (medicine_name, medicine_composition)
@@ -49,6 +72,19 @@ CREATE TABLE suppliers (
 describe suppliers;
 select * from suppliers;
 
+-- Suppliers Addresses Table
+CREATE TABLE suppliers_addresses (
+    address_id INT AUTO_INCREMENT PRIMARY KEY,
+    suppliers_id INT,
+    street VARCHAR(100),
+    city VARCHAR(50),
+    state VARCHAR(50),
+    zip_code VARCHAR(10),
+    FOREIGN KEY (suppliers_id) REFERENCES suppliers_id(suppliers_id) ON DELETE CASCADE
+);
+describe suppliers_addresses;
+select * from suppliers_addresses;
+
 -- Stocks Table
 CREATE TABLE stocks (
     medicine_id INT,
@@ -64,29 +100,43 @@ select * from stocks;
 -- Purchases Table
 CREATE TABLE purchases (
     purchase_id INT AUTO_INCREMENT PRIMARY KEY,
+    purchase_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     customer_id INT,
     medicine_id INT,
     supplier_id INT NULL,
     purchased_quantity INT NOT NULL CHECK(purchased_quantity > 0),
-    total_amt DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
-    FOREIGN KEY (medicine_id) REFERENCES medicines(medicine_id) ON DELETE CASCADE,
-    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE CASCADE
+    total_amt DECIMAL(10,2) NOT NULL, 
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE SET NULL,
+    FOREIGN KEY (medicine_id) REFERENCES medicines(medicine_id) ON DELETE SET NULL,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE SET NULL
 );
 describe purchases;
 select * from purchases;
 
+-- Purchase Sessions Table
+CREATE TABLE purchase_sessions (
+    purchase_session_id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT,
+    purchase_time TIMESTAMP, -- have a relation through trigger
+    actual_amt_to_pay DECIMAL(10,2),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE SET NULL
+);
+describe purchase_sessions;
+select * from purchase_sessions;
+
 -- Invoice Table
 CREATE TABLE invoice (
     invoice_no INT AUTO_INCREMENT PRIMARY KEY,
-	invoice_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    purchase_id INT,
+	invoice_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    purchase_session_id INT,
+    admin_username VARCHAR(20),
     discount DECIMAL(10, 2) DEFAULT 0,
     paid DECIMAL(10, 2) DEFAULT 0,
     total_amt_to_pay DECIMAL(10, 2),
     net_total DECIMAL(10, 2) GENERATED ALWAYS AS (total_amt_to_pay - discount) STORED,
     balance DECIMAL(10, 2) GENERATED ALWAYS AS (net_total - paid) STORED,
-    FOREIGN KEY (purchase_id) REFERENCES purchases(purchase_id) ON DELETE CASCADE
+    FOREIGN KEY (admin_username) REFERENCES admin(admin_username) ON DELETE SET NULL,
+    FOREIGN KEY (purchase_session_id) REFERENCES purchase_sessions(purchase_session_id) ON DELETE SET NULL
 );
 describe invoice;
 select * from invoice;
@@ -106,7 +156,39 @@ BEGIN
     END IF;
 END$$
 
--- Reduce stock on purchase, prevent insufficient stock purchase (for insert and update)
+-- Calculate total amount in purchases before insert
+CREATE TRIGGER calculate_total_amt_before_insert
+BEFORE INSERT ON purchases
+FOR EACH ROW
+BEGIN
+    DECLARE price DECIMAL(10,2);
+
+    -- Get the medicine price from the medicines table
+    SELECT medicine_price INTO price 
+    FROM medicines 
+    WHERE medicine_id = NEW.medicine_id;
+
+    -- Calculate total amount
+    SET NEW.total_amt = NEW.purchased_quantity * price;
+END$$
+
+-- Calculate total amount in purchases before update
+CREATE TRIGGER calculate_total_amt_before_update
+BEFORE UPDATE ON purchases
+FOR EACH ROW
+BEGIN
+    DECLARE price DECIMAL(10,2);
+
+    -- Get the medicine price from the medicines table
+    SELECT medicine_price INTO price 
+    FROM medicines 
+    WHERE medicine_id = NEW.medicine_id;
+
+    -- Recalculate total amount
+    SET NEW.total_amt = NEW.purchased_quantity * price;
+END$$
+
+-- Reduce stock on purchase, prevent insufficient stock purchase before insert
 CREATE TRIGGER reduce_stock_on_purchase_before_insert
 BEFORE INSERT ON purchases
 FOR EACH ROW
@@ -127,90 +209,61 @@ BEGIN
     END IF;
 END$$
 
-CREATE TRIGGER reduce_stock_on_purchase_before_update
-BEFORE UPDATE ON purchases
+--restore_stock_on_purchase_on_delete
+CREATE TRIGGER restore_stock_on_purchase_delete
+AFTER DELETE ON purchases
 FOR EACH ROW
 BEGIN
-    DECLARE available_stock INT;
-    DECLARE stock_difference INT;
-    
-    -- Check stock availability when updating purchase quantity
-    SELECT stock_quantity INTO available_stock
-    FROM stocks
-    WHERE medicine_id = NEW.medicine_id AND supplier_id = NEW.supplier_id;
-    
-    SET stock_difference = NEW.purchased_quantity - OLD.purchased_quantity;
+    UPDATE stocks
+    SET stock_quantity = stock_quantity + OLD.purchased_quantity 
+    WHERE medicine_id = OLD.medicine_id AND supplier_id = OLD.supplier_id;
+END $$
 
-    IF available_stock IS NULL OR available_stock < stock_difference THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Insufficient stock for this purchase update!';
+-- Assign purchases to a session and calculate actual_amt_to_pay
+CREATE TRIGGER create_purchase_session
+AFTER INSERT ON purchases
+FOR EACH ROW
+BEGIN
+    DECLARE existing_session_id INT;
+    DECLARE total_amount DECIMAL(10,2);
+
+    -- Check if there is an existing purchase session for this customer at the same date, hour, and minute
+    SELECT purchase_session_id INTO existing_session_id
+    FROM purchase_sessions
+    WHERE customer_id = NEW.customer_id
+    AND DATE_FORMAT(purchase_time, '%Y-%m-%d %H:%i') = DATE_FORMAT(NEW.purchase_time, '%Y-%m-%d %H:%i')
+    LIMIT 1;
+
+    -- Calculate the total amount of all purchases for this customer at this date, hour, and minute
+    SELECT SUM(total_amt) INTO total_amount
+    FROM purchases
+    WHERE customer_id = NEW.customer_id
+    AND DATE_FORMAT(purchase_time, '%Y-%m-%d %H:%i') = DATE_FORMAT(NEW.purchase_time, '%Y-%m-%d %H:%i');
+
+    IF existing_session_id IS NOT NULL THEN
+        -- Update existing purchase session
+        UPDATE purchase_sessions
+        SET actual_amt_to_pay = total_amount
+        WHERE purchase_session_id = existing_session_id;
     ELSE
-        UPDATE stocks
-        SET stock_quantity = stock_quantity - stock_difference
-        WHERE medicine_id = NEW.medicine_id AND supplier_id = NEW.supplier_id;
+        -- Insert new purchase session
+        INSERT INTO purchase_sessions (customer_id, purchase_time, actual_amt_to_pay)
+        VALUES (NEW.customer_id, NEW.purchase_time, total_amount);
     END IF;
-END$$
+END $$
 
--- Calculate total amount in purchases (for both insert and update)
-CREATE TRIGGER calculate_total_amt_before_insert
-BEFORE INSERT ON purchases
-FOR EACH ROW
-BEGIN
-    DECLARE price DECIMAL(10,2);
-
-    -- Get the medicine price from the medicines table
-    SELECT medicine_price INTO price 
-    FROM medicines 
-    WHERE medicine_id = NEW.medicine_id;
-
-    -- Calculate total amount
-    SET NEW.total_amt = NEW.purchased_quantity * price;
-END$$
-
-CREATE TRIGGER calculate_total_amt_before_update
-BEFORE UPDATE ON purchases
-FOR EACH ROW
-BEGIN
-    DECLARE price DECIMAL(10,2);
-
-    -- Get the medicine price from the medicines table
-    SELECT medicine_price INTO price 
-    FROM medicines 
-    WHERE medicine_id = NEW.medicine_id;
-
-    -- Recalculate total amount
-    SET NEW.total_amt = NEW.purchased_quantity * price;
-END$$
-
--- Calculate total_amt_to_pay in invoice (for both insert and update)
-CREATE TRIGGER before_invoice_insert
+-- Trigger to update total_amt_to_pay before insert
+CREATE TRIGGER calculate_total_amt_to_pay_before_insert
 BEFORE INSERT ON invoice
 FOR EACH ROW
 BEGIN
     DECLARE customer_balance DECIMAL(10,2);
-
-    -- Fetch the customer_balance_amt for the corresponding purchase
-    SELECT customer_balance_amt INTO customer_balance 
-    FROM customers 
-    WHERE customer_id = (SELECT customer_id FROM purchases WHERE purchase_id = NEW.purchase_id);
-
-    -- Calculate total_amt_to_pay
-    SET NEW.total_amt_to_pay = customer_balance + (SELECT total_amt FROM purchases WHERE purchase_id = NEW.purchase_id);
-END$$
-
-CREATE TRIGGER before_invoice_update
-BEFORE UPDATE ON invoice
-FOR EACH ROW
-BEGIN
-    DECLARE customer_balance DECIMAL(10,2);
-
-    -- Fetch the customer_balance_amt for the corresponding purchase
-    SELECT customer_balance_amt INTO customer_balance 
-    FROM customers 
-    WHERE customer_id = (SELECT customer_id FROM purchases WHERE purchase_id = NEW.purchase_id);
-
-    -- Recalculate total_amt_to_pay
-    SET NEW.total_amt_to_pay = customer_balance + (SELECT total_amt FROM purchases WHERE purchase_id = NEW.purchase_id);
+    DECLARE actual_amt DECIMAL(10,2);
+    DECLARE cust_id INT;
+    SELECT customer_id INTO cust_id FROM purchase_sessions WHERE purchase_session_id = NEW.purchase_session_id;
+    SELECT customer_balance_amt INTO customer_balance FROM customers WHERE customer_id = cust_id;
+    SELECT actual_amt_to_pay INTO actual_amt FROM purchase_sessions WHERE purchase_session_id = NEW.purchase_session_id;
+    SET NEW.total_amt_to_pay = actual_amt + customer_balance;
 END$$
 
 -- Update customer_balance_amt after inserting an invoice
@@ -221,7 +274,7 @@ BEGIN
     -- Update customer balance with the latest invoice balance
     UPDATE customers 
     SET customer_balance_amt = NEW.balance
-    WHERE customer_id = (SELECT customer_id FROM purchases WHERE purchase_id = NEW.purchase_id);
+    WHERE customer_id = (SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = NEW.purchase_session_id);
 END$$
 
 -- Update customer_balance_amt after updating an invoice
@@ -232,7 +285,7 @@ BEGIN
     -- Update customer balance with the latest invoice balance
     UPDATE customers 
     SET customer_balance_amt = NEW.balance
-    WHERE customer_id = (SELECT customer_id FROM purchases WHERE purchase_id = NEW.purchase_id);
+    WHERE customer_id = (SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = NEW.purchase_session_id);
 END$$
 
 DELIMITER ;

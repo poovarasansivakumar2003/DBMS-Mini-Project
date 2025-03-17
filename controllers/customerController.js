@@ -52,11 +52,12 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
         const [medicines] = await pool.query('SELECT * FROM medicines');
 
         const [invoice] = await pool.query(`
-            SELECT i.invoice_no, i.invoice_date, m.medicine_name, m.medicine_composition, s.supplier_name, m.medicine_expiry_date, m.medicine_price, p.purchased_quantity, p.total_amt, c.customer_balance_amt, p.total_amt_to_pay, i.discount, i.net_total, i.balance FROM invoice i
+            SELECT i.invoice_no, i.invoice_date, a.admin_username m.medicine_name, m.medicine_composition, s.supplier_name, m.medicine_expiry_date, m.medicine_price, p.purchased_quantity, p.total_amt, c.customer_balance_amt, p.total_amt_to_pay, i.discount, i.net_total, i.balance FROM invoice i
             JOIN purchases p ON i.purchase_id = p.purchase_id
             JOIN medicines m ON p.medicine_id = m.medicine_id
             JOIN suppliers s ON p.supplier_id = s.supplier_id
             JOIN customers c ON p.customer_id = c.customer_id
+            JOIN admin a ON i.admin_username = a.admin_username
             WHERE p.customer_id = ?
             ORDER BY i.invoice_date DESC
         `, [customerId]);
