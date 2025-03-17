@@ -32,6 +32,9 @@ exports.getDashboard = async (req, res) => {
             customers: "SELECT COUNT(*) AS count FROM customers",
             medicines: "SELECT COUNT(*) AS count FROM medicines",
             suppliers: "SELECT COUNT(*) AS count FROM suppliers",
+            purchases: "SELECT COUNT(*) AS count FROM purchases",
+            invoice: "SELECT COUNT(*) AS count FROM invoice",
+            stocks: "SELECT COUNT(*) AS count FROM stocks",
             feedback: "SELECT customer_name, customer_feedback, customer_photo FROM customers WHERE customer_feedback IS NOT NULL"
         };
 
@@ -44,11 +47,14 @@ exports.getDashboard = async (req, res) => {
         ];
 
         // Execute all queries in parallel
-        const [admins, customers, medicines, suppliers, feedback] = await Promise.all([
+        const [admins, customers, medicines, suppliers, purchases, invoice, stocks, feedback] = await Promise.all([
             pool.query(queries.admins),
             pool.query(queries.customers),
             pool.query(queries.medicines),
             pool.query(queries.suppliers),
+            pool.query(queries.purchases),
+            pool.query(queries.invoice),
+            pool.query(queries.stocks),
             pool.query(queries.feedback)
         ]);
 
@@ -57,6 +63,9 @@ exports.getDashboard = async (req, res) => {
             customers: customers[0][0].count,
             medicines: medicines[0][0].count,
             suppliers: suppliers[0][0].count,
+            purchases: purchases[0][0].count,
+            invoice: invoice[0][0].count,
+            stocks: stocks[0][0].count,
             feedback: feedback[0],
             faqs,
             profile: req.session.user?.role,
