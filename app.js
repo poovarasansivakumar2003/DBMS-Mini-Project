@@ -1,26 +1,11 @@
 const express = require('express');
 const path = require('path');
 const pool = require('./db');
-const http = require('http');
-const socketIo = require('socket.io');
 const session = require('express-session');
 const rateLimit = require("express-rate-limit");
 require('dotenv').config();
 
 const app = express();
-const server = http.createServer(app); // Attach server to Express
-const io = socketIo(server); // Attach socket.io to the server
-
-io.on('connection', (socket) => {
-    console.log('A user connected');
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    });
-});
-
-// Make io available globally
-app.set('io', io);
 
 // Sign and encrypt session data
 app.use(session({
@@ -42,8 +27,8 @@ const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 1000, // Limit each IP to 1000 requests per window
     message: "Too many requests from this IP, please try again later.",
-    standardHeaders: true,
-    legacyHeaders: false,
+    standardHeaders: true, // Send rate limit info in `RateLimit-*` headers
+    legacyHeaders: false,  // Disable `X-RateLimit-*` headers (deprecated)
 });
 
 // Apply middleware
@@ -84,7 +69,7 @@ app.use((err, req, res, next) => {
 
 // Start Server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
 });
 
@@ -103,5 +88,5 @@ function gracefulShutdown(signal) {
 }
 
 // Handle termination signals
-process.on("SIGINT", () => gracefulShutdown("SIGINT"));
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));  // Ctrl + C
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));  // Deployment shutdown

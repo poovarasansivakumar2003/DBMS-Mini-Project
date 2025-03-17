@@ -413,13 +413,20 @@ exports.processOrder = [isAdmin, async (req, res) => {
             [purchased_quantity, supplierId, medicine_id]
         );
 
-        // Emit event to notify customer
-        const io = req.app.get('io');
-        io.emit('orderApproved', { purchaseId, customerId, medicineId, net_total, balance });
-
-        res.json({ success: true, message: "Order approved successfully" });
+        res.render("success", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Success",
+            message: "Order approved successfully"
+        });
+        
     } catch (err) {
         console.error("Database Error:", err);
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
     }
 }];
