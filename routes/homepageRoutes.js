@@ -7,7 +7,6 @@ const contactController = require('../controllers/contactController');
 const customerRegistrationController = require("../controllers/customerRegistrationController");
 
 router.get("/", homepageController.getDashboard);
-router.get('/customer/photo/:filename', homepageController.getCustomerPhoto);
 
 router.get("/medicinesDetails", homepageController.showMedicines);
 

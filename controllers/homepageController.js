@@ -2,40 +2,23 @@ const path = require("path");
 const pool = require("../db");
 const fs = require('fs');
 
-exports.getCustomerPhoto = (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.resolve(__dirname, "../private/uploads/customersPhotos", filename);
-    const defaultPhotoPath = path.resolve(__dirname, "../private/uploads/customersPhotos/default_photo.jpg");
-
-    // Validate filename to prevent directory traversal attacks
-    if (!filename || !/^[a-zA-Z0-9._-]+$/.test(filename)) {
-        return res.status(400).render("400", {
-            username: req.session.user?.username,
-            profile: req.session.user?.role,
-            pagetitle: "Bad Request",
-            error: "Invalid file request"
-        });
-    }
-    
-    // Check if the requested file exists
-    if (!fs.existsSync(filePath)) {
-        return res.sendFile(defaultPhotoPath);
-    }
-
-    res.sendFile(filePath);
-};
-
 exports.getDashboard = async (req, res) => {
     try {
         const queries = {
             admins: "SELECT COUNT(*) AS count FROM admin",
             customers: "SELECT COUNT(*) AS count FROM customers",
+            feedbacks: "SELECT COUNT(*) AS count FROM feedbacks",
             medicines: "SELECT COUNT(*) AS count FROM medicines",
             suppliers: "SELECT COUNT(*) AS count FROM suppliers",
-            purchases: "SELECT COUNT(*) AS count FROM purchases",
-            invoice: "SELECT COUNT(*) AS count FROM invoice",
             stocks: "SELECT COUNT(*) AS count FROM stocks",
-            feedback: "SELECT customer_name, customer_feedback, customer_photo FROM customers WHERE customer_feedback IS NOT NULL"
+            purchases: "SELECT COUNT(*) AS count FROM purchase_sessions",
+            payments: "SELECT COUNT(*) AS count FROM payments",
+            invoice: "SELECT COUNT(*) AS count FROM invoice",
+            getfeedback: `SELECT c.customer_name, f.feedback_text, c.customer_photo, f.rating
+                       FROM feedbacks f 
+                       JOIN customers c ON f.customer_id = c.customer_id 
+                       WHERE f.rating >= 3
+                       ORDER BY f.feedback_date DESC LIMIT 5` 
         };
 
         const faqs = [
@@ -47,26 +30,40 @@ exports.getDashboard = async (req, res) => {
         ];
 
         // Execute all queries in parallel
-        const [admins, customers, medicines, suppliers, purchases, invoice, stocks, feedback] = await Promise.all([
+        const [admins, customers, feedbacks, medicines, suppliers, purchases, payments, invoice, stocks, getfeedback] = await Promise.all([
             pool.query(queries.admins),
             pool.query(queries.customers),
+            pool.query(queries.feedbacks),
             pool.query(queries.medicines),
             pool.query(queries.suppliers),
             pool.query(queries.purchases),
+            pool.query(queries.payments),
             pool.query(queries.invoice),
             pool.query(queries.stocks),
-            pool.query(queries.feedback)
+            pool.query(queries.getfeedback)
         ]);
+
+        const feedbackWithImages = getfeedback[0].map(fb => ({
+            customer_name: fb.customer_name,
+            feedback_text: fb.feedback_text,
+            rating: fb.rating,
+            customer_photo: fb.customer_photo 
+                ? `data:image/jpeg;base64,${fb.customer_photo.toString('base64')}` 
+                : '/img/default_photo.jpg'
+        }));
+        
 
         res.render("dashboard", {
             admins: admins[0][0].count,
             customers: customers[0][0].count,
+            feedbacks: feedbacks[0][0].count,
             medicines: medicines[0][0].count,
             suppliers: suppliers[0][0].count,
             purchases: purchases[0][0].count,
+            payments: payments[0][0].count,
             invoice: invoice[0][0].count,
             stocks: stocks[0][0].count,
-            feedback: feedback[0],
+            getfeedbacks: feedbackWithImages,
             faqs,
             profile: req.session.user?.role,
             username: req.session.user?.username,
@@ -74,7 +71,7 @@ exports.getDashboard = async (req, res) => {
         });
     } catch (err) {
         console.error("Database Error:", err);
-        res.status(500).render('500', { 
+        res.status(500).render('500', {
             profile: req.session.user?.role,
             username: req.session.user?.username,
             pagetitle: 'Internal Server Error',
@@ -90,7 +87,10 @@ exports.showMedicines = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM medicines');
-        const [medicines] = await pool.query('SELECT * FROM medicines LIMIT ? OFFSET ?', [limit, offset]);
+        const [medicines] = await pool.query(`
+            SELECT * FROM medicines 
+            ORDER BY medicine_expiry_date ASC
+            LIMIT ? OFFSET ?`, [limit, offset]);
 
         res.render("medicinesDetails", {
             profile: req.session.user?.role,
@@ -100,7 +100,6 @@ exports.showMedicines = async (req, res) => {
             currentPage: page,
             totalPages: Math.ceil(total / limit)
         });
-
     } catch (err) {
         console.error("Database Error:", err);
         return res.render("500", {

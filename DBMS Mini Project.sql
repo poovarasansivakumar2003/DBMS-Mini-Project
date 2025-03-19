@@ -1,6 +1,6 @@
-show databases;
-create database DBMS_Mini_Project;
-use DBMS_Mini_Project;
+DROP DATABASE IF EXISTS pharmacyDB;
+CREATE DATABASE pharmacyDB;
+use pharmacyDB;
 
 -- Admin Table
 CREATE TABLE admin (
@@ -8,7 +8,6 @@ CREATE TABLE admin (
     admin_password VARCHAR(255) NOT NULL
 );
 describe admin;
-select * from admin;
 
 -- Customers Table
 CREATE TABLE customers (
@@ -17,15 +16,15 @@ CREATE TABLE customers (
     customer_name VARCHAR(20) NOT NULL,
     customer_email VARCHAR(50) NOT NULL UNIQUE,
     customer_ph_no VARCHAR(15) NOT NULL UNIQUE,
-    customer_feedback VARCHAR(255),
-    customer_photo VARCHAR(255),
+    customer_photo BLOB,
     customer_balance_amt DECIMAL(10, 2) DEFAULT 0
 );
+CREATE INDEX idx_customer_email ON customers(customer_email);
+CREATE INDEX idx_customer_ph_no ON customers(customer_ph_no);
 describe customers;
-select * from customers;
 
 -- Customers Addresses Table
-CREATE TABLE customers_addresses (
+CREATE TABLE customer_addresses (
     address_id INT AUTO_INCREMENT PRIMARY KEY,
     customer_id INT,
     street VARCHAR(100),
@@ -35,31 +34,33 @@ CREATE TABLE customers_addresses (
     address_type ENUM('Home', 'Work', 'Other'),  -- Categorizing addresses
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
-describe customers_addresses;
-select * from customers_addresses;
+describe customer_addresses;
 
 -- Customers feedbacks Table
 CREATE TABLE feedbacks (
     feedback_id INT AUTO_INCREMENT PRIMARY KEY,
     customer_id INT, 
+    rating INT NOT NULL,
     feedback_text TEXT NOT NULL,
     feedback_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
+describe feedbacks;
 
 -- Medicines Table
 CREATE TABLE medicines (
     medicine_id INT AUTO_INCREMENT PRIMARY KEY,
     medicine_name VARCHAR(50) NOT NULL,
     medicine_composition VARCHAR(100) NOT NULL,
-    medicine_price DECIMAL(10, 2) NOT NULL,
+    medicine_price DECIMAL(10 , 2 ) NOT NULL,
     medicine_type ENUM('Tablet', 'Syrup', 'Capsule', 'Injection', 'Ointment') NOT NULL,
     medicine_expiry_date DATE NOT NULL,
-    medicine_img VARCHAR(255),
-    CONSTRAINT unique_medicine UNIQUE (medicine_name, medicine_composition)
+    medicine_img BLOB,
+    CONSTRAINT unique_medicine UNIQUE (medicine_name , medicine_composition)
 );
+CREATE INDEX idx_medicine_name ON medicines(medicine_name);
+CREATE INDEX idx_medicine_expiry_date ON medicines(medicine_expiry_date);
 describe medicines;
-select * from medicines;
 
 -- Suppliers Table
 CREATE TABLE suppliers (
@@ -70,20 +71,18 @@ CREATE TABLE suppliers (
     supplier_address VARCHAR(100)
 );
 describe suppliers;
-select * from suppliers;
 
 -- Suppliers Addresses Table
-CREATE TABLE suppliers_addresses (
+CREATE TABLE supplier_addresses (
     address_id INT AUTO_INCREMENT PRIMARY KEY,
-    suppliers_id INT,
+    supplier_id INT,
     street VARCHAR(100),
     city VARCHAR(50),
     state VARCHAR(50),
     zip_code VARCHAR(10),
-    FOREIGN KEY (suppliers_id) REFERENCES suppliers_id(suppliers_id) ON DELETE CASCADE
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE CASCADE
 );
-describe suppliers_addresses;
-select * from suppliers_addresses;
+describe supplier_addresses;
 
 -- Stocks Table
 CREATE TABLE stocks (
@@ -94,8 +93,9 @@ CREATE TABLE stocks (
     FOREIGN KEY (medicine_id) REFERENCES medicines(medicine_id) ON DELETE CASCADE,
     FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE CASCADE
 );
+CREATE INDEX idx_stock_medicine ON stocks(medicine_id);
+CREATE INDEX idx_stock_supplier ON stocks(supplier_id);
 describe stocks;
-select * from stocks;
 
 -- Purchases Table
 CREATE TABLE purchases (
@@ -106,12 +106,14 @@ CREATE TABLE purchases (
     supplier_id INT NULL,
     purchased_quantity INT NOT NULL CHECK(purchased_quantity > 0),
     total_amt DECIMAL(10,2) NOT NULL, 
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE SET NULL,
-    FOREIGN KEY (medicine_id) REFERENCES medicines(medicine_id) ON DELETE SET NULL,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
+    FOREIGN KEY (medicine_id) REFERENCES medicines(medicine_id) ON DELETE CASCADE,
     FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE SET NULL
 );
+CREATE INDEX idx_purchase_customer ON purchases(customer_id);
+CREATE INDEX idx_purchase_medicine ON purchases(medicine_id);
+CREATE INDEX idx_purchase_time ON purchases(purchase_time);
 describe purchases;
-select * from purchases;
 
 -- Purchase Sessions Table
 CREATE TABLE purchase_sessions (
@@ -119,10 +121,18 @@ CREATE TABLE purchase_sessions (
     customer_id INT,
     purchase_time TIMESTAMP, -- have a relation through trigger
     actual_amt_to_pay DECIMAL(10,2),
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE SET NULL
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 describe purchase_sessions;
-select * from purchase_sessions;
+
+CREATE TABLE payments (
+    payment_id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT,
+    payment_amt DECIMAL(10,2),
+    payment_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
+);
+describe payments;
 
 -- Invoice Table
 CREATE TABLE invoice (
@@ -131,219 +141,353 @@ CREATE TABLE invoice (
     purchase_session_id INT,
     admin_username VARCHAR(20),
     discount DECIMAL(10, 2) DEFAULT 0,
-    paid DECIMAL(10, 2) DEFAULT 0,
+    payment_id INT,
     total_amt_to_pay DECIMAL(10, 2),
     net_total DECIMAL(10, 2) GENERATED ALWAYS AS (total_amt_to_pay - discount) STORED,
-    balance DECIMAL(10, 2) GENERATED ALWAYS AS (net_total - paid) STORED,
-    FOREIGN KEY (admin_username) REFERENCES admin(admin_username) ON DELETE SET NULL,
-    FOREIGN KEY (purchase_session_id) REFERENCES purchase_sessions(purchase_session_id) ON DELETE SET NULL
+    balance DECIMAL(10, 2),
+    FOREIGN KEY (payment_id) REFERENCES payments(payment_id) ON DELETE CASCADE,
+    FOREIGN KEY (admin_username) REFERENCES admin(admin_username) ON DELETE NO ACTION,
+    FOREIGN KEY (purchase_session_id) REFERENCES purchase_sessions(purchase_session_id) ON DELETE CASCADE
 );
 describe invoice;
-select * from invoice;
 
 show tables;
 
 DELIMITER $$
 
--- Prevent expired medicine from being inserted
+-- Stored Procedure: Check Expiry Before Insert
 CREATE TRIGGER check_expiry_before_insert
 BEFORE INSERT ON medicines
 FOR EACH ROW
 BEGIN
     IF NEW.medicine_expiry_date < CURDATE() THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Cannot insert expired medicine!';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot insert expired medicine!';
     END IF;
 END$$
 
--- Calculate total amount in purchases before insert
+-- Stored Procedure: Prevent Purchase of Expired Medicine
+CREATE PROCEDURE PreventPurchaseOfExpiredStock(IN p_medicine_id INT)
+BEGIN
+    DECLARE medicine_expiry DATE;
+    SELECT medicine_expiry_date INTO medicine_expiry FROM medicines WHERE medicine_id = p_medicine_id;
+    IF medicine_expiry IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Medicine not found!';
+    ELSEIF medicine_expiry < CURDATE() THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot purchase expired medicine!';
+    END IF;
+END$$
+
+-- Trigger to prevent purchase of expired stock
+CREATE TRIGGER prevent_purchase_of_expired_stock
+BEFORE INSERT ON purchases
+FOR EACH ROW
+BEGIN
+    CALL PreventPurchaseOfExpiredStock(NEW.medicine_id);
+END$$
+
+-- Stored Procedure: Calculate Total Amount for Purchases
+CREATE PROCEDURE CalculateTotalAmount(IN p_medicine_id INT, IN p_purchased_quantity INT, OUT p_total_amount DECIMAL(10,2))
+BEGIN
+    DECLARE price DECIMAL(10,2);
+    SELECT medicine_price INTO price FROM medicines WHERE medicine_id = p_medicine_id LIMIT 1;
+    IF price IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Medicine not found!';
+    ELSE
+        SET p_total_amount = p_purchased_quantity * price;
+    END IF;
+END$$
+
+-- Trigger: Calculate total amount before insert/update
 CREATE TRIGGER calculate_total_amt_before_insert
 BEFORE INSERT ON purchases
 FOR EACH ROW
 BEGIN
-    DECLARE price DECIMAL(10,2);
-
-    -- Get the medicine price from the medicines table
-    SELECT medicine_price INTO price 
-    FROM medicines 
-    WHERE medicine_id = NEW.medicine_id;
-
-    -- Calculate total amount
-    SET NEW.total_amt = NEW.purchased_quantity * price;
+    DECLARE calculated_amount DECIMAL(10,2);
+    CALL CalculateTotalAmount(NEW.medicine_id, NEW.purchased_quantity, calculated_amount);
+    SET NEW.total_amt = calculated_amount;
 END$$
 
--- Calculate total amount in purchases before update
 CREATE TRIGGER calculate_total_amt_before_update
 BEFORE UPDATE ON purchases
 FOR EACH ROW
 BEGIN
-    DECLARE price DECIMAL(10,2);
-
-    -- Get the medicine price from the medicines table
-    SELECT medicine_price INTO price 
-    FROM medicines 
-    WHERE medicine_id = NEW.medicine_id;
-
-    -- Recalculate total amount
-    SET NEW.total_amt = NEW.purchased_quantity * price;
+    DECLARE calculated_amount DECIMAL(10,2);
+    CALL CalculateTotalAmount(NEW.medicine_id, NEW.purchased_quantity, calculated_amount);
+    SET NEW.total_amt = calculated_amount;
 END$$
 
--- Reduce stock on purchase, prevent insufficient stock purchase before insert
+-- Stored Procedure: Reduce Stock on Purchase
+CREATE PROCEDURE ReduceStockOnPurchase(IN p_medicine_id INT, IN p_supplier_id INT, IN p_purchased_quantity INT)
+BEGIN
+    DECLARE available_stock INT;
+    SELECT stock_quantity INTO available_stock FROM stocks 
+    WHERE medicine_id = p_medicine_id AND supplier_id = p_supplier_id;
+    
+    IF available_stock IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Stock not found!';
+    ELSEIF available_stock < p_purchased_quantity THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for this purchase!';
+    ELSE
+        UPDATE stocks SET stock_quantity = stock_quantity - p_purchased_quantity WHERE medicine_id = p_medicine_id AND supplier_id = p_supplier_id;
+    END IF;
+END$$
+
+-- Trigger: Reduce stock on purchase
 CREATE TRIGGER reduce_stock_on_purchase_before_insert
 BEFORE INSERT ON purchases
 FOR EACH ROW
 BEGIN
-    DECLARE available_stock INT;
-    
-    SELECT stock_quantity INTO available_stock
-    FROM stocks
-    WHERE medicine_id = NEW.medicine_id AND supplier_id = NEW.supplier_id;
-    
-    IF available_stock IS NULL OR available_stock < NEW.purchased_quantity THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Insufficient stock for this purchase!';
-    ELSE
-        UPDATE stocks
-        SET stock_quantity = stock_quantity - NEW.purchased_quantity
-        WHERE medicine_id = NEW.medicine_id AND supplier_id = NEW.supplier_id;
+    CALL ReduceStockOnPurchase(NEW.medicine_id, NEW.supplier_id, NEW.purchased_quantity);
+END$$
+
+-- Stored Procedure: Restore Stock on Purchase Deletion
+CREATE PROCEDURE RestoreStockOnPurchaseDelete(IN p_medicine_id INT, IN p_supplier_id INT, IN p_purchased_quantity INT)
+BEGIN
+    IF p_supplier_id IS NOT NULL THEN
+        UPDATE stocks SET stock_quantity = stock_quantity + p_purchased_quantity 
+        WHERE medicine_id = p_medicine_id AND supplier_id = p_supplier_id;
     END IF;
 END$$
 
---restore_stock_on_purchase_on_delete
+-- Trigger: Restore stock after purchase deletion
 CREATE TRIGGER restore_stock_on_purchase_delete
 AFTER DELETE ON purchases
 FOR EACH ROW
 BEGIN
-    UPDATE stocks
-    SET stock_quantity = stock_quantity + OLD.purchased_quantity 
-    WHERE medicine_id = OLD.medicine_id AND supplier_id = OLD.supplier_id;
-END $$
+    CALL RestoreStockOnPurchaseDelete(OLD.medicine_id, OLD.supplier_id, OLD.purchased_quantity);
+END$$
 
--- Assign purchases to a session and calculate actual_amt_to_pay
+
+-- Stored Procedure: Assign Purchase Session and Update Amount
+CREATE PROCEDURE AssignPurchaseSession(IN p_customer_id INT, IN p_purchase_time DATETIME, IN p_total_amount DECIMAL(10,2))
+BEGIN
+    DECLARE existing_session_id INT;
+
+    -- Find an existing session for the same customer and time
+    SELECT purchase_session_id INTO existing_session_id 
+    FROM purchase_sessions 
+    WHERE customer_id = p_customer_id AND purchase_time = p_purchase_time 
+    LIMIT 1;
+
+    IF existing_session_id IS NOT NULL THEN
+        -- Update existing session
+        UPDATE purchase_sessions 
+        SET actual_amt_to_pay = p_total_amount 
+        WHERE purchase_session_id = existing_session_id;
+    ELSE
+        -- Insert a new session
+        INSERT INTO purchase_sessions (customer_id, purchase_time, actual_amt_to_pay) 
+        VALUES (p_customer_id, p_purchase_time, p_total_amount);
+    END IF;
+END$$
+
+-- Trigger: Assign purchase session
 CREATE TRIGGER create_purchase_session
 AFTER INSERT ON purchases
 FOR EACH ROW
 BEGIN
-    DECLARE existing_session_id INT;
     DECLARE total_amount DECIMAL(10,2);
+    
+    -- Calculate total amount for the session
+    SELECT SUM(total_amt) INTO total_amount 
+    FROM purchases 
+    WHERE customer_id = NEW.customer_id 
+    AND purchase_time = NEW.purchase_time;
+    
+    -- Call the stored procedure
+    CALL AssignPurchaseSession(NEW.customer_id, NEW.purchase_time, total_amount);
+END$$
 
-    -- Check if there is an existing purchase session for this customer at the same date, hour, and minute
-    SELECT purchase_session_id INTO existing_session_id
-    FROM purchase_sessions
-    WHERE customer_id = NEW.customer_id
-    AND DATE_FORMAT(purchase_time, '%Y-%m-%d %H:%i') = DATE_FORMAT(NEW.purchase_time, '%Y-%m-%d %H:%i')
-    LIMIT 1;
-
-    -- Calculate the total amount of all purchases for this customer at this date, hour, and minute
-    SELECT SUM(total_amt) INTO total_amount
-    FROM purchases
-    WHERE customer_id = NEW.customer_id
-    AND DATE_FORMAT(purchase_time, '%Y-%m-%d %H:%i') = DATE_FORMAT(NEW.purchase_time, '%Y-%m-%d %H:%i');
-
-    IF existing_session_id IS NOT NULL THEN
-        -- Update existing purchase session
-        UPDATE purchase_sessions
-        SET actual_amt_to_pay = total_amount
-        WHERE purchase_session_id = existing_session_id;
-    ELSE
-        -- Insert new purchase session
-        INSERT INTO purchase_sessions (customer_id, purchase_time, actual_amt_to_pay)
-        VALUES (NEW.customer_id, NEW.purchase_time, total_amount);
-    END IF;
-END $$
-
--- Trigger to update total_amt_to_pay before insert
-CREATE TRIGGER calculate_total_amt_to_pay_before_insert
-BEFORE INSERT ON invoice
-FOR EACH ROW
+-- Stored Procedure: Calculate Total Amount to Pay for Invoice
+CREATE PROCEDURE CalculateTotalAmtToPay(IN p_purchase_session_id INT, OUT p_total_amt_to_pay DECIMAL(10,2))
 BEGIN
     DECLARE customer_balance DECIMAL(10,2);
     DECLARE actual_amt DECIMAL(10,2);
     DECLARE cust_id INT;
-    SELECT customer_id INTO cust_id FROM purchase_sessions WHERE purchase_session_id = NEW.purchase_session_id;
-    SELECT customer_balance_amt INTO customer_balance FROM customers WHERE customer_id = cust_id;
-    SELECT actual_amt_to_pay INTO actual_amt FROM purchase_sessions WHERE purchase_session_id = NEW.purchase_session_id;
-    SET NEW.total_amt_to_pay = actual_amt + customer_balance;
+    
+    SELECT customer_id INTO cust_id FROM purchase_sessions WHERE purchase_session_id = p_purchase_session_id;
+	IF cust_id IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid Purchase Session ID!';
+    ELSE
+        SELECT customer_balance_amt INTO customer_balance FROM customers WHERE customer_id = cust_id;
+        SELECT actual_amt_to_pay INTO actual_amt FROM purchase_sessions WHERE purchase_session_id = p_purchase_session_id;
+        SET p_total_amt_to_pay = actual_amt + IFNULL(customer_balance, 0);
+    END IF;
 END$$
 
--- Update customer_balance_amt after inserting an invoice
+-- Trigger: Calculate total_amt_to_pay before invoice insert
+CREATE TRIGGER calculate_total_amt_to_pay_before_insert
+BEFORE INSERT ON invoice
+FOR EACH ROW
+BEGIN
+    DECLARE calculated_total DECIMAL(10,2);
+    CALL CalculateTotalAmtToPay(NEW.purchase_session_id, calculated_total);
+    SET NEW.total_amt_to_pay = calculated_total;
+END$$
+
+DELIMITER $$
+
+-- Stored Procedure: Update Customer Balance After Invoice Insert
+CREATE PROCEDURE UpdateCustomerBalanceAfterInvoice(
+    IN p_purchase_session_id INT, 
+    IN p_total_amt_to_pay DECIMAL(10,2), 
+    IN p_payment_id INT, 
+    OUT p_balance_amt DECIMAL(10,2)
+)
+BEGIN
+    DECLARE paid_amount DECIMAL(10,2);
+    DECLARE cust_id INT;
+    
+    -- Get customer_id from purchase_sessions
+    SELECT customer_id INTO cust_id 
+    FROM purchase_sessions 
+    WHERE purchase_session_id = p_purchase_session_id;
+    
+    -- Get paid amount from payments
+    IF p_payment_id IS NOT NULL THEN
+        SELECT payment_amt INTO paid_amount 
+        FROM payments 
+        WHERE payment_id = p_payment_id;
+    ELSE
+        SET paid_amount = 0;
+    END IF;
+    
+    -- Calculate balance
+    SET p_balance_amt = p_total_amt_to_pay - paid_amount;
+    
+    -- Update customer's balance
+    UPDATE customers 
+    SET customer_balance_amt = p_balance_amt
+    WHERE customer_id = cust_id;
+END$$
+
+-- Trigger: Update customer balance after invoice insert
 CREATE TRIGGER update_customer_balance_after_invoice_insert
-AFTER INSERT ON invoice
+BEFORE INSERT ON invoice
 FOR EACH ROW
 BEGIN
-    -- Update customer balance with the latest invoice balance
-    UPDATE customers 
-    SET customer_balance_amt = NEW.balance
-    WHERE customer_id = (SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = NEW.purchase_session_id);
-END$$
-
--- Update customer_balance_amt after updating an invoice
-CREATE TRIGGER update_customer_balance_after_invoice_update
-AFTER UPDATE ON invoice
-FOR EACH ROW
-BEGIN
-    -- Update customer balance with the latest invoice balance
-    UPDATE customers 
-    SET customer_balance_amt = NEW.balance
-    WHERE customer_id = (SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = NEW.purchase_session_id);
+    DECLARE balance_amt DECIMAL(10,2);
+    -- Call the stored procedure with correct parameters
+    CALL UpdateCustomerBalanceAfterInvoice(NEW.purchase_session_id, NEW.total_amt_to_pay, NEW.payment_id, balance_amt);
+    SET NEW.balance = balance_amt;
 END$$
 
 DELIMITER ;
 
 SHOW TRIGGERS;
 
+-- Admin Table
 INSERT INTO admin (admin_username, admin_password) VALUES 
-('admin1', '$2a$10$nw35QHHaWQXowfPROS70A.mjbeYj8kPhpE5mBowZmJRHOg/G6/x8a'),-- Admin@123
-('admin2', '$2a$10$rth0XhJlmKXXd.HuU948cuIrTGa1XRyVsp9HNEeq7rE7l8XnXPhea');-- SecurePass
+('admin1', '$2a$10$nw35QHHaWQXowfPROS70A.mjbeYj8kPhpE5mBowZmJRHOg/G6/x8a'), -- Admin@123
+('admin2', '$2a$10$rth0XhJlmKXXd.HuU948cuIrTGa1XRyVsp9HNEeq7rE7l8XnXPhea'); -- SecurePass
+select * from admin;
 
-INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_address, customer_feedback, customer_password, customer_photo) VALUES 
-('John Doe', 'john.doe@example.com', '9876543210', '123 Main Street, NY', 'Great service, fast delivery and helpful staff.', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6',null), -- password
-('Alice Smith', 'alice.smith@example.com', '9876543211', '456 Elm Street, LA', 'The medication arrived on time, and everything was as expected.', '$2a$10$ClmJYIzo8c15tO0oSP/WK.ZyUlrC7st9EZdPDinNKIrDnPv5Vat8',null),-- 1234567890
-('Bob Johnson', 'bob.johnson@example.com', '9876543212', '789 Pine Street, TX', 'I had a smooth experience, and the quality of the product was good.', '$2a$10$.FGHozodkweJZOG4qFwQseKEhME20sdpQINxtJCgDwZSIxMhaEfl6','./private/uploads/customersPhotos/3_photo.png'),-- 9876543210
-('Jane Smith', 'janesmith@yahoo.com', '9123456789', '456 Avenue, City', 'Excellent support and easy ordering process.', '$2a$10$1icoY.4NSVHxZHlrTZCRHOgZVath6i/Eb83pOvNsb1tfcV0tJioc',null);-- super
+-- Customers Table
+INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_password) VALUES 
+('John Doe', 'john.doe@example.com', '9876543210', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6'), -- password
+('Alice Smith', 'alice.smith@example.com', '9876543211', '$2a$10$ClmJYIzo8c15tO0oSP/WK.ZyUlrC7st9EZdPDinNKIrDnPv5Vat8'), -- 1234567890
+('Bob Johnson', 'bob.johnson@example.com', '9876543212', '$2a$10$.FGHozodkweJZOG4qFwQseKEhME20sdpQINxtJCgDwZSIxMhaEfl6'), -- 9876543210
+('Jane Smith', 'janesmith@yahoo.com', '9123456789', '$2a$10$1icoY.4NSVHxZHlrTZCRHOgZVath6i/Eb83pOvNsb1tfcV0tJioc'); -- super
+select * from customers;
 
+-- Customers Addresses Table
+INSERT INTO customer_addresses (customer_id, street, city, state, zip_code, address_type) VALUES 
+(1, '123', 'Main Street', 'NY', '001203', 'Home'),
+(2, '456', 'Elm Street', 'LA', '034203', 'Other'),
+(3, '789', 'Pine Street', 'TX', '671203', 'Work'),
+(4, '456', 'Avenue', 'City', '001323', 'Home');
+select * from customer_addresses;
+
+-- Feedbacks Table
+INSERT INTO feedbacks (customer_id, rating, feedback_text) VALUES 
+(1, 4, 'Great service, fast delivery and helpful staff.'),
+(2, 3, 'The medication arrived on time, and everything was as expected.'),
+(3, 2, 'I had a smooth experience, and the quality of the product was good.'),
+(4, 3, 'Excellent support and easy ordering process.');
+select * from feedbacks;
+
+-- Medicines Table
+INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_type) VALUES 
+-- Tablets
+('Paracetamol', 'Acetaminophen 500mg', 10, '2025-12-31', 'Tablet'),
+('Aspirin', 'Aspirin 100mg', 5, '2026-06-30', 'Tablet'),
+('Amoxicillin 500mg', 'Amoxicillin', 15, '2026-04-30', 'Capsule'),
+('Ibuprofen', 'Ibuprofen 400mg', 30, '2025-08-15', 'Tablet'),
+('Amoxicillin 250mg', 'Amoxicillin', 50, '2026-05-01', 'Capsule'),
+('Vitamin C 500mg', 'Ascorbic Acid', 25, '2025-06-20', 'Tablet'),
+
+-- Syrups
+('Cough Syrup', 'Dextromethorphan, Guaifenesin', 80, '2026-09-10', 'Syrup'),
+('Iron Tonic', 'Ferrous Sulfate, Folic Acid', 90, '2026-07-15', 'Syrup'),
+('Multivitamin Syrup', 'Vitamin A, B, C, D, E', 75, '2025-12-01', 'Syrup'),
+
+-- Injections
+('Vitamin B12 Injection', 'Cyanocobalamin 1000mcg/ml', 120, '2026-08-20', 'Injection'),
+('Insulin Injection', 'Insulin Human Recombinant 100IU/ml', 500, '2026-10-10', 'Injection'),
+('Pain Relief Injection', 'Diclofenac Sodium 75mg/ml', 150, '2026-11-30', 'Injection'),
+
+-- Ointments
+('Burn Relief Ointment', 'Silver Sulfadiazine 1%', 60, '2026-09-25', 'Ointment'),
+('Antifungal Cream', 'Clotrimazole 1%', 50, '2026-07-30', 'Ointment'),
+('Anti-Inflammatory Gel', 'Diclofenac Gel 1%', 80, '2026-05-15', 'Ointment');
+select * from medicines;
+
+-- Suppliers Table
 INSERT INTO suppliers (supplier_name, supplier_email, supplier_ph_no, supplier_address) VALUES 
 ('MediSuppliers Inc.', 'contact@medisuppliers.com', '9988776655', '1st Avenue, NY'),
 ('Pharma Distributors', 'sales@pharmadist.com', '9988776644', 'Market Street, LA'),
 ('Wellness Suppliers', 'info@wellnesssup.com', '9988776633', 'Health Road, TX'),
 ('Pharma Inc.', 'contact@pharmainc.com', '8800112233', '789 Pharma St, City'),
 ('MediCo', 'support@medico.com', '8000223344', '321 Health Rd, City');
+select * from suppliers;
 
-INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img)
-VALUES 
-('Paracetamol', 'Acetaminophen 500mg', 10, '2025-12-31','./public/img/medicinesImg/paracetamol.jpg'),
-('Aspirin', 'Aspirin 100mg', 5, '2026-06-30','./public/img/medicinesImg/aspirin.jpg'),
-('Amoxicillin', 'Amoxicillin 500mg', 15, '2026-04-30','./public/img/medicinesImg/amoxicillin.jpg'),
-('Ibuprofen', 'Ibuprofen 400mg', 30, '2025-08-15','./public/img/medicinesImg/ibuprofen.jpg'),
-('Amoxicillin', 'Amoxicillin 250mg', 50, '2026-05-01','./public/img/medicinesImg/amoxicillin.jpg'),
-('Cough Syrup', 'Dextromethorphan, Guaifenesin', 80, '2026-09-10','./public/img/medicinesImg/coughSyrup.jpg'),
-('Vitamin C', 'Ascorbic Acid 500mg', 25, '2025-06-20','./public/img/medicinesImg/vitaminC.jpg');
+-- Suppliers Addresses Table
+INSERT INTO supplier_addresses (supplier_id, street, city, state, zip_code) VALUES 
+(1, '123', 'Main Street', 'NY', '001203'),
+(2, '456', 'Elm Street', 'LA', '034203'),
+(3, '789', 'Pine Street', 'TX', '671203'),
+(4, '456', 'Elm Street', 'LA', '034203'),
+(5, '456', 'Avenue', 'City', '001323');
+select * from supplier_addresses;
 
+-- Stocks Table
 INSERT INTO stocks (medicine_id, supplier_id, stock_quantity) VALUES 
-(1, 1, 100),  -- 100 units of Paracetamol supplied by MediSuppliers Inc. (Supplier ID: 1)
-(1, 2, 50),   -- 50 units of Paracetamol supplied by Pharma Distributors (Supplier ID: 2)
-(2, 1, 200),  -- 200 units of Aspirin supplied by MediSuppliers Inc. (Supplier ID: 1)
-(3, 2, 7),    -- 7 units of Amoxicillin supplied by Pharma Distributors (Supplier ID: 2)
-(4, 3, 50),   -- 50 units of Ibuprofen supplied by Wellness Suppliers (Supplier ID: 3)
-(5, 2, 200),  -- 200 units of expired Amoxicillin supplied by Pharma Distributors (Supplier ID: 2)
-(6, 4, 50);  -- 200 units of expired Cough Syrup supplied by MediCo (Supplier ID: 4)
+(1, 1, 100), 
+(1, 2, 50),  
+(2, 1, 200), 
+(3, 2, 50),  
+(4, 3, 50),  
+(6, 4, 50); 
+select * from stocks; 
 
--- Insert purchase data
-INSERT INTO purchases (admin_username, customer_id, medicine_id, supplier_id, purchased_quantity) VALUES
-('admin1', 1, 1, 1, 4),  -- John Doe bought 10 Paracetamol from MediSuppliers Inc.
-('admin2', 2, 2, 1, 5),  -- Alice Smith bought 5 Aspirin from MediSuppliers Inc.
-('admin1', 3, 3, 2, 3),  -- Bob Johnson bought 3 Amoxicillin from Pharma Distributors
-('admin2', 4, 4, 3, 2),  -- Jane Smith bought 2 Ibuprofen from Wellness Suppliers
-('admin1', 1, 6, 4, 1);  -- John Doe bought 1 Cough Syrup from MediCo
+-- Purchases Table
+INSERT INTO purchases (customer_id, medicine_id, supplier_id, purchased_quantity) VALUES
+(1, 1, 1, 4),  
+(2, 2, 1, 5),  
+(3, 3, 2, 3),  
+(4, 4, 3, 2),  
+(1, 6, 4, 1);  
+select * from purchases;
+select * from purchase_sessions;
 
--- Insert invoice data
-INSERT INTO invoice (purchase_id, discount, paid) VALUES 
-(1, 10, 80),  -- Invoice for Purchase ID 1: Discount = 10, Paid = 90
-(2, 5, 20),    -- Invoice for Purchase ID 2: Discount = 5, Paid = 20 
-(3, 20, 210), -- Invoice for Purchase ID 3: Discount = 20, Paid = 210,
-(4, 10, 50); -- Invoice for Purchase ID 4: Discount = 10, Paid = 115,
+-- Payments Table
+INSERT INTO payments (customer_id, payment_amt) VALUES 
+(1, 80),
+(2, 20),
+(3, 210),
+(4, 115);
+select * from payments;
 
-drop database DBMS_Mini_Project;
+-- Invoice Table
+INSERT INTO invoice (purchase_session_id, admin_username, discount, payment_id) VALUES 
+(1, 'admin1', 10, 1),
+(2, 'admin1', 5, 2),
+(3, 'admin2', 20, 3),
+(4, 'admin2', 10, 4);
+select * from invoice;
+
+SHOW ERRORS;
+SHOW WARNINGS;
 
 -- How Can Suppliers View Their Stock?
 -- How Can Suppliers Update Their Stock?

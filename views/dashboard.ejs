@@ -31,15 +31,19 @@
     <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Dashboard Overview</h2>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6 mb-12 justify-center">
-      <% const stats=[ { title: 'Admins' , count: admins, color: 'blue' , icon: 'fa-user-shield' }, 
-      { title: 'Customers' , count: customers, color: 'green' , icon: 'fa-users' }, 
-      { title: 'Medicines' , count: medicines, color: 'yellow' , icon: 'fa-pills' }, 
-      { title: 'Suppliers' , count: suppliers, color: 'red' , icon: 'fa-truck' },
-      { title: 'Purchases' , count: purchases, color: 'orange' , icon: 'fa-bag-shopping' }, 
-      { title: 'Invoice' , count: invoice, color: 'pink' , icon: 'fa-envelope' }, 
-      { title: 'Stocks' , count: stocks, color: 'gray' , icon: 'fa-home' }
-      ]; %>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12 justify-center">
+      <% const stats = [
+        { title: 'Admins', count: admins, color: 'blue', icon: 'fa-user-shield' }, 
+        { title: 'Customers', count: customers, color: 'green', icon: 'fa-users' },
+        { title: 'Feedbacks', count: feedbacks, color: 'purple', icon: 'fa-comment-dots' }, 
+        { title: 'Medicines', count: medicines, color: 'yellow', icon: 'fa-pills' }, 
+        { title: 'Suppliers', count: suppliers, color: 'red', icon: 'fa-truck' },
+        { title: 'Purchases', count: purchases, color: 'orange', icon: 'fa-shopping-cart' }, 
+        { title: 'Payments', count: payments, color: 'blue', icon: 'fa-credit-card' }, 
+        { title: 'Invoice', count: invoice, color: 'purple', icon: 'fa-file-invoice-dollar' }, 
+        { title: 'Stocks', count: stocks, color: 'gray', icon: 'fa-boxes' }
+      ];%>
+
 
       <% stats.forEach(stat=> { %>
       <div class="transform hover:scale-105 transition-transform duration-300">
@@ -67,12 +71,12 @@
     <div class="max-w-5xl mx-auto mb-12">
       <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">What Our Customers Say</h2>
       <div class="grid gap-6 md:grid-cols-2">
-        <% feedback.forEach(fb=> { %>
+        <% getfeedbacks.forEach(fb=> { %>
         <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
           <div class="p-6">
             <div class="flex items-center mb-4">
               <div class="bg-blue-100 rounded-full p-1">
-                <img src="/customer/photo/<%= fb.customer_photo ? encodeURIComponent(fb.customer_photo.split('/').pop()) : 'default_photo.jpg' %>" alt="<%= fb.customer_name %>" class="w-10 h-10 rounded-full">
+                <img src="<%= fb.customer_photo %>" alt="<%= fb.customer_name %>" class="w-10 h-10 rounded-full">
               </div>
               <div class="ml-4">
                 <h3 class="text-lg font-semibold text-gray-800">
@@ -81,7 +85,10 @@
                 <p class="text-sm text-gray-500">Verified Customer</p>
               </div>
             </div>
-            <p class="text-gray-600 italic">"<%= fb.customer_feedback %>"</p>
+            <p class="text-gray-600 italic">"<%= fb.feedback_text %>"</p>
+            <div class="mt-2 text-yellow-500">
+              <% for (let i = 0; i < fb.rating; i++) { %> ⭐ <% } %>
+            </div>
           </div>
         </div>
         <% }); %>
