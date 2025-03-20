@@ -49,7 +49,7 @@ exports.getDashboard = async (req, res) => {
             rating: fb.rating,
             customer_photo: fb.customer_photo 
                 ? `data:image/jpeg;base64,${fb.customer_photo.toString('base64')}` 
-                : '/img/default_photo.jpg'
+                : '/img/defaultPhoto.jpg'
         }));
         
 

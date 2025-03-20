@@ -16,7 +16,7 @@ CREATE TABLE customers (
     customer_name VARCHAR(20) NOT NULL,
     customer_email VARCHAR(50) NOT NULL UNIQUE,
     customer_ph_no VARCHAR(15) NOT NULL UNIQUE,
-    customer_photo BLOB,
+    customer_photo MEDIUMBLOB,
     customer_balance_amt DECIMAL(10, 2) DEFAULT 0
 );
 CREATE INDEX idx_customer_email ON customers(customer_email);
@@ -55,7 +55,7 @@ CREATE TABLE medicines (
     medicine_price DECIMAL(10 , 2 ) NOT NULL,
     medicine_type ENUM('Tablet', 'Syrup', 'Capsule', 'Injection', 'Ointment') NOT NULL,
     medicine_expiry_date DATE NOT NULL,
-    medicine_img BLOB,
+    medicine_img MEDIUMBLOB,
     CONSTRAINT unique_medicine UNIQUE (medicine_name , medicine_composition)
 );
 CREATE INDEX idx_medicine_name ON medicines(medicine_name);
@@ -400,9 +400,10 @@ select * from customer_addresses;
 
 -- Feedbacks Table
 INSERT INTO feedbacks (customer_id, rating, feedback_text) VALUES 
+(1, 1, 'Worst.'),
 (1, 4, 'Great service, fast delivery and helpful staff.'),
-(2, 3, 'The medication arrived on time, and everything was as expected.'),
-(3, 2, 'I had a smooth experience, and the quality of the product was good.'),
+(2, 4, 'The medication arrived on time, and everything was as expected.'),
+(3, 5, 'I had a smooth experience, and the quality of the product was good.'),
 (4, 3, 'Excellent support and easy ordering process.');
 select * from feedbacks;
 

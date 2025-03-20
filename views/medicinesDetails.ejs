@@ -9,7 +9,7 @@
       <% if (medicine.medicine_img) { %>
         <img src="data:image/jpeg;base64,<%= medicine.medicine_img.toString('base64') %>" alt="<%= medicine.medicine_name %>" class="w-full h-40 object-cover rounded-md mb-3">
       <% } else { %>
-        <img src="/img/MedicinesImg/default.jpg" alt="No Image Available" class="w-full h-40 object-cover rounded-md mb-3">
+        <img src="/img/noImg.jpg" alt="No Image Available" class="w-full h-40 object-cover rounded-md mb-3">
       <% } %>
       
       <h2 class="text-lg font-semibold text-gray-800"><%= medicine.medicine_name %></h2>

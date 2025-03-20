@@ -1,41 +1,37 @@
-const express = require("express");
-const app = express();
 const fs = require("fs");
 const pool = require("../db");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const PDFDocument = require("pdfkit");
-const multer = require("multer");
 const QRCode = require("qrcode");
-require("dotenv").config();
+const multer = require("multer");
 
-// Ensure private directories exist
-const privateDirs = ["../private/uploads/customersPhotos", "../private/customerCards"];
-privateDirs.forEach((dir) => fs.mkdirSync(path.join(__dirname, dir), { recursive: true }));
-
-// Configure Multer for File Uploads
-const uploadDir = path.join(__dirname, "../private/uploads/customersPhotos");
-fs.mkdirSync(uploadDir, { recursive: true });
-
+// Configure multer for file uploads
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, `${Date.now()}${path.extname(file.originalname)}`),
+  destination: function(req, file, cb) {
+    const uploadDir = path.join(__dirname, "../uploads");
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function(req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
 });
 
-// File Filters (Restrict to Images Only)
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
-    if (!allowedTypes.includes(file.mimetype)) {
-        return cb(new Error("Only images (JPEG, JPG, PNG) are allowed!"), false);
+const upload = multer({ 
+  storage: storage,
+  fileFilter: function(req, file, cb) {
+    // Accept only image files
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed!'), false);
     }
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`);
-};
-
-// Initialize Multer for Both Uploads
-const upload = multer({storage,fileFilter});
-
-// Serve static files
-app.use("/private/customerCards", express.static(path.join(__dirname, "../private/customerCards")));
+    cb(null, true);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 // Render Customer Registration Page
 exports.getCustomerRegister = (req, res) => {
@@ -60,7 +56,7 @@ exports.customerRegister = async (req, res) => {
         }
 
         try {
-            const { customer_name, customer_email, customer_ph_no, customer_address, customer_password } = req.body;
+            const { customer_name, customer_email, customer_ph_no, customer_password, street, city, state, zip_code, address_type } = req.body;
 
             // Check for existing customer email/phone in one query
             const [existingCustomer] = await pool.query(
@@ -69,6 +65,11 @@ exports.customerRegister = async (req, res) => {
             );
 
             if (existingCustomer.length > 0) {
+                // Clean up uploaded file if exists
+                if (req.file && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+                
                 return res.status(400).render("400", {
                     profile: req.session.user?.role,
                     username: req.session.user?.username,
@@ -79,6 +80,11 @@ exports.customerRegister = async (req, res) => {
 
             // Validate password
             if (!customer_password || customer_password.length < 8) {
+                // Clean up uploaded file if exists
+                if (req.file && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+                
                 return res.render("customerRegister", { 
                     profile: req.session.user?.role,
                     username: req.session.user?.username,
@@ -87,58 +93,73 @@ exports.customerRegister = async (req, res) => {
                 });
             }
 
-            // Hash password and use transaction for multiple queries
+            // Hash password and prepare customer photo
             const hashedPassword = await bcrypt.hash(customer_password.trim(), 10);
-
+            let customer_photo = null;
+            
+            if (req.file) {
+                customer_photo = fs.readFileSync(req.file.path);
+                // Clean up after reading
+                fs.unlinkSync(req.file.path);
+            }
+            
             // Using transaction to handle multiple database operations
             const connection = await pool.getConnection();
             await connection.beginTransaction();
 
             try {
                 const [result] = await connection.query(
-                    `INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_address, customer_password)
-                     VALUES (?, ?, ?, ?, ?)`,
-                    [customer_name, customer_email, customer_ph_no, customer_address || null, hashedPassword]
+                    `INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_password, customer_photo, customer_balance_amt)
+                     VALUES (?, ?, ?, ?, ?, 0.00)`,
+                    [customer_name, customer_email, customer_ph_no, hashedPassword, customer_photo]
                 );
 
                 const customer_id = result.insertId;
-                let customer_photo = "";
-                if (req.file) {
-                    const ext = path.extname(req.file.originalname);
-                    const newFileName = `${customer_id}_photo${ext}`;
-                    const relativePath = `./private/uploads/customersPhotos/${newFileName}`;
-                    const newFilePath = path.join(uploadDir, newFileName);
 
-                    fs.renameSync(req.file.path, newFilePath);
-                    customer_photo = relativePath;
-
-                    // Store relative path in the database
-                    await connection.query("UPDATE customers SET customer_photo = ? WHERE customer_id = ?", [customer_photo, customer_id]);
+                if (street || city || state || zip_code) {
+                    await connection.query(
+                        `INSERT INTO customer_addresses (customer_id, street, city, state, zip_code, address_type)
+                         VALUES (?, ?, ?, ?, ?, ?)`,
+                        [customer_id, street || null, city || null, state || null, zip_code || null, address_type || 'Home']
+                    );
                 }
 
-                // Generate PDF Card for the customer
-                const pdfDir = path.join(process.cwd(), "private/customerCards");
-                const pdfPath = path.join(pdfDir, `${customer_id}_card.pdf`);
-                fs.mkdirSync(pdfDir, { recursive: true });
+                await connection.commit();
 
+                // Create directory for customer cards if it doesn't exist
+                const cardsDir = path.join(__dirname, "../private/customerCards");
+                if (!fs.existsSync(cardsDir)) {
+                    fs.mkdirSync(cardsDir, { recursive: true });
+                }
+
+                // Generate PDF to file
+                const pdfFileName = `${customer_id}_card.pdf`;
+                const pdfPath = path.join(cardsDir, pdfFileName);
+                const pdfStream = fs.createWriteStream(pdfPath);
+                
                 await generateCustomerPDF({
                     customer_id,
                     customer_name,
                     customer_email,
                     customer_ph_no,
                     customer_photo,
-                    customer_address,
-                }, pdfPath);
-
-                await connection.commit();
-
-                // Render success page
-                res.render("success", {
-                    pdfName: `${customer_id}_card.pdf`,
-                    profile: req.session.user?.role,
-                    username: req.session.user?.username,
-                    pagetitle: "Success",
-                    message: 'Your account has been created successfully.'
+                    address_type,
+                    street,
+                    city,
+                    state,
+                    zip_code
+                }, pdfStream);
+                
+                // Wait for PDF to finish writing
+                pdfStream.on('finish', () => {
+                    // Render success page
+                    res.render("success", {
+                        pdfName: pdfFileName,
+                        profile: req.session.user?.role,
+                        username: req.session.user?.username,
+                        pagetitle: "Success",
+                        message: 'Your account has been created successfully.'
+                    });
                 });
 
             } catch (err) {
@@ -155,6 +176,11 @@ exports.customerRegister = async (req, res) => {
             }
         } catch (err) {
             console.error("Unexpected error:", err);
+            // Clean up uploaded file if exists
+            if (req.file && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+            
             res.render("customerRegister", {
                 profile: req.session.user?.role,
                 username: req.session.user?.username,
@@ -165,120 +191,83 @@ exports.customerRegister = async (req, res) => {
     });
 };
 
-// Generate Customer PDF
-async function generateCustomerPDF(customerData, filePath) {
-    return new Promise(async (resolve, reject) => {
-        // Create PDF with smaller margins to maximize space
-        const doc = new PDFDocument({
-            size: "A4",
-            margin: 20,
-            autoFirstPage: false
-        });
+async function generateCustomerPDF(customerData, outputStream) {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({ size: "A4", margin: 50 });
+            doc.pipe(outputStream);
 
-        const stream = fs.createWriteStream(filePath);
-        doc.pipe(stream);
+            // Header Section
+            doc.rect(0, 0, 595, 80).fill("#2563eb");
+            doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(24).text("MediVerse", 50, 30);
 
-        // Add a single page with specific dimensions
-        doc.addPage({
-            size: "A4",
-            margin: 20
-        });
-
-        const pageWidth = doc.page.width;
-        const pageHeight = doc.page.height;
-
-        // **Header Section** - Reduced height
-        const headerHeight = 40;
-        doc.rect(20, 20, pageWidth - 40, headerHeight)
-            .fill("#2563eb");
-
-        doc.fill("#ffffff")
-            .font("Helvetica-Bold")
-            .fontSize(20)
-            .text("MediVerse", 40, 30);
-
-        // **Mediverse Logo**
-        const iconPath = path.join(__dirname, "../public/img/favicon.png");
-        if (fs.existsSync(iconPath)) {
-            doc.image(iconPath, pageWidth - 90, 25, { width: 30 });
-        }
-
-        let yPosition = headerHeight + 40;
-
-        // **Customer Photo** 
-        if (customerData.customer_photo) {
-            const customerPhotoPath = path.resolve(customerData.customer_photo);
-            if (fs.existsSync(customerPhotoPath) && fs.lstatSync(customerPhotoPath).isFile()) {
-                doc.image(customerPhotoPath, 40, yPosition, { width: 60, height: 60 });
+            // Company Logo
+            const iconPath = path.join(__dirname, "../public/img/favicon.png");
+            if (fs.existsSync(iconPath)) {
+                doc.image(iconPath, 500, 20, { width: 50 });
             }
+
+            let yPosition = 100;
+
+            // Customer Photo (if available)
+            if (customerData.customer_photo) {
+                doc.roundedRect(50, yPosition, 100, 100, 10).stroke();
+                doc.image(customerData.customer_photo, 55, yPosition + 5, { fit: [90, 90] });
+            }
+
+            // Customer Information Section
+            const infoStartX = 180;
+            const labelWidth = 120;
+            const valueStartX = infoStartX + labelWidth + 10;
+            const fontSize = 12;
+            let textYPosition = yPosition; // Aligning with image height
+
+            doc.fontSize(fontSize).fillColor("#000000");
+
+            const addDetailRow = (label, value) => {
+                doc.font("Helvetica-Bold").text(label, infoStartX, textYPosition, { continued: false });
+                doc.font("Helvetica").text(value, valueStartX, textYPosition);
+                textYPosition += 25;
+            };
+
+            addDetailRow("Customer ID:", customerData.customer_id || "N/A");
+            addDetailRow("Name:", customerData.customer_name || "N/A");
+            addDetailRow("Email:", customerData.customer_email || "N/A");
+            addDetailRow("Phone Number:", customerData.customer_ph_no || "N/A");
+            addDetailRow("Address Type:", customerData.address_type || "N/A");
+            addDetailRow("Street:", customerData.street || "N/A");
+            addDetailRow("City:", customerData.city || "N/A");
+            addDetailRow("State:", customerData.state || "N/A");
+            addDetailRow("Zip Code:", customerData.zip_code || "N/A");
+
+            // QR Code Section - Properly Aligned
+            textYPosition += 30;
+            doc.fontSize(14).fillColor("#2563eb").text("Scan QR for Details", 400, textYPosition);
+            textYPosition += 20;
+
+            QRCode.toBuffer(
+                `Customer ID: ${customerData.customer_id}\nName: ${customerData.customer_name}\nPhone: ${customerData.customer_ph_no}`
+            )
+                .then(qrCodeBuffer => {
+                    doc.image(qrCodeBuffer, 400, textYPosition, { width: 120, height: 120 });
+
+                    // Footer Section with Proper Spacing
+                    doc.rect(0, 750, 595, 50).fill("#2563eb");
+                    doc.fillColor("#ffffff").fontSize(10).text("Created by Poovarasan S.", 50, 765);
+                    doc.text("Email: poovarasansivakumar2003@gmail.com", 50, 780);
+                    
+
+                    doc.end();
+                    resolve();
+                })
+                .catch(err => reject(err));
+        } catch (err) {
+            reject(err);
         }
-
-        // **Customer Details** - Optimized spacing
-        const textStartX = 120;
-        const labelWidth = 100;
-        const fontSize = 12;
-
-        doc.fontSize(fontSize).fillColor("#000000");
-
-        // Function to add customer detail rows
-        const addDetailRow = (label, value) => {
-            doc.font("Helvetica-Bold").text(label, textStartX, yPosition);
-            doc.font("Helvetica").text(value, textStartX + labelWidth, yPosition);
-            yPosition += 20;
-        };
-
-        addDetailRow("Customer ID:", customerData.customer_id);
-        addDetailRow("Name:", customerData.customer_name);
-        addDetailRow("Email:", customerData.customer_email);
-        addDetailRow("Phone Number:", customerData.customer_ph_no);
-
-        // Address with controlled width
-        doc.font("Helvetica-Bold").text("Address:", textStartX, yPosition);
-        doc.font("Helvetica").text(
-            customerData.customer_address || "N/A",
-            textStartX + labelWidth,
-            yPosition,
-            { width: 250 }
-        );
-
-        // **QR Code** - Moved to the right side
-        const qrCodeData = `Customer ID: ${customerData.customer_id}\nName: ${customerData.customer_name}\nPhone: ${customerData.customer_ph_no}`;
-        const qrCodeBuffer = await QRCode.toBuffer(qrCodeData);
-        doc.image(qrCodeBuffer, pageWidth - 130, yPosition - 60,  { width: 80, height: 80 });
-
-        // **Footer Section** - Positioned at bottom
-        const footerHeight = 40;
-        const footerMargin = 20;
-        const footerY = pageHeight - footerHeight - footerMargin;
-        const footerX = footerMargin;
-        const footerWidth = pageWidth - 2 * footerMargin;
-
-        // Draw footer background
-        doc.rect(footerX, footerY, footerWidth, footerHeight).fill("#2563eb");
-
-        // Set text color and font
-        doc.fillColor("#ffffff").font("Helvetica").fontSize(10);
-
-        // Left-aligned footer text
-        doc.text("Created by Poovarasan S.", footerX + 10, footerY + 12);
-        doc.text("Email: poovarasansivakumar2003@gmail.com", footerX + 10, footerY + 24);
-
-        // Right-aligned footer text (Ensure it fits in a single line)
-        const footerText = "A Smarter, Faster, and Seamless Way to Manage Your Pharmacy!";
-        const footerTextWidth = doc.widthOfString(footerText); // Get text width
-        const footerTextX = pageWidth - footerTextWidth - footerMargin - 10; // Calculate position
-
-        doc.text(footerText, footerTextX, footerY + 15);
-
-        // Finalize PDF
-        doc.end();
-        stream.on("finish", () => resolve());
-        stream.on("error", (err) => reject(err));
     });
 }
 
-
-
+// Download customer card
 exports.downloadCustomerCard = (req, res) => {
     const filePath = path.join(__dirname, "../private/customerCards", req.params.filename);
 
