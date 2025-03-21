@@ -12,11 +12,12 @@ describe admin;
 -- Customers Table
 CREATE TABLE customers (
     customer_id INT AUTO_INCREMENT PRIMARY KEY,
-    customer_password VARCHAR(255) NOT NULL,
+    customer_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     customer_name VARCHAR(20) NOT NULL,
     customer_email VARCHAR(50) NOT NULL UNIQUE,
     customer_ph_no VARCHAR(15) NOT NULL UNIQUE,
     customer_photo MEDIUMBLOB,
+    customer_password VARCHAR(255) NOT NULL,
     customer_balance_amt DECIMAL(10, 2) DEFAULT 0
 );
 CREATE INDEX idx_customer_email ON customers(customer_email);
@@ -383,11 +384,21 @@ INSERT INTO admin (admin_username, admin_password) VALUES
 select * from admin;
 
 -- Customers Table
-INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_password) VALUES 
-('John Doe', 'john.doe@example.com', '9876543210', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6'), -- password
-('Alice Smith', 'alice.smith@example.com', '9876543211', '$2a$10$ClmJYIzo8c15tO0oSP/WK.ZyUlrC7st9EZdPDinNKIrDnPv5Vat8'), -- 1234567890
-('Bob Johnson', 'bob.johnson@example.com', '9876543212', '$2a$10$.FGHozodkweJZOG4qFwQseKEhME20sdpQINxtJCgDwZSIxMhaEfl6'), -- 9876543210
-('Jane Smith', 'janesmith@yahoo.com', '9123456789', '$2a$10$1icoY.4NSVHxZHlrTZCRHOgZVath6i/Eb83pOvNsb1tfcV0tJioc'); -- super
+INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_password, customer_created_at) VALUES 
+('John Doe', 'john.doe@example.com', '9876543210', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6', '2025-03-01'), -- password
+('Alice Smith', 'alice.smith@example.com', '9876543211', '$2a$10$ClmJYIzo8c15tO0oSP/WK.ZyUlrC7st9EZdPDinNKIrDnPv5Vat8', '2025-03-02'),  -- 1234567890
+('Bob Johnson', 'bob.johnson@example.com', '9876543212', '$2a$10$.FGHozodkweJZOG4qFwQseKEhME20sdpQINxtJCgDwZSIxMhaEfl6', '2025-03-03'), -- 9876543210
+('Jane Smith', 'janesmith@yahoo.com', '9123456789', '$2a$10$1icoY.4NSVHxZHlrTZCRHOgZVath6i/Eb83pOvNsb1tfcV0tJioc', '2025-03-04'),-- super
+('Chris Evans', 'chris.evans@example.com', '9234567890', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6', '2025-03-05'), -- password
+('Emma Watson', 'emma.watson@example.com', '9345678901', '$2a$10$ClmJYIzo8c15tO0oSP/WK.ZyUlrC7st9EZdPDinNKIrDnPv5Vat8', '2025-03-06'),  -- 1234567890
+('David Warner', 'david.warner@example.com', '9456789012', '$2a$10$.FGHozodkweJZOG4qFwQseKEhME20sdpQINxtJCgDwZSIxMhaEfl6', DEFAULT), -- 9876543210
+('Sophia Lee', 'sophia.lee@example.com', '9567890123', '$2a$10$1icoY.4NSVHxZHlrTZCRHOgZVath6i/Eb83pOvNsb1tfcV0tJioc', '2025-03-08'),-- super
+('Michael Brown', 'michael.brown@example.com', '9678901234', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6', '2025-03-09'), -- password
+('Olivia Green', 'olivia.green@example.com', '9789012345', '$2a$10$ClmJYIzo8c15tO0oSP/WK.ZyUlrC7st9EZdPDinNKIrDnPv5Vat8', '2025-03-10'),  -- 1234567890
+('Liam Miller', 'liam.miller@example.com', '9890123456', '$2a$10$.FGHozodkweJZOG4qFwQseKEhME20sdpQINxtJCgDwZSIxMhaEfl6', DEFAULT), -- 9876543210
+('Ava Wilson', 'ava.wilson@example.com', '9901234567', '$2a$10$1icoY.4NSVHxZHlrTZCRHOgZVath6i/Eb83pOvNsb1tfcV0tJioc', DEFAULT),-- super
+('James Anderson', 'james.anderson@example.com', '9012345678', '$2a$10$rwXscApWpvq2s5wazkzPYOkmxWQGn89/B8nQNSG1nYb.QRPB6pKM6', '2025-03-13'), -- password
+('Mia Robinson', 'mia.robinson@example.com', '9123456780', '$2a$10$ClmJYIzo8c15tO0oSP/WK.ZyUlrC7st9EZdPDinNKIrDnPv5Vat8', DEFAULT);  -- 1234567890
 select * from customers;
 
 -- Customers Addresses Table
@@ -410,12 +421,12 @@ select * from feedbacks;
 -- Medicines Table
 INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_type) VALUES 
 -- Tablets
-('Paracetamol', 'Acetaminophen 500mg', 10, '2025-12-31', 'Tablet'),
+('Paracetamol', 'Acetaminophen 500mg', 10, '2025-12-31', 'Tablet'), 
 ('Aspirin', 'Aspirin 100mg', 5, '2026-06-30', 'Tablet'),
-('Amoxicillin 500mg', 'Amoxicillin', 15, '2026-04-30', 'Capsule'),
+('Amoxicillin', 'Amoxicillin 500mg', 15, '2026-04-30', 'Capsule'),
 ('Ibuprofen', 'Ibuprofen 400mg', 30, '2025-08-15', 'Tablet'),
-('Amoxicillin 250mg', 'Amoxicillin', 50, '2026-05-01', 'Capsule'),
-('Vitamin C 500mg', 'Ascorbic Acid', 25, '2025-06-20', 'Tablet'),
+('Amoxicillin', 'Amoxicillin 250mg', 50, '2026-05-01', 'Capsule'),
+('Vitamin C', 'Ascorbic Acid 500mg', 25, '2025-06-20', 'Tablet'),
 
 -- Syrups
 ('Cough Syrup', 'Dextromethorphan, Guaifenesin', 80, '2026-09-10', 'Syrup'),
@@ -490,6 +501,11 @@ select * from invoice;
 SHOW ERRORS;
 SHOW WARNINGS;
 
+-- Recent Orders & Deliveries
+-- Low Stock Alerts
+-- Revenue Overview
+-- Upcoming Expiry Alerts
+-- Customer Growth Analytics
 -- How Can Suppliers View Their Stock?
 -- How Can Suppliers Update Their Stock?
 -- Show Medicine Stock for Each Supplier

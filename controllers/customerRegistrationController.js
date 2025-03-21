@@ -115,6 +115,13 @@ exports.customerRegister = async (req, res) => {
                 );
 
                 const customer_id = result.insertId;
+                
+                const [rows] = await connection.query(
+                    `SELECT customer_created_at FROM customers WHERE customer_id = ?`,
+                    [customer_id]
+                );
+            
+                const customer_created_at = rows.length > 0 ? rows[0].customer_created_at : null;
 
                 if (street || city || state || zip_code) {
                     await connection.query(
@@ -147,7 +154,8 @@ exports.customerRegister = async (req, res) => {
                     street,
                     city,
                     state,
-                    zip_code
+                    zip_code,
+                    customer_created_at
                 }, pdfStream);
                 
                 // Wait for PDF to finish writing
@@ -231,6 +239,7 @@ async function generateCustomerPDF(customerData, outputStream) {
             };
 
             addDetailRow("Customer ID:", customerData.customer_id || "N/A");
+            addDetailRow("Registered On:", customerData.customer_created_at || "N/A");
             addDetailRow("Name:", customerData.customer_name || "N/A");
             addDetailRow("Email:", customerData.customer_email || "N/A");
             addDetailRow("Phone Number:", customerData.customer_ph_no || "N/A");

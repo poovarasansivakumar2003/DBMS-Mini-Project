@@ -14,11 +14,10 @@ exports.getDashboard = async (req, res) => {
             purchases: "SELECT COUNT(*) AS count FROM purchase_sessions",
             payments: "SELECT COUNT(*) AS count FROM payments",
             invoice: "SELECT COUNT(*) AS count FROM invoice",
-            getfeedback: `SELECT c.customer_name, f.feedback_text, c.customer_photo, f.rating
-                       FROM feedbacks f 
-                       JOIN customers c ON f.customer_id = c.customer_id 
-                       WHERE f.rating >= 3
-                       ORDER BY f.feedback_date DESC LIMIT 5` 
+            getfeedback: "SELECT c.customer_name, f.feedback_text, c.customer_photo, f.rating FROM feedbacks f JOIN customers c ON f.customer_id = c.customer_id WHERE f.rating >= 3 ORDER BY f.rating DESC LIMIT 4 ",
+            topSellingMedicinesQuery: "SELECT m.medicine_id, m.medicine_name AS name, m.medicine_type AS category, m.medicine_price AS price, m.medicine_img AS photo, COALESCE(SUM(p.purchased_quantity), 0) AS sold_count FROM medicines m LEFT JOIN purchases p ON m.medicine_id = p.medicine_id GROUP BY m.medicine_id ORDER BY sold_count DESC LIMIT 6 ",
+            customerGrowthQuery: "WITH RECURSIVE date_series AS (SELECT CURDATE() - INTERVAL 29 DAY AS day UNION ALL SELECT day + INTERVAL 1 DAY FROM date_series WHERE day < CURDATE()) SELECT ds.day, COALESCE(COUNT(c.customer_id), 0) AS new_customers FROM date_series ds LEFT JOIN customers c ON DATE(c.customer_created_at) = ds.day GROUP BY ds.day ORDER BY ds.day ASC ",
+            newCustomersQuery: "SELECT COUNT(*) AS newCustomers FROM customers WHERE MONTH(customer_created_at) = MONTH(CURRENT_DATE()) AND YEAR(customer_created_at) = YEAR(CURRENT_DATE())"
         };
 
         const faqs = [
@@ -30,7 +29,7 @@ exports.getDashboard = async (req, res) => {
         ];
 
         // Execute all queries in parallel
-        const [admins, customers, feedbacks, medicines, suppliers, purchases, payments, invoice, stocks, getfeedback] = await Promise.all([
+        const [admins, customers, feedbacks, medicines, suppliers, purchases, payments, invoice, stocks, getfeedback, topSelling, customerGrowth, newCustomers] = await Promise.all([
             pool.query(queries.admins),
             pool.query(queries.customers),
             pool.query(queries.feedbacks),
@@ -40,18 +39,24 @@ exports.getDashboard = async (req, res) => {
             pool.query(queries.payments),
             pool.query(queries.invoice),
             pool.query(queries.stocks),
-            pool.query(queries.getfeedback)
+            pool.query(queries.getfeedback),
+            pool.query(queries.topSellingMedicinesQuery),
+            pool.query(queries.customerGrowthQuery),
+            pool.query(queries.newCustomersQuery)
         ]);
+
+        const customerGrowthData = customerGrowth[0] || [];
+        const days = customerGrowthData.map(row => new Date(row.day).toISOString().split('T')[0]);
+        const customerData = customerGrowthData.map(row => row.new_customers || 0);
 
         const feedbackWithImages = getfeedback[0].map(fb => ({
             customer_name: fb.customer_name,
             feedback_text: fb.feedback_text,
             rating: fb.rating,
-            customer_photo: fb.customer_photo 
-                ? `data:image/jpeg;base64,${fb.customer_photo.toString('base64')}` 
+            customer_photo: fb.customer_photo
+                ? `data:image/jpeg;base64,${fb.customer_photo.toString('base64')}`
                 : '/img/defaultPhoto.jpg'
         }));
-        
 
         res.render("dashboard", {
             admins: admins[0][0].count,
@@ -64,6 +69,11 @@ exports.getDashboard = async (req, res) => {
             invoice: invoice[0][0].count,
             stocks: stocks[0][0].count,
             getfeedbacks: feedbackWithImages,
+            topSelling: topSelling[0] || [],
+            newCustomers: newCustomers[0][0]?.newCustomers || 0,
+            customerGrowth: customerGrowthData,
+            days,
+            customerData,
             faqs,
             profile: req.session.user?.role,
             username: req.session.user?.username,

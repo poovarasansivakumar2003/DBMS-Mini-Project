@@ -36,6 +36,8 @@ app.use(apiLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/chartjs', express.static(path.join(__dirname, 'node_modules/chart.js/dist')));
+app.use('/fontawesome', express.static(__dirname + '/node_modules/@fortawesome/fontawesome-free'));
 
 // Set View Engine
 app.set('view engine', 'ejs');

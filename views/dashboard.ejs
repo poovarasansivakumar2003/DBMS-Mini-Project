@@ -25,6 +25,33 @@
     </div>
   </div>
 
+  <!-- Product Overview Section -->
+  <div class="container mx-auto px-6 py-8">
+    <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Why Choose MediVerse?</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+        <div class="text-blue-500 text-4xl mb-4">
+          <i class="fas fa-bolt"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Streamlined Operations</h3>
+        <p class="text-gray-600">Automate inventory management, prescription processing, and customer records in one intuitive platform, saving valuable time and reducing errors.</p>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+        <div class="text-green-500 text-4xl mb-4">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Data-Driven Insights</h3>
+        <p class="text-gray-600">Make informed decisions with real-time analytics on sales trends, inventory levels, and customer preferences to optimize your pharmacy business.</p>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+        <div class="text-purple-500 text-4xl mb-4">
+          <i class="fas fa-users"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Enhanced Customer Experience</h3>
+        <p class="text-gray-600">Provide a seamless experience with digital prescriptions, refill reminders, and personalized health recommendations for your customers.</p>
+      </div>
+    </div>
+  </div>
 
   <!-- Dashboard Section -->
   <div class="container mx-auto p-6">
@@ -67,6 +94,52 @@
       <% }); %>
     </div>
 
+    <!-- Key Features Section -->
+    <div class="max-w-6xl mx-auto mb-12">
+      <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Key Features</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-4">
+            <div class="bg-yellow-100 p-3 rounded-full">
+              <i class="fas fa-pills text-yellow-500 text-xl"></i>
+            </div>
+            <h3 class="ml-4 text-xl font-semibold">Comprehensive Medicine Management</h3>
+          </div>
+          <p class="text-gray-600">Track every aspect of your pharmacy inventory from purchase to expiry. Set automatic alerts for low stock and expiring medicines.</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-4">
+            <div class="bg-green-100 p-3 rounded-full">
+              <i class="fas fa-truck text-green-500 text-xl"></i>
+            </div>
+            <h3 class="ml-4 text-xl font-semibold">Supplier Relationship Management</h3>
+          </div>
+          <p class="text-gray-600">Maintain detailed supplier profiles, track order history, and manage pricing negotiations all in one place.</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-4">
+            <div class="bg-blue-100 p-3 rounded-full">
+              <i class="fas fa-file-invoice-dollar text-blue-500 text-xl"></i>
+            </div>
+            <h3 class="ml-4 text-xl font-semibold">Advanced Billing & Invoicing</h3>
+          </div>
+          <p class="text-gray-600">Generate professional invoices, track payments, and manage insurance claims with our intuitive financial tools.</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-4">
+            <div class="bg-purple-100 p-3 rounded-full">
+              <i class="fas fa-chart-pie text-purple-500 text-xl"></i>
+            </div>
+            <h3 class="ml-4 text-xl font-semibold">Business Analytics</h3>
+          </div>
+          <p class="text-gray-600">Gain insights into sales trends, popular medicines, and customer behavior with comprehensive analytical reports.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Customer Feedback Section -->
     <div class="max-w-5xl mx-auto mb-12">
       <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">What Our Customers Say</h2>
@@ -92,6 +165,164 @@
           </div>
         </div>
         <% }); %>
+      </div>
+    </div>
+
+    <!-- Top Selling Medicines Section -->
+    <div class="max-w-6xl mx-auto mb-12">
+      <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Top Selling Medicines</h2>
+      <% if (topSelling.length > 0) { %>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <% topSelling.forEach(med => { %>
+
+        <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden p-6">
+          <% if (med.photo) { %>
+          <img src="data:image/jpeg;base64,<%= med.photo.toString('base64') %>" alt="<%= med.name %>" class="w-fit h-fit object-cover rounded-md mb-3">
+          <% } else { %>
+          <img src="/img/noImg.jpg" alt="No Image Available" class="w-fit h-fit object-cover rounded-md mb-3">
+          <% } %>
+          <h3 class="text-xl font-semibold text-gray-800"><%= med.name || "Unknown Medicine" %></h3>
+          <p class="text-gray-600 mt-2">Category: <%= med.category || "N/A" %></p>
+          <p class="text-gray-600 mt-1">Sold: <%= med.sold_count || 0 %> units</p>
+          <p class="text-gray-800 font-bold mt-2">$<%= med.price || "N/A" %></p>
+        </div>
+        <% }); %>
+      </div>
+      <% } else { %>
+      <p class="text-gray-600 text-center">No top-selling medicines available.</p>
+      <% } %>
+    </div>
+
+    <!-- Customer Growth Section -->
+    <div class="max-w-6xl mx-auto mb-12">
+      <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">📈 Customer Growth</h2>
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <p class="text-gray-600">New Customers This Month: <span class="text-blue-600 font-bold"><%= newCustomers %></span></p>
+        <p class="text-gray-600">Total Registered Customers: <span class="text-green-600 font-bold"><%= customers %></span></p>
+        <canvas id="customerGrowthChart"></canvas>
+      </div>
+    </div>
+
+    <script>
+      var ctx = document.getElementById('customerGrowthChart').getContext('2d');
+      var customerGrowthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: <%- JSON.stringify(days.map(day => day.substring(5))) %>,
+          datasets: [{
+            label: 'New Customers',
+            data: <%- JSON.stringify(customerData) %>,
+            borderColor: '#3B82F6',
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderWidth: 2,
+            fill: true
+          }]
+        }
+      });
+    </script>
+
+    <!-- Pricing Plans Section -->
+    <div class="max-w-6xl mx-auto mb-12">
+      <h2 class="text-3xl font-bold text-center mb-12 text-gray-800">Upgrade Your Pharmacy Plan</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <!-- Standard Plan -->
+        <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border-t-4 border-blue-400">
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-center text-gray-800 mb-4">Standard</h3>
+            <p class="text-center text-3xl font-bold text-gray-900 mb-6">&#8377; 1999<span class="text-sm text-gray-600">/month</span></p>
+            <ul class="space-y-3 mb-6">
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Basic Inventory Management</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Prescription Upload & Tracking</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Automated Billing & Invoicing</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">2 Admin Users</span>
+              </li>
+            </ul>
+            <div class="text-center">
+              <a href="/customerRegister" class="inline-block bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition duration-200">Upgrade Now</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Premium Plan -->
+        <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border-t-4 border-green-400 transform scale-105">
+          <div class="bg-green-500 py-2">
+            <p class="text-center text-white font-semibold">Best Value</p>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-center text-gray-800 mb-4">Premium</h3>
+            <p class="text-center text-3xl font-bold text-gray-900 mb-6">&#8377; 4999<span class="text-sm text-gray-600">/month</span></p>
+            <ul class="space-y-3 mb-6">
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Advanced Inventory & Expiry Tracking</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">24/7 Prescription Management</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Loyalty & Discount Management</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">5 Admin Users</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Email & SMS Notifications</span>
+              </li>
+            </ul>
+            <div class="text-center">
+              <a href="/customerRegister" class="inline-block bg-green-500 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition duration-200">Upgrade Now</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enterprise Plan -->
+        <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border-t-4 border-purple-400">
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-center text-gray-800 mb-4">Enterprise</h3>
+            <p class="text-center text-3xl font-bold text-gray-900 mb-6">&#8377; 9999<span class="text-sm text-gray-600">/month</span></p>
+            <ul class="space-y-3 mb-6">
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Complete Pharmacy Automation</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Multi-branch Management</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">AI-driven Analytics & Reports</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Unlimited Admin Users</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check text-green-500 mr-2"></i>
+                <span class="text-gray-600">Priority Customer Support</span>
+              </li>
+            </ul>
+            <div class="text-center">
+              <a href="/customerRegister" class="inline-block bg-purple-500 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-600 transition duration-200">Upgrade Now</a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
