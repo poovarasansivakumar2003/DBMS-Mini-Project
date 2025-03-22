@@ -122,6 +122,7 @@ CREATE TABLE purchase_sessions (
     customer_id INT,
     purchase_time TIMESTAMP, -- have a relation through trigger
     actual_amt_to_pay DECIMAL(10,2),
+    CONSTRAINT unique_purchase UNIQUE (customer_id , purchase_time),
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 describe purchase_sessions;
@@ -143,9 +144,10 @@ CREATE TABLE invoice (
     admin_username VARCHAR(20),
     discount DECIMAL(10, 2) DEFAULT 0,
     payment_id INT,
+    prev_balance DECIMAL(10, 2),
     total_amt_to_pay DECIMAL(10, 2),
     net_total DECIMAL(10, 2) GENERATED ALWAYS AS (total_amt_to_pay - discount) STORED,
-    balance DECIMAL(10, 2),
+    curr_balance DECIMAL(10, 2),
     FOREIGN KEY (payment_id) REFERENCES payments(payment_id) ON DELETE CASCADE,
     FOREIGN KEY (admin_username) REFERENCES admin(admin_username) ON DELETE NO ACTION,
     FOREIGN KEY (purchase_session_id) REFERENCES purchase_sessions(purchase_session_id) ON DELETE CASCADE
@@ -300,7 +302,7 @@ BEGIN
 END$$
 
 -- Stored Procedure: Calculate Total Amount to Pay for Invoice
-CREATE PROCEDURE CalculateTotalAmtToPay(IN p_purchase_session_id INT, OUT p_total_amt_to_pay DECIMAL(10,2))
+CREATE PROCEDURE CalculateTotalAmtToPay(IN p_purchase_session_id INT, OUT p_total_amt_to_pay DECIMAL(10,2), OUT p_prev_balance DECIMAL(10,2))
 BEGIN
     DECLARE customer_balance DECIMAL(10,2);
     DECLARE actual_amt DECIMAL(10,2);
@@ -312,6 +314,7 @@ BEGIN
     ELSE
         SELECT customer_balance_amt INTO customer_balance FROM customers WHERE customer_id = cust_id;
         SELECT actual_amt_to_pay INTO actual_amt FROM purchase_sessions WHERE purchase_session_id = p_purchase_session_id;
+        SET p_prev_balance = customer_balance;
         SET p_total_amt_to_pay = actual_amt + IFNULL(customer_balance, 0);
     END IF;
 END$$
@@ -322,8 +325,10 @@ BEFORE INSERT ON invoice
 FOR EACH ROW
 BEGIN
     DECLARE calculated_total DECIMAL(10,2);
-    CALL CalculateTotalAmtToPay(NEW.purchase_session_id, calculated_total);
+    DECLARE prev_balance DECIMAL(10,2);
+    CALL CalculateTotalAmtToPay(NEW.purchase_session_id, calculated_total, prev_balance);
     SET NEW.total_amt_to_pay = calculated_total;
+    SET NEW.prev_balance = prev_balance;
 END$$
 
 DELIMITER $$
@@ -370,7 +375,7 @@ BEGIN
     DECLARE balance_amt DECIMAL(10,2);
     -- Call the stored procedure with correct parameters
     CALL UpdateCustomerBalanceAfterInvoice(NEW.purchase_session_id, NEW.total_amt_to_pay, NEW.payment_id, balance_amt);
-    SET NEW.balance = balance_amt;
+    SET NEW.curr_balance = balance_amt;
 END$$
 
 DELIMITER ;

@@ -7,30 +7,15 @@ const QRCode = require("qrcode");
 const multer = require("multer");
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    const uploadDir = path.join(__dirname, "../uploads");
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function(req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: function(req, file, cb) {
-    // Accept only image files
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image files are allowed!'), false);
-    }
-    cb(null, true);
-  },
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+const upload = multer({
+    storage: multer.memoryStorage(),
+    fileFilter: function (req, file, cb) {
+        if (!file.mimetype.startsWith("image/")) {
+            return cb(new Error("Only image files are allowed!"), false);
+        }
+        cb(null, true);
+    },
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
 // Render Customer Registration Page
@@ -44,7 +29,7 @@ exports.getCustomerRegister = (req, res) => {
 
 // Handle Customer Registration
 exports.customerRegister = async (req, res) => {
-    upload.single("customer_photo")(req, res, async (err) => {
+    upload.single("customerPhoto")(req, res, async (err) => {
         if (err) {
             console.error("Multer error:", err);
             return res.status(500).render("500", {
@@ -93,15 +78,10 @@ exports.customerRegister = async (req, res) => {
                 });
             }
 
-            // Hash password and prepare customer photo
+            // Hash password
             const hashedPassword = await bcrypt.hash(customer_password.trim(), 10);
-            let customer_photo = null;
-            
-            if (req.file) {
-                customer_photo = fs.readFileSync(req.file.path);
-                // Clean up after reading
-                fs.unlinkSync(req.file.path);
-            }
+
+            let customerPhoto = req.file ? req.file.buffer : null;
             
             // Using transaction to handle multiple database operations
             const connection = await pool.getConnection();
@@ -111,7 +91,7 @@ exports.customerRegister = async (req, res) => {
                 const [result] = await connection.query(
                     `INSERT INTO customers (customer_name, customer_email, customer_ph_no, customer_password, customer_photo, customer_balance_amt)
                      VALUES (?, ?, ?, ?, ?, 0.00)`,
-                    [customer_name, customer_email, customer_ph_no, hashedPassword, customer_photo]
+                    [customer_name, customer_email, customer_ph_no, hashedPassword, customerPhoto]
                 );
 
                 const customer_id = result.insertId;
@@ -149,7 +129,7 @@ exports.customerRegister = async (req, res) => {
                     customer_name,
                     customer_email,
                     customer_ph_no,
-                    customer_photo,
+                    customerPhoto,
                     address_type,
                     street,
                     city,
@@ -218,9 +198,9 @@ async function generateCustomerPDF(customerData, outputStream) {
             let yPosition = 100;
 
             // Customer Photo (if available)
-            if (customerData.customer_photo) {
+            if (customerData.customerPhoto) {
                 doc.roundedRect(50, yPosition, 100, 100, 10).stroke();
-                doc.image(customerData.customer_photo, 55, yPosition + 5, { fit: [90, 90] });
+                doc.image(customerData.customerPhoto, 55, yPosition + 5, { fit: [90, 90] });
             }
 
             // Customer Information Section
@@ -240,6 +220,7 @@ async function generateCustomerPDF(customerData, outputStream) {
 
             addDetailRow("Customer ID:", customerData.customer_id || "N/A");
             addDetailRow("Registered On:", customerData.customer_created_at || "N/A");
+            textYPosition += 20;
             addDetailRow("Name:", customerData.customer_name || "N/A");
             addDetailRow("Email:", customerData.customer_email || "N/A");
             addDetailRow("Phone Number:", customerData.customer_ph_no || "N/A");
@@ -255,7 +236,7 @@ async function generateCustomerPDF(customerData, outputStream) {
             textYPosition += 20;
 
             QRCode.toBuffer(
-                `Customer ID: ${customerData.customer_id}\nName: ${customerData.customer_name}\nPhone: ${customerData.customer_ph_no}`
+                `Customer ID: ${customerData.customer_id}\nName: ${customerData.customer_name}\nPhone: ${customerData.customer_ph_no}\nEMAIL: ${customerData.customer_email}`
             )
                 .then(qrCodeBuffer => {
                     doc.image(qrCodeBuffer, 400, textYPosition, { width: 120, height: 120 });

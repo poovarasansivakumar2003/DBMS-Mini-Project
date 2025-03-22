@@ -28,7 +28,8 @@ router.use(checkSession);
 router.use(checkCustomer);
 
 router.get('/customerDashboard', customerController.getCustomerDashboard);
-router.post('/update', customerController.updateCustomer);
-router.post('/purchase', customerController.purchaseMedicine);
+router.get('/download-invoice/:invoiceNo', customerController.downloadInvoice);
+// router.post('/customerDashboard/update', customerController.updateCustomer);
+// router.get("/customer/downloadCard/:filename", customerController.downloadCustomerCard);
 
 module.exports = router;
