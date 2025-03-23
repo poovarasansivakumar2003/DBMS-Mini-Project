@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const multer = require('multer');
 const path = require('path');
 const PDFDocument = require("pdfkit");
+const QRCode = require("qrcode");
 
 // Configure multer for file uploads
 const upload = multer({
@@ -43,7 +44,7 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
         }
 
         const customer = customerResult[0];
-        
+
         // Check if customer has a photo, otherwise use default image
         if (customer && customer.customer_photo) {
             customer.customer_photo = `data:image/jpeg;base64,${customer.customer_photo.toString('base64')}`;
@@ -112,6 +113,288 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
     }
 }];
 
+exports.updateCustomer = [isCustomer, async (req, res) => {
+    try {
+        // Upload customer photo
+        await new Promise((resolve, reject) => {
+            upload.single("customer_photo")(req, res, (err) => {
+                if (err) {
+                    console.error("Multer error:", err);
+                    return reject(res.status(500).render("500", {
+                        username: req.session.user?.username,
+                        profile: "customer",
+                        pagetitle: "Internal Server Error",
+                        error: "File upload error"
+                    }));
+                }
+                resolve();
+            });
+        });
+
+        const customerId = req.session.customerId;
+        const { customer_name, customer_email, customer_ph_no, customer_password } = req.body;
+
+        // Fetch customer details including password
+        const [existingCustomer] = await pool.query(
+            "SELECT customer_id, customer_password FROM customers WHERE customer_id = ?",
+            [customerId]
+        );
+
+        // Check if customer exists
+        if (existingCustomer.length === 0) {
+            return res.status(404).render("404", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Page Not Found",
+                error: "Customer not found"
+            });
+        }
+
+        const storedPassword = existingCustomer[0].customer_password;
+
+        // Ensure passwords match
+        const isMatch = await bcrypt.compare(customer_password.trim(), storedPassword);
+        if (!isMatch) {
+            return res.status(400).render("login", {
+                pagetitle: 'Login',
+                profile: null,
+                username: null,
+                error: "Invalid credentials"
+            });
+        }
+
+        // Check if email or phone number already exists for another customer
+        const [duplicateCustomer] = await pool.query(
+            "SELECT customer_id FROM customers WHERE (customer_email = ? OR customer_ph_no = ?) AND customer_id != ?",
+            [customer_email, customer_ph_no, customerId]
+        );
+
+        if (duplicateCustomer.length > 0) {
+            if (req.file && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Bad Request",
+                error: "Another customer with this email or phone number already exists"
+            });
+        }
+
+        let updateFields = [];
+        let updateValues = [];
+
+        if (customer_name) {
+            updateFields.push("customer_name = ?");
+            updateValues.push(customer_name);
+        }
+        if (customer_email) {
+            updateFields.push("customer_email = ?");
+            updateValues.push(customer_email);
+        }
+        if (customer_ph_no) {
+            updateFields.push("customer_ph_no = ?");
+            updateValues.push(customer_ph_no);
+        }
+
+        let customer_photo = null;
+        if (req.file) {
+            customer_photo = req.file.buffer;
+            updateFields.push("customer_photo = ?");
+            updateValues.push(customer_photo);
+        }
+
+        if (updateFields.length > 0) {
+            updateValues.push(customerId);
+            await pool.query(
+                `UPDATE customers SET ${updateFields.join(", ")} WHERE customer_id = ?`,
+                updateValues
+            );
+        }
+
+        // Fetch updated customer details
+        const [customerUpdate] = await pool.query(
+            `SELECT customer_id, customer_created_at, customer_name, customer_email, customer_ph_no, customer_photo, customer_balance_amt 
+            FROM customers WHERE customer_id = ?`,
+            [customerId]
+        );
+
+        const customer = customerUpdate[0];
+
+        // Fetch addresses
+        const [addressResult] = await pool.query(
+            "SELECT address_type, street, city, state, zip_code FROM customer_addresses WHERE customer_id = ?",
+            [customerId]
+        );
+
+        // Ensure PDF directory exists
+        const pdfDirectory = path.join(__dirname, "../private/customerCards");
+        if (!fs.existsSync(pdfDirectory)) {
+            fs.mkdirSync(pdfDirectory, { recursive: true });
+        }
+
+        const pdfFileName = `${customer.customer_id}_card.pdf`;
+        const pdfPath = path.join(pdfDirectory, pdfFileName);
+
+        const pdfStream = fs.createWriteStream(pdfPath);
+
+        try {
+            await generateCustomerPDF(customer, addressResult, pdfStream);
+        } catch (pdfError) {
+            console.error("PDF Generation Error:", pdfError);
+            return res.status(500).render("500", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Internal Server Error",
+                error: "Failed to generate customer card"
+            });
+        }
+
+        res.render("success", {
+            pdfName: pdfFileName,
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Success",
+            message: "Your Profile updated successfully!"
+        });
+
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+
+async function generateCustomerPDF(customerData, addresses, outputStream) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const doc = new PDFDocument({ size: "A4", margin: 50 });
+            doc.pipe(outputStream);
+
+            // Load font (ensure "Helvetica" is available, or use a built-in default)
+            doc.font("Helvetica");
+
+            // Header
+            doc.rect(0, 0, 595, 80).fill("#2563eb");
+            doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(24).text("MediVerse", 50, 30);
+
+            // Company Logo
+            const iconPath = path.join(__dirname, "../public/img/favicon.png");
+            if (fs.existsSync(iconPath)) {
+                doc.image(iconPath, 500, 20, { width: 50 });
+            }
+
+            let yPosition = 100;
+
+            // Ensure photo is displayed correctly
+            if (customerData.customer_photo) {
+                const customerPhoto = Buffer.isBuffer(customerData.customer_photo)
+                    ? customerData.customer_photo
+                    : Buffer.from(customerData.customer_photo);
+
+                doc.roundedRect(50, yPosition, 100, 100, 10).stroke();
+                doc.image(customerPhoto, 55, yPosition + 5, { fit: [90, 90] });
+            }
+
+            // Set font color back to black for text
+            doc.fillColor("#000000");
+
+            // Customer Information Section
+            const infoStartX = 180;
+            const labelWidth = 120;
+            const valueStartX = infoStartX + labelWidth + 10;
+            const fontSize = 12;
+            let textYPosition = yPosition; // Aligning with image height
+
+            doc.fontSize(fontSize).fillColor("#000000");
+
+            const addDetailRow = (label, value) => {
+                doc.font("Helvetica-Bold").text(label, infoStartX, textYPosition, { continued: false });
+                doc.font("Helvetica").text(value, valueStartX, textYPosition);
+                textYPosition += 25;
+            };
+
+            addDetailRow("Customer ID:", customerData.customer_id || "N/A");
+            addDetailRow("Registered On:", customerData.customer_created_at || "N/A");
+            textYPosition += 20;
+            addDetailRow("Name:", customerData.customer_name || "N/A");
+            addDetailRow("Email:", customerData.customer_email || "N/A");
+            addDetailRow("Phone Number:", customerData.customer_ph_no || "N/A");
+
+            // Addresses (Limit to 5 entries)
+            if (Array.isArray(addresses)) {
+                addresses.slice(0, 5).forEach((addr) => {
+                    addDetailRow("Address Type:", addr.address_type || "N/A");
+                    addDetailRow("Street:", addr.street || "N/A");
+                    addDetailRow("City:", addr.city || "N/A");
+                    addDetailRow("State:", addr.state || "N/A");
+                    addDetailRow("Zip Code:", addr.zip_code || "N/A");
+                });
+            }
+
+            // QR Code Section
+            textYPosition += 30;
+            doc.fontSize(14).fillColor("#2563eb").text("Scan QR for Details", 400, textYPosition);
+            textYPosition += 20;
+
+            // Generate QR Code & Add to PDF
+            const qrData = `Customer ID: ${customerData.customer_id}\nName: ${customerData.customer_name}\nPhone: ${customerData.customer_ph_no}\nEmail: ${customerData.customer_email}`;
+            const qrCodeBuffer = await QRCode.toBuffer(qrData);
+            doc.image(qrCodeBuffer, 400, textYPosition, { width: 120, height: 120 });
+
+            // Footer
+            doc.fillColor("#ffffff").rect(0, 750, 595, 50).fill("#2563eb");
+            doc.fillColor("#ffffff").fontSize(10).text("Created by Poovarasan S.", 50, 765);
+            doc.text("Email: poovarasansivakumar2003@gmail.com", 50, 780);
+
+            // Finish PDF generation
+            doc.end();
+            outputStream.on("finish", resolve);
+            outputStream.on("error", reject);
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
+// Download customer card
+exports.downloadCustomerCard = [isCustomer, (req, res) => {
+    const filePath = path.join(__dirname, "../private/customerCards", req.params.filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+        console.error("File Not Found:", filePath);
+        return res.status(404).render("404", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Page Not Found",
+            error: "File Not Found"
+        });
+    }
+
+    // Set headers for downloading the file
+    res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
+
+    // Send the file
+    res.download(filePath, (err) => {
+        if (err) {
+            console.error("Download Error:", err);
+            res.status(500).render("404", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Internal Server Error",
+                error: "Failed to download the file"
+            });
+        }
+    });
+}];
+
+
 exports.downloadInvoice = [isCustomer, async (req, res) => {
     try {
         const { invoiceNo } = req.params;
@@ -162,7 +445,7 @@ exports.downloadInvoice = [isCustomer, async (req, res) => {
         const invoice = invoiceData[0];
 
         // Ensure the 'invoices' directory exists
-        const invoicesDir = path.join(__dirname, "../invoices");
+        const invoicesDir = path.join(__dirname, "../private/invoices");
         if (!fs.existsSync(invoicesDir)) {
             fs.mkdirSync(invoicesDir, { recursive: true });
         }
@@ -351,256 +634,102 @@ exports.downloadInvoice = [isCustomer, async (req, res) => {
     }
 }];
 
-exports.updateCustomer = [isCustomer, async (req, res) => {
-    upload.single("customer_photo")(req, res, async (err) => {
-        if (err) {
-            console.error("Multer error:", err);
-            return res.status(500).render("500", {
-                username: req.session.user?.username,
-                profile: "customer",
-                pagetitle: "Internal Server Error",
-                error: "Multer error"
-            });
-        }
-    });
 
+exports.addAddress = [isCustomer, async (req, res) => {
     try {
+        const { street, city, state, zip_code, address_type } = req.body;
         const customerId = req.session.customerId;
-        const { customer_name, customer_email, customer_ph_no, customer_password } = req.body;
 
-        if (customer_password.length < 8) {
-            // Clean up uploaded file if exists
-            if (req.file && fs.existsSync(req.file.path)) {
-                fs.unlinkSync(req.file.path);
-            }
+        await pool.query("INSERT INTO customer_addresses (customer_id, street, city, state, zip_code, address_type) VALUES (?, ?, ?, ?, ?, ?)",
+            [customerId, street, city, state, zip_code, address_type]);
 
-            return res.render("customerRegister", {
-                username: req.session.user?.username,
-                profile: "customer",
-                pagetitle: "Customer Register",
-                error: "Password must be at least 8 characters"
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(customer_password.trim(), 10);
-        let customerPhoto = null;
-        if (req.file) {
-            customerPhoto = req.file.buffer;
-            fs.unlinkSync(req.file.path);
-        }
-
-        let updateFields = [];
-        let updateValues = [];
-
-        if (customer_name) {
-            updateFields.push("customer_name = ?");
-            updateValues.push(customer_name);
-        }
-        if (customer_email) {
-            updateFields.push("customer_email = ?");
-            updateValues.push(customer_email);
-        }
-        if (customer_ph_no) {
-            updateFields.push("customer_ph_no = ?");
-            updateValues.push(customer_ph_no);
-        }
-        if (hashedPassword) {
-            updateFields.push("customer_password = ?");
-            updateValues.push(hashedPassword);
-        }
-        if (customerPhoto) {
-            updateFields.push("customer_photo = ?");
-            updateValues.push(customerPhoto);
-        }
-
-        if (updateFields.length > 0) {
-            updateValues.push(customerId);
-            await pool.query(
-                `UPDATE customers SET ${updateFields.join(", ")} WHERE customer_id = ?`,
-                updateValues
-            );
-        }
-
-        // Fetch updated customer details
-        const [customerResult] = await pool.query(`
-            SELECT customer_id, customer_created_at, customer_name, customer_email, customer_ph_no, customer_photo, customer_balance_amt
-            FROM customers WHERE customer_id = ?`,
-            [customerId]
-        );
-
-        if (!customerResult.length) {
-            return res.status(404).render("404", {
-                username: req.session.user?.username,
-                profile: "customer",
-                pagetitle: "Page Not Found",
-                error: "Customer not found"
-            });
-        }
-        const customer = customerResult[0];
-
-        // Fetch all addresses for the customer
-        const [addresses] = await pool.query(
-            "SELECT address_type, street, city, state, zip_code FROM customer_addresses WHERE customer_id = ?",
-            [customerId]
-        );
-
-        // Fetch all feedbacks for the customer
-        const [feedbacks] = await pool.query(
-            "SELECT rating, feedback_text, feedback_date FROM feedbacks WHERE customer_id = ? ORDER BY feedback_date DESC",
-            [customerId]
-        );
-
-        // Generate PDF to file
-        const pdfFileName = `${customer_id}_card.pdf`;
-        const pdfPath = path.join(__dirname, "../private/customerCards", pdfFileName);
-        const pdfStream = fs.createWriteStream(pdfPath);
-
-        await generateCustomerPDF(customer, addresses, feedbacks, pdfStream);
-
-        // Wait for PDF to finish writing
-        pdfStream.on('finish', () => {
-            // Render success page
-            res.render("success", {
-                pdfName: pdfFileName,
-                username: req.session.user?.username,
-                profile: "customer",
-                pagetitle: "Success",
-                message: 'Your Profile updated successfully!'
-            });
-        });
+        res.redirect("/customer/dashboard");
     } catch (err) {
-        console.error("Database Error:", err);
-        res.status(500).render("500", {
-            username: req.session.user?.username,
-            profile: "customer",
-            pagetitle: "Internal Server Error",
-            error: err.message
-        });
+        console.error("Add Address Error:", err);
+        res.status(500).render("500", { error: "Failed to add address" });
     }
 }];
 
-async function generateCustomerPDF(customerData, outputStream) {
-    return new Promise((resolve, reject) => {
-        try {
-            const doc = new PDFDocument({ size: "A4", margin: 50 });
-            doc.pipe(outputStream);
+// ✏️ Edit Address
+exports.editAddress = [isCustomer, async (req, res) => {
+    try {
+        const { street, city, state, zip_code, address_type } = req.body;
+        const { addressId } = req.params;
+        const customerId = req.session.customerId;
 
-            // Header Section
-            doc.rect(0, 0, 595, 80).fill("#2563eb");
-            doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(24).text("MediVerse", 50, 30);
+        await pool.query("UPDATE customer_addresses SET street=?, city=?, state=?, zip_code=?, address_type=? WHERE address_id=? AND customer_id=?",
+            [street, city, state, zip_code, address_type, addressId, customerId]);
 
-            // Company Logo
-            const iconPath = path.join(__dirname, "../public/img/favicon.png");
-            if (fs.existsSync(iconPath)) {
-                doc.image(iconPath, 500, 20, { width: 50 });
-            }
-
-            let yPosition = 100;
-
-            // Customer Photo (if available)
-            if (customerData.customer_photo) {
-                doc.roundedRect(50, yPosition, 100, 100, 10).stroke();
-                doc.image(customerData.customer_photo, 55, yPosition + 5, { fit: [90, 90] });
-            }
-
-            // Customer Information Section
-            const infoStartX = 180;
-            const labelWidth = 120;
-            const valueStartX = infoStartX + labelWidth + 10;
-            const fontSize = 12;
-            let textYPosition = yPosition; // Aligning with image height
-
-            doc.fontSize(fontSize).fillColor("#000000");
-
-            const addDetailRow = (label, value) => {
-                doc.font("Helvetica-Bold").text(label, infoStartX, textYPosition, { continued: false });
-                doc.font("Helvetica").text(value, valueStartX, textYPosition);
-                textYPosition += 25;
-            };
-
-            addDetailRow("Customer ID:", customer.customer_id || "N/A");
-            addDetailRow("Registered On:", customer.customer_created_at || "N/A");
-            textYPosition += 20;
-            addDetailRow("Name:", customer.customer_name || "N/A");
-            addDetailRow("Email:", customer.customer_email || "N/A");
-            addDetailRow("Phone Number:", customer.customer_ph_no || "N/A");
-            addDetailRow("Phone Number:", customer.customer_balance_amt || "N/A");
-            const addItems = Math.min(addresses.length, 5);
-
-        // Render invoice table rows with proper spacing
-        for (let i = 0; i < addItems; i++) {
-            addDetailRow("Address Type:", addresses.address_type[i] || "N/A");
-            addDetailRow("Street:", addresses.street[i] || "N/A");
-            addDetailRow("City:", addresses.city[i] || "N/A");
-            addDetailRow("State:", addresses.state[i] || "N/A");
-            addDetailRow("Zip Code:", addresses.zip_code[i] || "N/A");
-        }
-        const fedItems = Math.min(feedbacks.length, 5);
-
-        // Render invoice table rows with proper spacing
-        for (let i = 0; i < fedItems; i++) {
-            addDetailRow("Feedback Date:", feedbacks.feedback_date || "N/A");
-            addDetailRow("Rating", feedbacks.rating || "N/A");
-            addDetailRow("Feedback text:", feedbacks.feedback_text || "N/A");
-        }
-            // QR Code Section - Properly Aligned
-            textYPosition += 30;
-            doc.fontSize(14).fillColor("#2563eb").text("Scan QR for Details", 400, textYPosition);
-            textYPosition += 20;
-
-            QRCode.toBuffer(
-                `Customer ID: ${customerData.customer_id}\nName: ${customerData.customer_name}\nPhone: ${customerData.customer_ph_no}\nEMAIL: ${customerData.customer_email}`
-            )
-                .then(qrCodeBuffer => {
-                    doc.image(qrCodeBuffer, 55, textYPosition, { width: 120, height: 120 });
-
-                    // Footer Section with Proper Spacing
-                    doc.rect(0, 750, 595, 50).fill("#2563eb");
-                    doc.fillColor("#ffffff").fontSize(10).text("Created by Poovarasan S.", 50, 765);
-                    doc.text("Email: poovarasansivakumar2003@gmail.com", 50, 780);
-
-
-                    doc.end();
-                    resolve();
-                })
-                .catch(err => reject(err));
-        } catch (err) {
-            reject(err);
-        }
-    });
-}
-
-// Download customer card
-exports.downloadCustomerCard = (req, res) => {
-    const filePath = path.join(__dirname, "../private/customerCards", req.params.filename);
-
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-        console.error("File Not Found:", filePath);
-        return res.status(404).render("404", {
-            username: req.session.user?.username,
-            profile: "customer",
-            pagetitle: "Page Not Found",
-            error: "File Not Found"
-        });
+        res.redirect("/customer/dashboard");
+    } catch (err) {
+        console.error("Edit Address Error:", err);
+        res.status(500).render("500", { error: "Failed to edit address" });
     }
+}];
 
-    // Set headers for downloading the file
-    res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
+// 🗑️ Delete Address
+exports.deleteAddress = [isCustomer, async (req, res) => {
+    try {
+        const { addressId } = req.params;
+        const customerId = req.session.customerId;
 
-    // Send the file
-    res.download(filePath, (err) => {
-        if (err) {
-            console.error("Download Error:", err);
-            res.status(500).render("404", {
-                username: req.session.user?.username,
-                profile: "customer",
-                pagetitle: "Internal Server Error",
-                error: "Failed to download the file"
-            });
-        }
-    });
-};
+        await pool.query("DELETE FROM customer_addresses WHERE address_id=? AND customer_id=?", [addressId, customerId]);
+
+        res.redirect("/customer/dashboard");
+    } catch (err) {
+        console.error("Delete Address Error:", err);
+        res.status(500).render("500", { error: "Failed to delete address" });
+    }
+}];
+
+// 📢 Add Feedback
+exports.addFeedback = [isCustomer, async (req, res) => {
+    try {
+        const { rating, feedback_text } = req.body;
+        const customerId = req.session.customerId;
+
+        await pool.query("INSERT INTO feedbacks (customer_id, rating, feedback_text) VALUES (?, ?, ?)",
+            [customerId, rating, feedback_text]);
+
+        res.redirect("/customer/dashboard");
+    } catch (err) {
+        console.error("Add Feedback Error:", err);
+        res.status(500).render("500", { error: "Failed to add feedback" });
+    }
+}];
+
+// ✏️ Edit Feedback
+exports.editFeedback = [isCustomer, async (req, res) => {
+    try {
+        const { rating, feedback_text } = req.body;
+        const { feedbackId } = req.params;
+        const customerId = req.session.customerId;
+
+        await pool.query("UPDATE feedbacks SET rating=?, feedback_text=? WHERE feedback_id=? AND customer_id=?",
+            [rating, feedback_text, feedbackId, customerId]);
+
+        res.redirect("/customer/dashboard");
+    } catch (err) {
+        console.error("Edit Feedback Error:", err);
+        res.status(500).render("500", { error: "Failed to edit feedback" });
+    }
+}];
+
+// 🗑️ Delete Feedback
+exports.deleteFeedback = [isCustomer, async (req, res) => {
+    try {
+        const { feedbackId } = req.params;
+        const customerId = req.session.customerId;
+
+        await pool.query("DELETE FROM feedbacks WHERE feedback_id=? AND customer_id=?", [feedbackId, customerId]);
+
+        res.redirect("/customer/dashboard");
+    } catch (err) {
+        console.error("Delete Feedback Error:", err);
+        res.status(500).render("500", { error: "Failed to delete feedback" });
+    }
+}];
+
 
 // exports.purchaseMedicine = [isCustomer, async (req, res) => {
 //     try {
