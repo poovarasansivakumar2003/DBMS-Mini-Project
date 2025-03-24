@@ -28,17 +28,14 @@ router.use(checkSession);
 router.use(checkCustomer);
 
 router.get('/customerDashboard', customerController.getCustomerDashboard);
-router.get('/download-invoice/:invoiceNo', customerController.downloadInvoice);
-router.post('/customerDashboard', customerController.updateCustomer); 
+router.post('/update/customerDashboard', customerController.updateCustomer); 
 router.get("/downloadCard/:filename", customerController.downloadCustomerCard);
+router.get('/download-invoice/:invoiceNo', customerController.downloadInvoice);
 
-router.post("/customerDashboard/add", customerController.addAddress);
-router.post("/address/edit/:addressId", customerController.editAddress);
-router.post("/address/delete/:addressId", customerController.deleteAddress);
-
+router.post("/customerDashboard/address/add", customerController.addAddress);
 router.post("/customerDashboard/feedback/add", customerController.addFeedback);
-router.post("/customerDashboard/feedback/edit/:feedbackId", customerController.editFeedback);
-router.post("/customerDashboard/feedback/delete/:feedbackId", customerController.deleteFeedback);
 
+router.post("/customerDashboard/address/deleteOrEdit", customerController.deleteOrEditAddress);
+router.post("/customerDashboard/feedback/deleteOrEdit", customerController.deleteOrEditFeedback);
 
 module.exports = router;

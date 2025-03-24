@@ -48,6 +48,72 @@
   </div>
 </div>
       <% } %>
+      <% if (message==="Your address has been added successfully!" ) { %>
+        <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+      </div>
+    </div>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.href = "/customer/CustomerDashboard";
+    }, 3000); // 3 seconds delay
+  </script>
+      <% } %>
+      <% if (message==="Your address has been deleted successfully!" ) { %>
+          <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+        </div>
+      </div>
+    </div>
+    <script>
+      setTimeout(() => {
+        window.location.href = "/customer/CustomerDashboard";
+      }, 3000); // 3 seconds delay
+    </script>
+      <% } %>
+      <% if (message==="Your address has been updated successfully!" ) { %>
+        <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+      </div>
+    </div>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.href = "/customer/CustomerDashboard";
+    }, 3000); // 3 seconds delay
+  </script>
+      <% } %>
+      <% if (message==="Your feedback has been added successfully!" ) { %>
+        <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+      </div>
+    </div>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.href = "/customer/CustomerDashboard";
+    }, 3000); // 3 seconds delay
+  </script>
+      <% } %>
+      <% if (message==="Your feedback has been deleted successfully!" ) { %>
+          <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+        </div>
+      </div>
+    </div>
+    <script>
+      setTimeout(() => {
+        window.location.href = "/customer/CustomerDashboard";
+      }, 3000); // 3 seconds delay
+    </script>
+      <% } %>
+      <% if (message==="Your feedback has been updated successfully!" ) { %>
+        <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+      </div>
+    </div>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.href = "/customer/CustomerDashboard";
+    }, 3000); // 3 seconds delay
+  </script>
+      <% } %>
       <% if (message==="Added to cart, wait for admin approval" ) { %>
       <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
     </div>

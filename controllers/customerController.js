@@ -28,10 +28,18 @@ const isCustomer = (req, res, next) => {
 exports.getCustomerDashboard = [isCustomer, async (req, res) => {
     try {
         const customerId = req.session.customerId;
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
         // Fetch customer details
         const [customerResult] = await pool.query('SELECT c.customer_id, c.customer_created_at, c.customer_name, c.customer_email, c.customer_ph_no, c.customer_photo, c.customer_balance_amt FROM customers c WHERE c.customer_id = ?', [customerId]);
-        const [addressResult] = await pool.query('SELECT ca.address_type, ca.street, ca.city, ca.state, ca.zip_code FROM customer_addresses ca WHERE ca.customer_id = ?', [customerId]);
-        const [feedbackResult] = await pool.query('SELECT f.rating, f.feedback_text, f.feedback_date FROM feedbacks f WHERE f.customer_id = ?', [customerId]);
+        const [addressResult] = await pool.query('SELECT * FROM customer_addresses ca WHERE ca.customer_id = ?', [customerId]);
+        const [feedbackResult] = await pool.query('SELECT * FROM feedbacks f WHERE f.customer_id = ?', [customerId]);
 
 
         if (!customerResult.length) {
@@ -102,6 +110,263 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
             feedbacks,
             invoice
         });
+
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.deleteOrEditAddress = [isCustomer, async (req, res) => {
+    try {
+        const { address_id, action, street, city, state, zip_code, address_type } = req.body;
+        const customerId = req.session.customerId;
+
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
+
+        // Check if address exists and belongs to customer
+        const [existingAddress] = await pool.execute(
+            "SELECT * FROM customer_addresses WHERE customer_id = ? AND address_id = ?",
+            [customerId, address_id]
+        );
+
+        if (!existingAddress.length) {
+            return res.status(404).render("404", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Not Found",
+                error: "Address not found."
+            });
+        }
+
+        if (action === "delete") {
+            // Delete the address
+            const [deleteResult] = await pool.execute(
+                "DELETE FROM customer_addresses WHERE customer_id = ? AND address_id = ?",
+                [customerId, address_id] // Fixed `addressId` to `address_id`
+            );
+
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "customer",
+                    pagetitle: "Not Found",
+                    error: "Address not found or already deleted."
+                });
+            }
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Success",
+                message: "Your address has been deleted successfully!"
+            });
+        } 
+        
+        if (action === "edit") {
+            // Validate input fields
+            if (!street || !city || !state || !zip_code || !address_type) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "customer",
+                    pagetitle: "Bad Request",
+                    error: "All address fields must be provided."
+                });
+            }
+
+            // Update the address
+            await pool.execute(
+                "UPDATE customer_addresses SET street=?, city=?, state=?, zip_code=?, address_type=? WHERE customer_id = ? AND address_id=?",
+                [street, city, state, zip_code, address_type, customerId, address_id]
+            );
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Success",
+                message: "Your address has been updated successfully!"
+            });
+        }
+
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Bad Request",
+            error: "Invalid action provided."
+        });
+
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.deleteOrEditFeedback = [isCustomer, async (req, res) => {
+    try {
+        const { feedback_id, action, rating, feedback_text } = req.body;
+        const customerId = req.session.customerId;
+
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
+
+        // Check if address exists and belongs to customer
+        const [existingFeedback] = await pool.execute(
+            "SELECT * FROM feedbacks WHERE customer_id = ? AND feedback_id = ?",
+            [customerId, feedback_id]
+        );
+
+        if (!existingFeedback.length) {
+            return res.status(404).render("404", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Not Found",
+                error: "Feedback not found."
+            });
+        }
+
+        if (action === "delete") {
+            // Delete the address
+            const [deleteResult] = await pool.execute("DELETE FROM feedbacks WHERE customer_id = ? AND feedback_id = ?", [customerId, feedback_id]);
+        
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "customer",
+                    pagetitle: "Not Found",
+                    error: "Feedback not found or already deleted."
+                });
+            }
+
+            res.render("success", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Success",
+                message: "Your feedback has been deleted successfully!"
+            });
+        } 
+        
+        if (action === "edit") {
+            // Validate input fields
+            if (!rating || !feedback_text){
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "customer",
+                    pagetitle: "Bad Request",
+                    error: "All Feedback fields must be provided."
+                });
+            }
+
+            await pool.execute(
+                "UPDATE feedbacks SET rating=?, feedback_text=?, feedback_date=CURRENT_TIMESTAMP WHERE customer_id = ? AND feedback_id=?",
+                [rating, feedback_text, customerId, feedback_id]
+            );
+            res.render("success", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Success",
+                message: "Your feedback has been updated successfully!"
+            });
+        }
+
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Bad Request",
+            error: "Invalid action provided."
+        });
+
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+// Add Address
+exports.addAddress = [isCustomer, async (req, res) => {
+    const { street, city, state, zip_code, address_type } = req.body;
+    try {
+        const customerId = req.session.customerId;
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
+        await pool.execute(
+            "INSERT INTO customer_addresses (customer_id, street, city, state, zip_code, address_type) VALUES (?, ?, ?, ?, ?, ?)",
+            [customerId, street, city, state, zip_code, address_type]
+        );
+        res.render("success", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Success",
+            message: "Your address has been added successfully!"
+        });
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+// Add Feedback
+exports.addFeedback = [isCustomer, async (req, res) => {
+    const { rating, feedback_text } = req.body;
+    try {
+        const customerId = req.session.customerId;
+        
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
+        await pool.execute(
+            "INSERT INTO feedbacks (customer_id, rating, feedback_text) VALUES (?, ?, ?)",
+            [customerId, rating, feedback_text]
+        );
+        res.render("success", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Success",
+            message: "Your feedback has been added successfully!"
+        });
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).render("500", {
@@ -132,6 +397,15 @@ exports.updateCustomer = [isCustomer, async (req, res) => {
         });
 
         const customerId = req.session.customerId;
+
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
         const { customer_name, customer_email, customer_ph_no, customer_password } = req.body;
 
         // Fetch customer details including password
@@ -155,10 +429,10 @@ exports.updateCustomer = [isCustomer, async (req, res) => {
         // Ensure passwords match
         const isMatch = await bcrypt.compare(customer_password.trim(), storedPassword);
         if (!isMatch) {
-            return res.status(400).render("login", {
-                pagetitle: 'Login',
-                profile: null,
-                username: null,
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Bad Request",
                 error: "Invalid credentials"
             });
         }
@@ -635,100 +909,7 @@ exports.downloadInvoice = [isCustomer, async (req, res) => {
 }];
 
 
-exports.addAddress = [isCustomer, async (req, res) => {
-    try {
-        const { street, city, state, zip_code, address_type } = req.body;
-        const customerId = req.session.customerId;
 
-        await pool.query("INSERT INTO customer_addresses (customer_id, street, city, state, zip_code, address_type) VALUES (?, ?, ?, ?, ?, ?)",
-            [customerId, street, city, state, zip_code, address_type]);
-
-        res.redirect("/customer/dashboard");
-    } catch (err) {
-        console.error("Add Address Error:", err);
-        res.status(500).render("500", { error: "Failed to add address" });
-    }
-}];
-
-// ✏️ Edit Address
-exports.editAddress = [isCustomer, async (req, res) => {
-    try {
-        const { street, city, state, zip_code, address_type } = req.body;
-        const { addressId } = req.params;
-        const customerId = req.session.customerId;
-
-        await pool.query("UPDATE customer_addresses SET street=?, city=?, state=?, zip_code=?, address_type=? WHERE address_id=? AND customer_id=?",
-            [street, city, state, zip_code, address_type, addressId, customerId]);
-
-        res.redirect("/customer/dashboard");
-    } catch (err) {
-        console.error("Edit Address Error:", err);
-        res.status(500).render("500", { error: "Failed to edit address" });
-    }
-}];
-
-// 🗑️ Delete Address
-exports.deleteAddress = [isCustomer, async (req, res) => {
-    try {
-        const { addressId } = req.params;
-        const customerId = req.session.customerId;
-
-        await pool.query("DELETE FROM customer_addresses WHERE address_id=? AND customer_id=?", [addressId, customerId]);
-
-        res.redirect("/customer/dashboard");
-    } catch (err) {
-        console.error("Delete Address Error:", err);
-        res.status(500).render("500", { error: "Failed to delete address" });
-    }
-}];
-
-// 📢 Add Feedback
-exports.addFeedback = [isCustomer, async (req, res) => {
-    try {
-        const { rating, feedback_text } = req.body;
-        const customerId = req.session.customerId;
-
-        await pool.query("INSERT INTO feedbacks (customer_id, rating, feedback_text) VALUES (?, ?, ?)",
-            [customerId, rating, feedback_text]);
-
-        res.redirect("/customer/dashboard");
-    } catch (err) {
-        console.error("Add Feedback Error:", err);
-        res.status(500).render("500", { error: "Failed to add feedback" });
-    }
-}];
-
-// ✏️ Edit Feedback
-exports.editFeedback = [isCustomer, async (req, res) => {
-    try {
-        const { rating, feedback_text } = req.body;
-        const { feedbackId } = req.params;
-        const customerId = req.session.customerId;
-
-        await pool.query("UPDATE feedbacks SET rating=?, feedback_text=? WHERE feedback_id=? AND customer_id=?",
-            [rating, feedback_text, feedbackId, customerId]);
-
-        res.redirect("/customer/dashboard");
-    } catch (err) {
-        console.error("Edit Feedback Error:", err);
-        res.status(500).render("500", { error: "Failed to edit feedback" });
-    }
-}];
-
-// 🗑️ Delete Feedback
-exports.deleteFeedback = [isCustomer, async (req, res) => {
-    try {
-        const { feedbackId } = req.params;
-        const customerId = req.session.customerId;
-
-        await pool.query("DELETE FROM feedbacks WHERE feedback_id=? AND customer_id=?", [feedbackId, customerId]);
-
-        res.redirect("/customer/dashboard");
-    } catch (err) {
-        console.error("Delete Feedback Error:", err);
-        res.status(500).render("500", { error: "Failed to delete feedback" });
-    }
-}];
 
 
 // exports.purchaseMedicine = [isCustomer, async (req, res) => {

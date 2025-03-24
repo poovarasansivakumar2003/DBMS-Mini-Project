@@ -1,311 +1,533 @@
 <%- include('includes/header') %>
 
-<div class="bg-gradient-to-br from-blue-50 to-white flex flex-col items-center min-h-screen p-4">
-  <!-- Customer Profile -->
-  <div class="mt-4 bg-white p-6 shadow-md rounded-lg w-full max-w-2xl">
-    <h2 class="text-xl font-semibold border-b pb-2 mb-4">Your Profile</h2>
-
-    <!-- Customer Photo -->
-    <div class="flex justify-center my-4">
-      <img src="<%= customer.customer_photo %>" alt="Profile Photo" class="w-24 h-24 rounded-full shadow-md">
+<div class="bg-gradient-to-br from-blue-50 to-white min-h-screen py-8 px-4">
+  <div class="max-w-6xl mx-auto">
+    <!-- Page Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-blue-800">My Health Dashboard</h1>
+      <p class="text-slate-600 mt-2">Manage your profile, addresses, view your purchase history and purchase</p>
     </div>
 
-    <!-- Customer Details -->
-    <div class="space-y-2">
-      <p><strong>ID:</strong> <%= customer.customer_id %></p>
-      <p><strong>Registered On:</strong> <%= new Date(customer.customer_created_at).toLocaleString() %></p>
-      <p><strong>Name:</strong> <%= customer.customer_name %></p>
-      <p><strong>Email:</strong> <%= customer.customer_email %></p>
-      <p><strong>Phone:</strong> <%= customer.customer_ph_no %></p>
-      <p><strong>Balance Amount:</strong> $<%= customer.customer_balance_amt %></p>
-    </div>
+    <!-- Main Content Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left Column - Profile Card -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+          <!-- Profile Header -->
+          <div class="bg-gradient-to-r from-blue-600 to-teal-700 p-6 text-white">
+            <div class="flex justify-center mb-4">
+              <img src="<%= customer.customer_photo %>" alt="Profile Photo" class="w-28 h-28 rounded-full border-4 border-white shadow-lg object-cover">
+            </div>
+            <h2 class="text-2xl font-semibold text-center"><%= customer.customer_name %></h2>
+            <p class="text-teal-100 text-center">Member since <%= new Date(customer.customer_created_at).toLocaleDateString() %></p>
+          </div>
 
-    <!-- Customer Address -->
-    <div class="mt-6 bg-gray-50 p-4 rounded-md">
-      <h3 class="text-lg font-semibold border-b pb-2 mb-2">Saved Addresses</h3>
-      <% if (addresses.length > 0) { %>
-      <% addresses.forEach(address => { %>
-      <div class="border p-3 rounded-md mb-2">
-        <p><strong><%= address.address_type %>:</strong> <%= address.street %>, <%= address.city %>, <%= address.state %> - <%= address.zip_code %></p>
+          <!-- Customer Details -->
+          <div class="p-6">
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <i class="fa-solid fa-id-card text-teal-600 w-8"></i>
+                <span class="text-gray-700"><%= customer.customer_id %></span>
+              </div>
+              <div class="flex items-center">
+                <i class="fa-solid fa-envelope text-teal-600 w-8"></i>
+                <span class="text-gray-700"><%= customer.customer_email %></span>
+              </div>
+              <div class="flex items-center">
+                <i class="fa-solid fa-phone text-teal-600 w-8"></i>
+                <span class="text-gray-700"><%= customer.customer_ph_no %></span>
+              </div>
+              <div class="flex items-center">
+                <i class="fa-solid fa-wallet text-teal-600 w-8"></i>
+                <span class="text-gray-700 font-semibold">Balance: $<%= customer.customer_balance_amt %></span>
+              </div>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-gray-200">
+              <h3 class="text-lg font-semibold text-blue-800 mb-4">Update Profile</h3>
+              <form action="/customer/update/customerDashboard" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
+
+                <div class="space-y-4">
+                  <div>
+                    <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-user text-gray-400"></i>
+                      </div>
+                      <input type="text" id="customer_name" name="customer_name" value="<%= customer.customer_name %>" required class="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-envelope text-gray-400"></i>
+                      </div>
+                      <input type="email" id="customer_email" name="customer_email" value="<%= customer.customer_email %>" required class="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="customer_ph_no" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-phone text-gray-400"></i>
+                      </div>
+                      <input type="tel" id="customer_ph_no" name="customer_ph_no" value="<%= customer.customer_ph_no %>" required class="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="customer_photo" class="block text-sm font-medium text-gray-700 mb-1">Profile Photo</label>
+                    <input type="file" id="customer_photo" name="customer_photo" accept="image/*" class="block w-full py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="previewImage(event)">
+
+                    <div class="mt-3 flex items-center gap-4">
+                      <img id="image-preview" class="w-16 h-16 rounded-full border border-gray-300 object-cover hidden" alt="Profile Preview">
+                      <button type="button" id="remove-image" class="hidden text-sm text-red-500 hover:text-red-700 font-medium" onclick="removeImage()">Remove</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="customer_password" class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-lock text-gray-400"></i>
+                      </div>
+                      <input type="password" id="customer_password" name="customer_password" required class="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <i id="password-toggle" class="fas fa-eye text-gray-400 hover:text-gray-600 cursor-pointer"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="submit" id="submitBtn" class="w-full flex justify-center py-2 px-4 rounded-lg text-white bg-blue-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">
+                    <div class="flex items-center">
+                      <i class="fas fa-save mr-2"></i>
+                      <span id="submitText">Save Changes</span>
+                    </div>
+                    <span id="loadingSpinner" class="hidden ml-2">
+                      <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
-      <% }) %>
-      <% } else { %>
-      <p class="text-gray-500">No address saved.</p>
-      <% } %>
-    </div>
 
-    <!-- Customer Feedback -->
-    <div class="mt-6 bg-gray-50 p-4 rounded-md">
-      <h3 class="text-lg font-semibold border-b pb-2 mb-2">Your Feedback</h3>
-      <% if (feedbacks.length > 0) { %>
-      <% feedbacks.forEach(feedback => { %>
-      <div class="border p-3 rounded-md mb-2">
-        <p><strong>Date:</strong> <%= new Date(feedback.feedback_date).toLocaleString() %></p>
-        <p><strong>Rating:</strong> ⭐ <%= feedback.rating %> / 5</p>
-        <p><strong>Feedback:</strong> <%= feedback.feedback_text %></p>
+      <!-- Right Column - Tabbed Content -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+          <!-- Tab Navigation -->
+          <div class="flex border-b">
+            <button onclick="openTab('addresses')" id="addresses-tab" class="tab-btn flex-1 py-4 font-medium text-center text-blue-800 bg-teal-50 border-b-2 border-blue-600">
+              <i class="fa-solid fa-map-marker-alt mr-2"></i>Addresses
+            </button>
+            <button onclick="openTab('feedback')" id="feedback-tab" class="tab-btn flex-1 py-4 font-medium text-center text-gray-600">
+              <i class="fa-solid fa-comment-dots mr-2"></i>Feedback
+            </button>
+            <button onclick="openTab('invoices')" id="invoices-tab" class="tab-btn flex-1 py-4 font-medium text-center text-gray-600">
+              <i class="fa-solid fa-file-invoice-dollar mr-2"></i>Purchase History
+            </button>
+          </div>
+
+          <!-- Tab Content -->
+          <div class="p-6">
+            <!-- Addresses Tab -->
+            <div id="addresses-content" class="tab-content">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-blue-800">Your Saved Addresses</h3>
+                <button onclick="toggleAddAddressForm()" class="flex items-center bg-blue-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg">
+                  <i class="fa-solid fa-plus mr-2"></i> Add New
+                </button>
+              </div>
+
+              <!-- Add Address Form (Hidden by default) -->
+              <div id="add-address-form" class="hidden mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 class="text-lg font-medium text-blue-800 mb-4">Add New Address</h4>
+                <form action="/customer/customerDashboard/address/add" method="POST" class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Street:</label>
+                      <input type="text" name="street" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">City:</label>
+                      <input type="text" name="city" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">State:</label>
+                      <input type="text" name="state" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">ZIP Code:</label>
+                      <input type="text" name="zip_code" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Address Type:</label>
+                    <select name="address_type" class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      <option value="Home">Home</option>
+                      <option value="Work">Work</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div class="flex justify-end gap-2">
+                    <button type="button" onclick="toggleAddAddressForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg">Save Address</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Address Cards -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <% if (addresses.length > 0) { %>
+                <% addresses.forEach(address => { %>
+                <div class="border rounded-lg shadow-sm hover:shadow-md transition p-4 bg-white">
+                  <div class="flex justify-between items-start mb-2">
+                    <div>
+                      <span class="inline-block bg-teal-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full"><%= address.address_type %></span>
+                      <h4 class="text-sm text-gray-500 mt-1">ID: <%= address.address_id %></h4>
+                    </div>
+                    <div class="flex gap-2">
+                      <button onclick="toggleEditForm('address-<%= address.address_id %>')" class="text-teal-600 hover:text-blue-800">
+                        <i class="fa-solid fa-edit"></i>
+                      </button>
+                      <form action="/customer/customerDashboard/address/deleteOrEdit" method="POST" class="inline">
+                        <input type="hidden" name="address_id" value="<%= address.address_id %>">
+                        <button type="submit" name="action" value="delete" class="text-red-600 hover:text-red-800" onclick="return confirm('Are you sure you want to delete this address?')">
+                          <i class="fa-solid fa-trash-alt"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 text-gray-700">
+                    <p><%= address.street %></p>
+                    <p><%= address.city %>, <%= address.state %> <%= address.zip_code %></p>
+                  </div>
+
+                  <!-- Edit Address Form (Hidden) -->
+                  <form id="address-<%= address.address_id %>" action="/customer/customerDashboard/address/deleteOrEdit" method="POST" class="mt-4 space-y-3 hidden">
+                    <input type="hidden" name="address_id" value="<%= address.address_id %>">
+
+                    <div>
+                      <label for="address_type_<%= address.address_id %>" class="block text-xs font-medium text-gray-700">Address Type</label>
+                      <select id="address_type_<%= address.address_id %>" name="address_type" required class="w-full border p-2 rounded mt-1">
+                        <option value="Home" <%= address.address_type === 'Home' ? 'selected' : '' %>>Home</option>
+                        <option value="Work" <%= address.address_type === 'Work' ? 'selected' : '' %>>Work</option>
+                        <option value="Other" <%= address.address_type === 'Other' ? 'selected' : '' %>>Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label for="street_<%= address.address_id %>" class="block text-xs font-medium text-gray-700">Street</label>
+                      <input type="text" id="street_<%= address.address_id %>" name="street" value="<%= address.street %>" required class="w-full border p-2 rounded mt-1">
+                    </div>
+
+                    <div>
+                      <label for="city_<%= address.address_id %>" class="block text-xs font-medium text-gray-700">City</label>
+                      <input type="text" id="city_<%= address.address_id %>" name="city" value="<%= address.city %>" required class="w-full border p-2 rounded mt-1">
+                    </div>
+
+                    <div>
+                      <label for="state_<%= address.address_id %>" class="block text-xs font-medium text-gray-700">State</label>
+                      <input type="text" id="state_<%= address.address_id %>" name="state" value="<%= address.state %>" required class="w-full border p-2 rounded mt-1">
+                    </div>
+
+                    <div>
+                      <label for="zip_code_<%= address.address_id %>" class="block text-xs font-medium text-gray-700">ZIP Code</label>
+                      <input type="text" id="zip_code_<%= address.address_id %>" name="zip_code" value="<%= address.zip_code %>" required class="w-full border p-2 rounded mt-1">
+                    </div>
+
+                    <button type="submit" name="action" value="edit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">Save Changes</button>
+                  </form>
+                </div>
+                <% }) %>
+                <% } else { %>
+                <div class="col-span-2 py-8 text-center">
+                  <div class="text-gray-400 mb-2"><i class="fa-solid fa-map-marker-alt text-3xl"></i></div>
+                  <p class="text-gray-500">You haven't saved any addresses yet.</p>
+                  <button onclick="toggleAddAddressForm()" class="mt-3 text-teal-600 hover:text-blue-800 font-medium">+ Add your first address</button>
+                </div>
+                <% } %>
+              </div>
+            </div>
+
+            <!-- Feedback Tab -->
+            <div id="feedback-content" class="tab-content hidden">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-blue-800">Your Feedback</h3>
+                <button onclick="toggleAddFeedbackForm()" class="flex items-center bg-blue-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg">
+                  <i class="fa-solid fa-plus mr-2"></i> Add Feedback
+                </button>
+              </div>
+
+              <!-- Add Feedback Form (Hidden by default) -->
+              <div id="add-feedback-form" class="hidden mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 class="text-lg font-medium text-blue-800 mb-4">Share Your Experience</h4>
+                <form action="/customer/customerDashboard/feedback/add" method="POST" class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Rating:</label>
+                    <div class="flex items-center">
+                      <div class="rating flex gap-1">
+                        <% for(let i = 1; i <= 5; i++) { %>
+                        <input type="radio" id="star<%= i %>" name="rating" value="<%= i %>" class="hidden" <%= i === 5 ? 'checked' : '' %>>
+                        <label for="star<%= i %>" class="text-2xl cursor-pointer text-gray-300 hover:text-yellow-400 peer-checked:text-yellow-400">★</label>
+                        <% } %>
+                      </div>
+                      <span class="ml-2 text-sm text-gray-500">(1-5 stars)</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Your Comments:</label>
+                    <textarea name="feedback_text" required class="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-32" placeholder="Tell us about your experience..."></textarea>
+                  </div>
+
+                  <div class="flex justify-end gap-2">
+                    <button type="button" onclick="toggleAddFeedbackForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg">Submit Feedback</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Feedback Cards -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <% if (feedbacks.length > 0) { %>
+                <% feedbacks.forEach(feedback => { %>
+                <div class="border rounded-lg shadow-sm hover:shadow-md transition p-4 bg-white">
+                  <div class="flex justify-between items-start mb-2">
+                    <div>
+                      <div class="flex">
+                        <% for(let i = 1; i <= 5; i++) { %>
+                        <span class="text-lg <%= i <= feedback.rating ? 'text-yellow-400' : 'text-gray-300' %>">★</span>
+                        <% } %>
+                      </div>
+                      <p class="text-xs text-gray-500 mt-1">
+                        <i class="fa-regular fa-calendar-alt mr-1"></i>
+                        <%= new Date(feedback.feedback_date).toLocaleDateString() %>
+                      </p>
+                    </div>
+                    <div class="flex gap-2">
+                      <button onclick="toggleEditForm('feedback-<%= feedback.feedback_id %>')" class="text-teal-600 hover:text-blue-800">
+                        <i class="fa-solid fa-edit"></i>
+                      </button>
+                      <form action="/customer/customerDashboard/feedback/deleteOrEdit" method="POST" class="inline">
+                        <input type="hidden" name="feedback_id" value="<%= feedback.feedback_id %>">
+                        <button type="submit" name="action" value="delete" class="text-red-600 hover:text-red-800" onclick="return confirm('Are you sure you want to delete this feedback?')">
+                          <i class="fa-solid fa-trash-alt"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <div class="mt-3">
+                    <p class="text-gray-700"><%= feedback.feedback_text %></p>
+                  </div>
+
+                  <!-- Edit Feedback Form (Hidden) -->
+                  <form id="feedback-<%= feedback.feedback_id %>" action="/customer/customerDashboard/feedback/deleteOrEdit" method="POST" class="mt-4 space-y-3 hidden">
+                    <input type="hidden" name="feedback_id" value="<%= feedback.feedback_id %>">
+
+                    <div>
+                      <label for="rating_<%= feedback.feedback_id %>" class="block text-xs font-medium text-gray-700">Rating (1-5):</label>
+                      <input type="number" min="1" max="5" id="rating_<%= feedback.feedback_id %>" name="rating" value="<%= feedback.rating %>" required class="w-full border p-2 rounded mt-1">
+                    </div>
+
+                    <div>
+                      <label for="feedback_text_<%= feedback.feedback_id %>" class="block text-xs font-medium text-gray-700">Feedback:</label>
+                      <textarea id="feedback_text_<%= feedback.feedback_id %>" name="feedback_text" required class="w-full border p-2 rounded mt-1 min-h-24"><%= feedback.feedback_text %></textarea>
+                    </div>
+
+                    <button type="submit" name="action" value="edit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">Update Feedback</button>
+                  </form>
+                </div>
+                <% }) %>
+                <% } else { %>
+                <div class="col-span-2 py-8 text-center">
+                  <div class="text-gray-400 mb-2"><i class="fa-solid fa-comment-dots text-3xl"></i></div>
+                  <p class="text-gray-500">You haven't shared any feedback yet.</p>
+                  <button onclick="toggleAddFeedbackForm()" class="mt-3 text-teal-600 hover:text-blue-800 font-medium">+ Share your first experience</button>
+                </div>
+                <% } %>
+              </div>
+            </div>
+
+            <!-- Purchase History Tab -->
+            <div id="invoices-content" class="tab-content hidden">
+              <h3 class="text-xl font-semibold text-blue-800 mb-6">Your Purchase History</h3>
+
+              <% if (invoice && invoice.length > 0) { %>
+              <div class="space-y-4">
+                <% invoice.forEach(row => { %>
+                <div class="border rounded-lg shadow-sm hover:shadow-md transition overflow-hidden bg-white">
+                  <!-- Invoice Header -->
+                  <div class="bg-gradient-to-r from-teal-50 to-blue-50 p-4 border-b flex flex-wrap justify-between items-center">
+                    <div>
+                      <h4 class="font-semibold text-blue-800">Invoice #<%= row.invoice_no %></h4>
+                      <p class="text-sm text-gray-600"><%= new Date(row.invoice_time).toLocaleDateString() %></p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-sm text-gray-600">Assisted by: <span class="font-medium"><%= row.admin_username || 'N/A' %></span></p>
+                      <button class="mt-2 bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-teal-700 text-sm" onclick="downloadInvoice('<%= row.invoice_no %>')">
+                        <i class="fa-solid fa-download mr-1"></i> Download
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Invoice Details -->
+                  <div class="p-4">
+                    <!-- Medicines Table -->
+                    <div class="overflow-x-auto mb-4">
+                      <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Composition</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
+                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                            <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                          <% 
+                                const medicines = row.medicine_names.split(', ');
+                                const compositions = row.medicine_compositions.split(', ');
+                                const suppliers = row.supplier_names.split(', ');
+                                const expiryDates = row.medicine_expiry_dates.split(', ');
+                                const prices = row.medicine_prices.split(', ');
+                                const quantities = row.purchased_quantities.split(', ');
+                                const totals = row.total_amt.split(', ');
+                                
+                                for(let i = 0; i < medicines.length; i++) { 
+                              %>
+                          <tr>
+                            <td class="px-3 py-2 text-sm text-gray-800"><%= medicines[i] %></td>
+                            <td class="px-3 py-2 text-sm text-gray-600"><%= compositions[i] %></td>
+                            <td class="px-3 py-2 text-sm text-gray-600"><%= suppliers[i] %></td>
+                            <td class="px-3 py-2 text-sm text-gray-600"><%= expiryDates[i] %></td>
+                            <td class="px-3 py-2 text-sm text-gray-800 text-right">₹<%= prices[i] %></td>
+                            <td class="px-3 py-2 text-sm text-gray-800 text-center"><%= quantities[i] %></td>
+                            <td class="px-3 py-2 text-sm text-gray-800 text-right">₹<%= totals[i] %></td>
+                          </tr>
+                          <% } %>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <% }); %>
+              </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
       </div>
-      <% }) %>
-      <% } else { %>
-      <p class="text-gray-500">No feedback available.</p>
-      <% } %>
     </div>
   </div>
+</div>
+<script>
+  // Toggle password visibility
+  function togglePassword() {
+    const passwordField = document.getElementById('customer_password');
+    const passwordToggle = document.getElementById('password-toggle');
 
-  <!-- Update Profile Form -->
-  <form action="/customer/customerDashboard" method="POST" enctype="multipart/form-data" class="mt-4 w-full max-w-2xl bg-white p-6 shadow-md rounded-lg">
-    <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
-
-    <% if (typeof error !=="undefined" && error) { %>
-    <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-      <div class="flex items-center">
-        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
-        <p class="text-sm text-red-700">
-          <%= error %>
-        </p>
-      </div>
-    </div>
-    <% } %>
-
-    <h2 class="text-xl font-semibold mb-4">Update Profile</h2>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Full Name Field -->
-      <div>
-        <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-1">
-          Name
-        </label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fa-solid fa-user text-gray-400"></i>
-          </div>
-          <input type="text" id="customer_name" name="customer_name" value="<%= customer.customer_name %>" required class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
-                             text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 
-                             focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter your full name">
-        </div>
-      </div>
-
-      <!-- Email Field -->
-      <div>
-        <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-1">
-          Email Address
-        </label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fa-solid fa-envelope text-gray-400"></i>
-          </div>
-          <input type="email" id="customer_email" name="customer_email" value="<%= customer.customer_email %>" required class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
-                             text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 
-                             focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter your email address">
-        </div>
-      </div>
-
-      <!-- Phone Number Field -->
-      <div>
-        <label for="customer_ph_no" class="block text-sm font-medium text-gray-700 mb-1">
-          Phone Number
-        </label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fa-solid fa-phone text-gray-400"></i>
-          </div>
-          <input type="tel" id="customer_ph_no" name="customer_ph_no" value="<%= customer.customer_ph_no %>" required class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
-                             text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 
-                             focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter your phone number">
-        </div>
-      </div>
-
-      <div>
-        <label for="customer_photo" class="block text-sm font-medium text-gray-700 mb-1">Upload Photo <span class="text-red-500">Only image files are allowed!</span></label>
-        <input type="file" id="customer_photo" name="customer_photo" accept="image/*" class="block w-full py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" onchange="previewImage(event)">
-
-        <div class="mt-3 flex items-center gap-4">
-          <img id="image-preview" class="w-24 h-24 rounded-full border border-gray-300 object-cover hidden shadow-md" alt="Profile Preview">
-          <button type="button" id="remove-image" class="hidden text-sm text-red-500 hover:text-red-700 font-medium" onclick="removeImage()">Remove</button>
-        </div>
-      </div>
-
-      <div>
-        <label for="customer_password" class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-lock text-gray-400"></i>
-          </div>
-          <input type="password" id="customer_password" name="customer_password" required class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter your password">
-          <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-            <i id="password-toggle" class="fas fa-eye text-gray-400 hover:text-gray-600 cursor-pointer"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="mt-4">
-      <button type="submit" id="submitBtn" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-        <div class="flex items-center">
-          <i class="fas fa-sign-in-alt mr-2"></i>
-          <span id="submitText">Save Changes</span>
-        </div>
-        <span id="loadingSpinner" class="hidden ml-2">
-          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </span>
-      </button>
-    </div>
-  </form>
-
-  <script>
-    function togglePassword() {
-      const passwordInput = document.getElementById('customer_password');
-      const passwordToggle = document.getElementById('password-toggle');
-
-      if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        passwordToggle.classList.replace('fa-eye', 'fa-eye-slash');
-      } else {
-        passwordInput.type = 'password';
-        passwordToggle.classList.replace('fa-eye-slash', 'fa-eye');
-      }
+    if (passwordField.type === 'password') {
+      passwordField.type = 'text';
+      passwordToggle.classList.remove('fa-eye');
+      passwordToggle.classList.add('fa-eye-slash');
+    } else {
+      passwordField.type = 'password';
+      passwordToggle.classList.remove('fa-eye-slash');
+      passwordToggle.classList.add('fa-eye');
     }
+  }
 
-    function previewImage(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const imgElement = document.getElementById("image-preview");
-          const removeButton = document.getElementById("remove-image");
-          imgElement.src = e.target.result;
-          imgElement.classList.remove("hidden");
-          removeButton.classList.remove("hidden");
-        };
-        reader.readAsDataURL(file);
-      }
+  // Preview image before upload
+  function previewImage(event) {
+    const preview = document.getElementById('image-preview');
+    const removeBtn = document.getElementById('remove-image');
+    const file = event.target.files[0];
+
+    if (file) {
+      preview.src = URL.createObjectURL(file);
+      preview.classList.remove('hidden');
+      removeBtn.classList.remove('hidden');
     }
+  }
 
-    function removeImage() {
-      document.getElementById("image-preview").classList.add("hidden");
-      document.getElementById("remove-image").classList.add("hidden");
-      document.getElementById("customer_photo").value = "";
-    }
+  // Remove image preview
+  function removeImage() {
+    const preview = document.getElementById('image-preview');
+    const removeBtn = document.getElementById('remove-image');
+    const fileInput = document.getElementById('customer_photo');
 
-    document.querySelector('form').addEventListener('submit', function() {
-      document.getElementById('submitBtn').disabled = true;
-      document.getElementById('submitText').textContent = 'Changing Profile...';
-      document.getElementById('loadingSpinner').classList.remove('hidden');
+    preview.src = '';
+    preview.classList.add('hidden');
+    removeBtn.classList.add('hidden');
+    fileInput.value = '';
+  }
+
+  // Tab navigation
+  function openTab(tabName) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => content.classList.add('hidden'));
+
+    // Remove active class from all tab buttons
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      btn.classList.remove('bg-blue-50', 'text-blue-800', 'border-b-2', 'border-blue-600');
+      btn.classList.add('text-gray-600');
     });
-  </script>
 
+    // Show the selected tab content
+    document.getElementById(tabName + '-content').classList.remove('hidden');
 
-  <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-6">
-    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Customer Invoice</h2>
+    // Add active class to the selected tab button
+    const activeTab = document.getElementById(tabName + '-tab');
+    activeTab.classList.add('bg-blue-50', 'text-blue-800', 'border-b-2', 'border-blue-600');
+    activeTab.classList.remove('text-gray-600');
+  }
 
-    <% if (invoice.length > 0) { %>
-    <div class="overflow-x-auto">
-      <table class="min-w-full bg-white border border-gray-300">
-        <thead>
-          <tr class="bg-blue-600 text-white">
-            <th class="px-4 py-2">Invoice No</th>
-            <th class="px-4 py-2">Date</th>
-            <th class="px-4 py-2">Admin</th>
-            <th class="px-4 py-2">Medicines</th>
-            <th class="px-4 py-2">Composition</th>
-            <th class="px-4 py-2">Suppliers</th>
-            <th class="px-4 py-2">Expiry Dates</th>
-            <th class="px-4 py-2">Prices</th>
-            <th class="px-4 py-2">Qty</th>
-            <th class="px-4 py-2">Total</th>
-            <th class="px-4 py-2">Payable</th>
-            <th class="px-4 py-2">Prev Balance</th>
-            <th class="px-4 py-2">Discount</th>
-            <th class="px-4 py-2">Net Total</th>
-            <th class="px-4 py-2">Paid</th>
-            <th class="px-4 py-2">Payment Date</th>
-            <th class="px-4 py-2">Balance</th>
-            <th class="px-4 py-2">Bill</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% invoice.forEach(row => { %>
-          <tr class="border-b hover:bg-gray-100">
-            <td class="px-4 py-2"><%= row.invoice_no %></td>
-            <td class="px-4 py-2"><%= new Date(row.invoice_time).toLocaleString() %></td>
-            <td class="px-4 py-2"><%= row.admin_username || 'N/A' %></td>
-            <td class="px-4 py-2"><%- row.medicine_names.split(', ').join('<br>') %></td>
-            <td class="px-4 py-2"><%- row.medicine_compositions.split(', ').join('<br>') %></td>
-            <td class="px-4 py-2"><%- row.supplier_names.split(', ').join('<br>') %></td>
-            <td class="px-4 py-2"><%- row.medicine_expiry_dates.split(', ').join('<br>') %></td>
-            <td class="px-4 py-2 text-right"><%- row.medicine_prices.split(', ').join('<br>') %></td>
-            <td class="px-4 py-2 text-center"><%- row.purchased_quantities.split(', ').join('<br>') %></td>
-            <td class="px-4 py-2 text-right">₹<%- row.total_amt.split(', ').join('<br>') %></td>
-            <td class="px-4 py-2 text-right">₹<%= row.actual_amt_to_pay %></td>
-            <td class="px-4 py-2 text-right">₹<%= row.prev_balance %></td>
-            <td class="px-4 py-2 text-right">₹<%= row.discount %></td>
-            <td class="px-4 py-2 text-right">₹<%= row.net_total %></td>
-            <td class="px-4 py-2 text-right text-green-600 font-semibold">₹<%= row.amount_paid %></td>
-            <td class="px-4 py-2"><%= row.payment_date ? new Date(row.payment_date).toLocaleString() : 'N/A' %></td>
-            <td class="px-4 py-2 text-right text-red-600 font-semibold">₹<%= row.curr_balance %></td>
-            <td><button class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700" onclick="downloadInvoice('<%= row.invoice_no %>')">
-                Download
-              </button></td>
-            <script>
-              function downloadInvoice(invoiceNo) {
-                window.location.href = `/customer/download-invoice/${invoiceNo}`;
-              }
-            </script>
-          </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-    <% } else { %>
-    <p class="text-gray-600">No invoices found for this customer.</p>
-    <% } %>
-  </div>
+  // Toggle add address form
+  function toggleAddAddressForm() {
+    const form = document.getElementById('add-address-form');
+    form.classList.toggle('hidden');
+  }
 
+  // Toggle edit forms
+  function toggleEditForm(id) {
+    const form = document.getElementById(id);
+    form.classList.toggle('hidden');
+  }
 
+  // Toggle add feedback form
+  function toggleAddFeedbackForm() {
+    const form = document.getElementById('add-feedback-form');
+    form.classList.toggle('hidden');
+  }
 
+  // Download invoice (this would likely connect to a backend endpoint)
+  function downloadInvoice(invoiceNo) {
+    window.location.href = `/customer/invoice/download/${invoiceNo}`;
+  }
 
-  <h2>📍 Your Addresses</h2>
-  <ul>
-    <% addresses.forEach(address => { %>
-    <li>
-      <strong><%= address.address_type %></strong>: <%= address.street %>, <%= address.city %>, <%= address.state %> - <%= address.zip_code %>
-      <form action="/customer/address/edit/<%= address.address_id %>" method="POST">
-        <input type="text" name="street" placeholder="Street" value="<%= address.street %>" required>
-        <input type="text" name="city" placeholder="City" value="<%= address.city %>" required>
-        <input type="text" name="state" placeholder="State" value="<%= address.state %>" required>
-        <input type="text" name="zip_code" placeholder="Zip Code" value="<%= address.zip_code %>" required>
-        <select name="address_type">
-          <option value="Home" <%= address.address_type === "Home" ? "selected" : "" %>>Home</option>
-          <option value="Work" <%= address.address_type === "Work" ? "selected" : "" %>>Work</option>
-          <option value="Other" <%= address.address_type === "Other" ? "selected" : "" %>>Other</option>
-        </select>
-        <button type="submit">Edit</button>
-      </form>
-      <form action="/customer/address/delete/<%= address.address_id %>" method="POST">
-        <button type="submit">Delete</button>
-      </form>
-    </li>
-    <% }) %>
-  </ul>
-
-  <h2>📝 Your Feedback</h2>
-  <ul>
-    <% feedbacks.forEach(feedback => { %>
-    <li>
-      ⭐ <%= feedback.rating %>/5 - "<%= feedback.feedback_text %>"
-      <form action="/customer/feedback/edit/<%= feedback.feedback_id %>" method="POST">
-        <input type="number" name="rating" min="1" max="5" value="<%= feedback.rating %>" required>
-        <input type="text" name="feedback_text" value="<%= feedback.feedback_text %>" required>
-        <button type="submit">Edit</button>
-      </form>
-      <form action="/customer/feedback/delete/<%= feedback.feedback_id %>" method="POST">
-        <button type="submit">Delete</button>
-      </form>
-    </li>
-    <% }) %>
-  </ul>
-
-
-  <%- include('includes/footer') %>
+  // Initialize the first tab on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set the first tab as active by default
+    openTab('addresses');
+  });
+</script>
+<%- include('includes/footer') %>
