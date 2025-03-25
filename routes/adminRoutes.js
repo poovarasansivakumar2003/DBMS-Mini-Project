@@ -27,11 +27,12 @@ const checkAdmin = (req, res, next) => {
 router.use(checkSession);
 router.use(checkAdmin);
 
-router.get('/customer/photo/:filename', adminController.getCustomerPhoto);
 router.get('/adminDashboard', adminController.getAdminDashboard);
-router.post('/adminDashboard/addMedicine', adminController.addMedicine);
-router.post('/adminDashboard/editDeleteMedicine', adminController.deleteOrEditMedicine);
 router.post('/adminDashboard/editDeleteCustomer', adminController.deleteOrEditCustomer);
-router.post('/processOrder', adminController.processOrder);
+
+
+// router.post('/adminDashboard/addMedicine', adminController.addMedicine);
+// router.post('/adminDashboard/editDeleteMedicine', adminController.deleteOrEditMedicine);
+// router.post('/processOrder', adminController.processOrder);
 
 module.exports = router;

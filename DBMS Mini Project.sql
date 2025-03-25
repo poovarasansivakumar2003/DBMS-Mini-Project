@@ -27,12 +27,12 @@ describe customers;
 -- Customers Addresses Table
 CREATE TABLE customer_addresses (
     address_id INT AUTO_INCREMENT PRIMARY KEY,
+    address_type ENUM('Home', 'Work', 'Other'),  -- Categorizing addresses
     customer_id INT,
     street VARCHAR(100),
     city VARCHAR(50),
     state VARCHAR(50),
     zip_code VARCHAR(10),
-    address_type ENUM('Home', 'Work', 'Other'),  -- Categorizing addresses
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 describe customer_addresses;
@@ -168,26 +168,6 @@ BEGIN
     END IF;
 END$$
 
--- Stored Procedure: Prevent Purchase of Expired Medicine
-CREATE PROCEDURE PreventPurchaseOfExpiredStock(IN p_medicine_id INT)
-BEGIN
-    DECLARE medicine_expiry DATE;
-    SELECT medicine_expiry_date INTO medicine_expiry FROM medicines WHERE medicine_id = p_medicine_id;
-    IF medicine_expiry IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Medicine not found!';
-    ELSEIF medicine_expiry < CURDATE() THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot purchase expired medicine!';
-    END IF;
-END$$
-
--- Trigger to prevent purchase of expired stock
-CREATE TRIGGER prevent_purchase_of_expired_stock
-BEFORE INSERT ON purchases
-FOR EACH ROW
-BEGIN
-    CALL PreventPurchaseOfExpiredStock(NEW.medicine_id);
-END$$
-
 -- Stored Procedure: Calculate Total Amount for Purchases
 CREATE PROCEDURE CalculateTotalAmount(IN p_medicine_id INT, IN p_purchased_quantity INT, OUT p_total_amount DECIMAL(10,2))
 BEGIN
@@ -220,18 +200,32 @@ BEGIN
 END$$
 
 -- Stored Procedure: Reduce Stock on Purchase
-CREATE PROCEDURE ReduceStockOnPurchase(IN p_medicine_id INT, IN p_supplier_id INT, IN p_purchased_quantity INT)
+CREATE PROCEDURE ReduceStockOnPurchase(
+    IN p_medicine_id INT, 
+    IN p_supplier_id INT, 
+    IN p_purchased_quantity INT
+)
 BEGIN
     DECLARE available_stock INT;
-    SELECT stock_quantity INTO available_stock FROM stocks 
-    WHERE medicine_id = p_medicine_id AND supplier_id = p_supplier_id;
-    
-    IF available_stock IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Stock not found!';
-    ELSEIF available_stock < p_purchased_quantity THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for this purchase!';
-    ELSE
-        UPDATE stocks SET stock_quantity = stock_quantity - p_purchased_quantity WHERE medicine_id = p_medicine_id AND supplier_id = p_supplier_id;
+
+    -- Check if supplier_id is provided
+    IF p_supplier_id IS NOT NULL THEN
+        -- Get available stock for the given medicine and supplier
+        SELECT stock_quantity INTO available_stock 
+        FROM stocks 
+        WHERE medicine_id = p_medicine_id AND supplier_id = p_supplier_id;
+        
+        -- Validate stock availability
+        IF available_stock IS NULL THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Stock not found for the given supplier!';
+        ELSEIF available_stock < p_purchased_quantity THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for this purchase!';
+        ELSE
+            -- Reduce stock
+            UPDATE stocks 
+            SET stock_quantity = stock_quantity - p_purchased_quantity 
+            WHERE medicine_id = p_medicine_id AND supplier_id = p_supplier_id;
+        END IF;
     END IF;
 END$$
 
@@ -240,8 +234,31 @@ CREATE TRIGGER reduce_stock_on_purchase_before_insert
 BEFORE INSERT ON purchases
 FOR EACH ROW
 BEGIN
-    CALL ReduceStockOnPurchase(NEW.medicine_id, NEW.supplier_id, NEW.purchased_quantity);
+    -- Call procedure only if supplier_id is provided
+    IF NEW.supplier_id IS NOT NULL THEN
+        CALL ReduceStockOnPurchase(NEW.medicine_id, NEW.supplier_id, NEW.purchased_quantity);
+    END IF;
 END$$
+
+-- Trigger: Reduce or add stock on purchase update
+CREATE TRIGGER reduce_stock_on_purchase_before_update
+BEFORE UPDATE ON purchases
+FOR EACH ROW
+BEGIN
+    -- If the supplier_id is changed, update stock for both old and new suppliers
+    IF OLD.supplier_id IS NOT NULL THEN
+        -- Revert stock for old supplier
+        UPDATE stocks 
+        SET stock_quantity = stock_quantity + OLD.purchased_quantity
+        WHERE medicine_id = OLD.medicine_id AND supplier_id = OLD.supplier_id;
+    END IF;
+
+    IF NEW.supplier_id IS NOT NULL THEN
+        -- Deduct stock for new supplier
+        CALL ReduceStockOnPurchase(NEW.medicine_id, NEW.supplier_id, NEW.purchased_quantity);
+    END IF;
+END$$
+
 
 -- Stored Procedure: Restore Stock on Purchase Deletion
 CREATE PROCEDURE RestoreStockOnPurchaseDelete(IN p_medicine_id INT, IN p_supplier_id INT, IN p_purchased_quantity INT)

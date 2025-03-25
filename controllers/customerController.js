@@ -41,7 +41,6 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
         const [addressResult] = await pool.query('SELECT * FROM customer_addresses ca WHERE ca.customer_id = ?', [customerId]);
         const [feedbackResult] = await pool.query('SELECT * FROM feedbacks f WHERE f.customer_id = ?', [customerId]);
 
-
         if (!customerResult.length) {
             return res.status(404).render("404", {
                 profile: req.session.user?.role,
@@ -62,9 +61,6 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
 
         const addresses = Array.isArray(addressResult) ? addressResult : [];
         const feedbacks = Array.isArray(feedbackResult) ? feedbackResult : [];
-
-        // Fetch available medicines
-        const [medicines] = await pool.query('SELECT * FROM medicines');
 
         const [invoice] = await pool.query(`
             SELECT 
@@ -99,15 +95,51 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
             ORDER BY i.invoice_time DESC
         `, [customerId]);
 
+
+
+
+        const [medicines] = await pool.query(`SELECT m.medicine_id, m.medicine_name, m.medicine_composition, 
+             m.medicine_price, m.medicine_type, m.medicine_expiry_date, m.medicine_img, SUM(s.stock_quantity) as total_stock
+      FROM medicines m
+      LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
+      WHERE m.medicine_expiry_date > CURDATE()
+      GROUP BY m.medicine_id
+      HAVING total_stock > 0`
+        );
+        const [cartItems] = await pool.query(`SELECT 
+                p.purchase_id,
+                m.medicine_id,
+                m.medicine_name,
+                m.medicine_composition,
+                m.medicine_price,
+                p.purchased_quantity,
+                (m.medicine_price * p.purchased_quantity) AS total_price,
+                m.medicine_img,
+                ps.purchase_time
+            FROM purchases p
+            JOIN purchase_sessions ps 
+                ON p.customer_id = ps.customer_id 
+                AND p.purchase_time = ps.purchase_time
+            JOIN medicines m 
+                ON p.medicine_id = m.medicine_id
+            WHERE p.customer_id = ?
+            AND ps.purchase_time = (
+                SELECT MAX(purchase_time) 
+                FROM purchase_sessions 
+                WHERE customer_id = ?
+            )
+`, [customerId, customerId]);
+
         res.render('customerDashboard', {
             pagetitle: `Customer Panel - ${req.session.user.username}`,
             username: req.session.user.username,
             profile: "customer",
             customerId,
-            medicines,
             customer,
             addresses,
             feedbacks,
+            medicines: medicines || [],
+            cartItems: cartItems || [],
             invoice
         });
 
@@ -173,8 +205,8 @@ exports.deleteOrEditAddress = [isCustomer, async (req, res) => {
                 pagetitle: "Success",
                 message: "Your address has been deleted successfully!"
             });
-        } 
-        
+        }
+
         if (action === "edit") {
             // Validate input fields
             if (!street || !city || !state || !zip_code || !address_type) {
@@ -250,7 +282,7 @@ exports.deleteOrEditFeedback = [isCustomer, async (req, res) => {
         if (action === "delete") {
             // Delete the address
             const [deleteResult] = await pool.execute("DELETE FROM feedbacks WHERE customer_id = ? AND feedback_id = ?", [customerId, feedback_id]);
-        
+
             if (deleteResult.affectedRows === 0) {
                 return res.status(404).render("404", {
                     username: req.session.user?.username,
@@ -266,11 +298,11 @@ exports.deleteOrEditFeedback = [isCustomer, async (req, res) => {
                 pagetitle: "Success",
                 message: "Your feedback has been deleted successfully!"
             });
-        } 
-        
+        }
+
         if (action === "edit") {
             // Validate input fields
-            if (!rating || !feedback_text){
+            if (!rating || !feedback_text) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
                     profile: "customer",
@@ -348,7 +380,7 @@ exports.addFeedback = [isCustomer, async (req, res) => {
     const { rating, feedback_text } = req.body;
     try {
         const customerId = req.session.customerId;
-        
+
         if (!customerId) {
             return res.status(400).render("400", {
                 username: req.session.user?.username,
@@ -908,47 +940,43 @@ exports.downloadInvoice = [isCustomer, async (req, res) => {
     }
 }];
 
+exports.purchaseMedicine = [isCustomer, async (req, res) => {
+    try {
+        const { medicineId, quantity } = req.body;
+        const customerId = req.session.customerId;
 
+        // Fetch medicine price
+        const [medicine] = await pool.query('SELECT medicine_price FROM medicines WHERE medicine_id = ?', [medicineId]);
 
+        if (!medicine.length) {
+            return res.status(404).render("400", {
+                profile: req.session.user?.role,
+                username: req.session.user?.username,
+                pagetitle: "Bad Request",
+                error: "Invalid medicine ID"
+            });
+        }
 
+        // Insert purchase record
+        await pool.query(
+            'INSERT INTO purchases (customer_id, medicine_id, purchased_quantity) VALUES (?, ?, ?)',
+            [customerId, medicineId, quantity]
+        );
 
-// exports.purchaseMedicine = [isCustomer, async (req, res) => {
-//     try {
-//         const { medicineId, quantity } = req.body;
-//         const customerId = req.session.customerId;
-
-//         // Fetch medicine price
-//         const [medicine] = await pool.query('SELECT medicine_price FROM medicines WHERE medicine_id = ?', [medicineId]);
-
-//         if (!medicine.length) {
-//             return res.status(404).render("400", {
-//                 profile: req.session.user?.role,
-//                 username: req.session.user?.username,
-//                 pagetitle: "Bad Request",
-//                 error: "Invalid medicine ID"
-//             });
-//         }
-
-//         // Insert purchase record
-//         await pool.query(
-//             'INSERT INTO purchases (customer_id, medicine_id, purchased_quantity) VALUES (?, ?, ?)',
-//             [customerId, medicineId, quantity]
-//         );
-
-//         res.render("success", {
-//             pdfName: null,
-//             username: req.session.user?.username,
-//             profile: "customer",
-//             pagetitle: "Success",
-//             message: "Added to cart, wait for admin approval"
-//         });
-//     } catch (err) {
-//         console.error("Database Error:", err);
-//         res.status(500).render("500", {
-//             username: req.session.user?.username,
-//             profile: "customer",
-//             pagetitle: "Internal Server Error",
-//             error: err.message
-//         });
-//     }
-// }];
+        res.render("success", {
+            pdfName: null,
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Success",
+            message: "Added to cart, wait for admin approval"
+        });
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];

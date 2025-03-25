@@ -11,13 +11,14 @@ router.get("/medicinesDetails", homepageController.showMedicines);
 
 router.get('/login', authController.getLoginPage);
 router.post('/login', authController.handleLogin);
+router.get('/logout', authController.logout);
+
 router.get('/forgotPassword', authController.forgotPassword);  
 router.post('/forgotPassword', authController.forgotPassword); 
 router.get('/otpVerification', authController.verifyOtp); 
 router.post('/otpVerification', authController.verifyOtp);  
 router.get('/resetPassword', authController.resetPassword);  
 router.post('/resetPassword', authController.resetPassword);
-router.get('/logout', authController.logout);
 
 router.get('/contact', contactController.getContactPage);
 router.post('/contact', contactController.postContactForm);
