@@ -23,7 +23,6 @@
       <% }); %>
 
       <% customer.feedbacks.forEach(feedback => { %>
-      <p class="text-gray-600 text-sm truncate"><strong>Feedback ID:</strong> <%= feedback.feedback_id %></p>
       <p class="text-gray-600 text-sm truncate"><strong>Feedback Date:</strong> <%= feedback.feedback_date %></p>
       <p class="text-gray-600 text-sm truncate"><strong>Rating:</strong> <%= feedback.rating %> / 5</p>
       <p class="text-gray-600 text-sm truncate"><strong>Feedback:</strong> <%= feedback.feedback_text %></p>
@@ -109,30 +108,6 @@
   <a href="/customerRegister" class="text-blue-600 hover:text-blue-800">+ Add Customer</a>
   <% } %>
 
-  <script>
-    function toggleEditForm(formId) {
-      document.querySelectorAll("form[id^='edit-form']").forEach(form => form.classList.add('hidden'));
-      document.getElementById(`edit-form-${formId}`).classList.toggle('hidden');
-    }
-
-    function previewImage(event, formId) {
-      const preview = document.getElementById(`preview-${formId}`);
-      preview.src = URL.createObjectURL(event.target.files[0]);
-      preview.classList.remove('hidden');
-    }
-
-    function removeImage(formId) {
-      const preview = document.getElementById(`preview-${formId}`);
-      const removeBtn = document.getElementById(`remove-image-${formId}`);
-      const fileInput = document.getElementById(`photo-${formId}`);
-
-      preview.src = '';
-      preview.classList.add('hidden');
-      removeBtn.classList.add('hidden');
-      fileInput.value = '';
-    }
-  </script>
-
 <h2 class="text-2xl font-semibold text-gray-600 mt-10 mb-4">Add Medicine</h2>
 <div class="bg-white p-6 rounded-lg shadow-md">
   <form action="/admin/adminDashboard/addMedicine" method="POST" enctype="multipart/form-data" class="space-y-4">
@@ -183,35 +158,7 @@
   </form>
 </div>
 
-<script>
-  // Preview the selected image
-  function previewImage(event) {
-    const file = event.target.files[0];
-    const preview = document.getElementById('medicine_img_preview');
-    const removeButton = document.getElementById('remove_img_button');
-    
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        preview.src = e.target.result;
-        preview.classList.remove('hidden');
-        removeButton.classList.remove('hidden');
-      };
-      reader.readAsDataURL(file);
-    }
-  }
 
-  // Remove the selected image
-  function removeImage() {
-    const input = document.getElementById('medicine_img_input');
-    const preview = document.getElementById('medicine_img_preview');
-    const removeButton = document.getElementById('remove_img_button');
-    
-    input.value = ''; // Clear the file input
-    preview.classList.add('hidden'); // Hide the preview
-    removeButton.classList.add('hidden'); // Hide the remove button
-  }
-</script>
 
 
 <% if (medicines && medicines.length > 0) { %>
@@ -285,50 +232,38 @@
   <p class="text-lg text-gray-600">No medicines available or expired medicines.</p>
 <% } %>
 
-
-
-
-
-
-
-
-
-  <!--  
-  <h2 class="text-2xl font-semibold text-gray-600 mt-10 mb-4">Stocks</h2>
-  <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
-    <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-      <thead>
-        <tr class="bg-blue-100 text-gray-700">
-          <th class="py-2 px-4 border-b">Medicine Name</th>
-          <th class="py-2 px-4 border-b">Supplier Name</th>
-          <th class="py-2 px-4 border-b">Stock Quantity</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% stocks.forEach(st=> { %>
-        <tr class="hover:bg-blue-50">
-          <td class="py-2 px-4 border-b">
-            <%= st.medicine_name %>
-          </td>
-          <td class="py-2 px-4 border-b">
-            <%= st.supplier_name %>
-          </td>
-          <td class="py-2 px-4 border-b">
-            <%= st.stock_quantity %>
-          </td>
-        </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-
-
-  
-
-
-
-  <!-- Add this script at the bottom of your page before the footer -->
-
 </div>
+
+
+<script>
+  // Generic function to toggle edit forms
+function toggleEditForm(formId) {
+  document.querySelectorAll("form[id^='edit-form']").forEach(form => form.classList.add('hidden'));
+  document.getElementById(`edit-form-${formId}`).classList.toggle('hidden');
+}
+
+// Generic function to preview image for any form
+function previewImage(event, formId) {
+  const preview = document.getElementById(`preview-${formId}`);
+  const removeBtn = document.getElementById(`remove-image-${formId}`);
+  
+  preview.src = URL.createObjectURL(event.target.files[0]);
+  preview.classList.remove('hidden');
+  removeBtn.classList.remove('hidden');
+}
+
+// Generic function to remove image preview
+function removeImage(formId) {
+  const preview = document.getElementById(`preview-${formId}`);
+  const removeBtn = document.getElementById(`remove-image-${formId}`);
+  const fileInput = document.getElementById(`photo-${formId}`);
+  
+  preview.src = '';
+  preview.classList.add('hidden');
+  removeBtn.classList.add('hidden');
+  fileInput.value = '';
+}
+
+</script>
 
 <%- include('includes/footer') %>

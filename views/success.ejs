@@ -49,48 +49,48 @@
 </div>
       <% } %>
       <% if (message==="Your address has been added successfully!" ) { %>
-        <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
-      </div>
+      <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
     </div>
   </div>
-  <script>
-    setTimeout(() => {
-      window.location.href = "/customer/CustomerDashboard";
-    }, 3000); // 3 seconds delay
-  </script>
+</div>
+<script>
+  setTimeout(() => {
+    window.location.href = "/customer/CustomerDashboard";
+  }, 3000); // 3 seconds delay
+</script>
       <% } %>
       <% if (message==="Your address has been deleted successfully!" ) { %>
-          <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
-        </div>
-      </div>
+      <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
     </div>
-    <script>
-      setTimeout(() => {
-        window.location.href = "/customer/CustomerDashboard";
-      }, 3000); // 3 seconds delay
-    </script>
+  </div>
+</div>
+<script>
+  setTimeout(() => {
+    window.location.href = "/customer/CustomerDashboard";
+  }, 3000); // 3 seconds delay
+</script>
       <% } %>
       <% if (message==="Your address has been updated successfully!" ) { %>
-        <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
-      </div>
+      <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
     </div>
   </div>
-  <script>
-    setTimeout(() => {
-      window.location.href = "/customer/CustomerDashboard";
-    }, 3000); // 3 seconds delay
-  </script>
+</div>
+<script>
+  setTimeout(() => {
+    window.location.href = "/customer/CustomerDashboard";
+  }, 3000); // 3 seconds delay
+</script>
       <% } %>
       <% if (message==="Your feedback has been added successfully!" ) { %>
-        <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
-      </div>
+      <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
     </div>
   </div>
-  <script>
+</div>
+<script>
     setTimeout(() => {
       window.location.href = "/customer/CustomerDashboard";
     }, 3000); // 3 seconds delay
-  </script>
+</script>
       <% } %>
       <% if (message==="Your feedback has been deleted successfully!" ) { %>
           <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
@@ -149,7 +149,7 @@
   }, 3000); // 3 seconds delay
 </script>
       <% } %>
-      <% if (message==='Medicine Edited successfully!' ) { %>
+      <% if (message === 'Medicine Edited Successfully!' ) { %>
         <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
     </div>
   </div>
@@ -181,5 +181,5 @@
     window.location.href = "/admin/adminDashboard";
   }, 3000); // 3 seconds delay
 </script>
-      <% } %>
+<% } %>
 <%- include('includes/footer') %>
