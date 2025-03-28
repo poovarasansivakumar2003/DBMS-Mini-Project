@@ -56,12 +56,12 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             SELECT 
                 c.customer_id, c.customer_created_at, c.customer_name, c.customer_email, 
                 c.customer_ph_no, c.customer_balance_amt, c.customer_photo, 
-                ca.address_id, ca.address_type, ca.street, ca.city, ca.state, ca.zip_code, 
+                ca.customer_address_id, ca.address_type, ca.street, ca.city, ca.state, ca.zip_code, 
                 f.feedback_id, f.rating, f.feedback_text, f.feedback_date
             FROM customers c
             LEFT JOIN customer_addresses ca ON c.customer_id = ca.customer_id
             LEFT JOIN feedbacks f ON c.customer_id = f.customer_id
-            ORDER BY c.customer_id, ca.address_id, f.feedback_id;
+            ORDER BY c.customer_id, ca.customer_address_id, f.feedback_id;
         `);
 
         let customers = {};
@@ -82,9 +82,9 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                 };
             }
 
-            if (row.address_id) {
+            if (row.customer_address_id) {
                 customers[row.customer_id].addresses.push({
-                    address_id: row.address_id,
+                    customer_address_id: row.customer_address_id,
                     street: row.street,
                     city: row.city,
                     state: row.state,
@@ -103,9 +103,50 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             }
         });
 
-        const [suppliers] = await pool.execute(`SELECT * FROM suppliers;`);
+        const [totalIncomeResult] = await pool.execute(
+            `SELECT SUM(payment_amt) AS total_income FROM payments`
+          );
+          const [adminIncomeResult] = await pool.execute(
+            "SELECT SUM(net_total) AS income_generated_by_admin FROM invoice WHERE admin_username = ?", 
+            [admin_username]
+          );
+          
+          // Extract values correctly
+          const totalIncome = totalIncomeResult[0]?.total_income || 0;
+          const adminIncome = adminIncomeResult[0]?.income_generated_by_admin || 0;
+
+        const [suppliersQuery] = await pool.execute(`SELECT s.*, sa.supplier_address_id, sa.street, sa.city, sa.state, sa.zip_code
+        FROM suppliers s
+        LEFT JOIN supplier_addresses sa ON s.supplier_id = sa.supplier_id`);
+
+        const suppliers = [];
+        const supplierMap = new Map();
+
+        suppliersQuery.forEach(row => {
+            if (!supplierMap.has(row.supplier_id)) {
+                supplierMap.set(row.supplier_id, {
+                    supplier_id: row.supplier_id,
+                    supplier_name: row.supplier_name,
+                    supplier_email: row.supplier_email,
+                    supplier_ph_no: row.supplier_ph_no,
+                    supplier_address: row.supplier_address,
+                    addresses: []
+                });
+                suppliers.push(supplierMap.get(row.supplier_id));
+            }
+            if (row.customer_address_id) {
+                supplierMap.get(row.supplier_id).addresses.push({
+                    customer_address_id: row.customer_address_id,
+                    street: row.street,
+                    city: row.city,
+                    state: row.state,
+                    zip_code: row.zip_code
+                });
+            }
+        });
+
         const [stocks] = await pool.execute(`
-            SELECT m.medicine_name, s.supplier_name, st.stock_quantity 
+            SELECT m.medicine_name, m.medicine_composition ,s.supplier_name, st.stock_quantity 
             FROM stocks st 
             JOIN medicines m ON st.medicine_id = m.medicine_id 
             JOIN suppliers s ON st.supplier_id = s.supplier_id;
@@ -118,6 +159,8 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             profile: "admin",
             customers: Object.values(customers),
             medicines,
+            totalIncome,
+            adminIncome,
             suppliers,
             stocks
         });
@@ -136,7 +179,6 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
 // ✅ Edit or Delete Customer (Supports Image Update)
 exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
     try {
-
         // Upload customer photo (if provided)
         await new Promise((resolve, reject) => {
             upload.single("customer_photo")(req, res, (err) => {
@@ -152,7 +194,7 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
             });
         });
 
-        const { action, customer_id, customer_name, customer_email, customer_ph_no, customer_balance_amt, address_id, street, city, state, zip_code, address_type, feedback_id, rating, feedback_text } = req.body;
+        const { action, customer_id, customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_address_id, street, city, state, zip_code, address_type, feedback_id, rating, feedback_text } = req.body;
         let customer_photo = req.file ? req.file.buffer : null;
 
         if (!customer_id) {
@@ -217,8 +259,8 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
              // Update address
              await pool.execute(
                 `UPDATE customer_addresses SET street=?, city=?, state=?, zip_code=?, address_type=? 
-                 WHERE customer_id=? AND address_id=?`,
-                [street, city, state, zip_code, address_type, customer_id, address_id]
+                 WHERE customer_id=? AND customer_address_id=?`,
+                [street, city, state, zip_code, address_type, customer_id, customer_address_id]
             );
 
             return res.render("success", {
@@ -268,8 +310,6 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
         });
     }
 }];
-
-
 
 // Add Medicine
 exports.addMedicine = [isAdmin, async (req, res) => {
@@ -398,9 +438,9 @@ exports.deleteOrEditMedicine = [isAdmin, async (req, res) => {
 
             await pool.query(
                 `UPDATE medicines
-                 SET medicine_name = ?, medicine_composition = ?, medicine_price = ?, medicine_expiry_date = ?, medicine_type = ?
+                 SET medicine_name = ?, medicine_composition = ?, medicine_price = ?, medicine_expiry_date = ?, medicine_type = ?, medicine_img = ?
                  WHERE medicine_id = ?`,
-                [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_type, medicine_id]
+                [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_type, medicine_img, medicine_id]
             );
 
             return res.render("success", {
@@ -428,58 +468,69 @@ exports.deleteOrEditMedicine = [isAdmin, async (req, res) => {
     }
 }];
 
-// exports.processOrder = [isAdmin, async (req, res) => {
-//     try {
-//         const { purchaseId, supplierId, discount, paid } = req.body;
+// Add Medicine
+exports.addSupplier = [isAdmin, async (req, res) => {
+    try {
+        const {supplier_name, supplier_email, supplier_ph_no, street, city, state, zip_code } = req.body;
+        if (!supplier_name || !supplier_email || !supplier_ph_no || !street || !city|| !state || !zip_code) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Bad Request",
+                error: "All fields are required"
+            });
+        }
 
-//         // Get purchase details
-//         const [purchaseResult] = await pool.query(
-//             'SELECT total_amt, customer_id, medicine_id, purchased_quantity FROM purchases WHERE purchase_id = ?',
-//             [purchaseId]
-//         );
+        await connection.beginTransaction(); // Start Transaction
 
-//         if (!purchaseResult.length) {
-//             throw new Error("Invalid purchase ID");
-//         }
+        // Insert into suppliers table
+        const [supplierInsertResult] = await connection.query(
+            `INSERT INTO suppliers (supplier_name, supplier_email, supplier_ph_no) VALUES (?, ?, ?)`,
+            [supplier_name, supplier_email, supplier_ph_no]
+        );
 
-//         const { total_amt, customer_id, medicine_id, purchased_quantity } = purchaseResult[0];
+        if (supplierInsertResult.affectedRows === 0) {
+            throw new Error("Failed to insert supplier.");
+        }
 
-//         // Calculate net total and balance
-//         const net_total = total_amt - discount;
-//         const balance = net_total - paid;
+        const supplier_id = supplierInsertResult.insertId;
 
-//         // Insert into invoice table
-//         await pool.query(
-//             'INSERT INTO invoice (purchase_id, discount, paid, total_amt_to_pay, net_total, balance) VALUES (?, ?, ?, ?, ?, ?)',
-//             [purchaseId, discount, paid, total_amt, net_total, balance]
-//         );
+        const [addressInsertResult] = await connection.query(
+            `INSERT INTO supplier_addresses (supplier_id, street, city, state, zip_code) VALUES (?, ?, ?, ?, ?)`,
+            [supplier_id, street, city, state, zip_code]
+        );
 
-//         // Update customer's balance amount
-//         await pool.query(
-//             'UPDATE customers SET customer_balance_amt = customer_balance_amt + ? WHERE customer_id = ?',
-//             [balance, customer_id]
-//         );
+        if (addressInsertResult.affectedRows === 0) {
+            throw new Error("Failed to insert supplier address.");
+        }
 
-//         // Reduce stock for the supplier
-//         await pool.query(
-//             'UPDATE stocks SET stock_quantity = stock_quantity - ? WHERE supplier_id = ? AND medicine_id = ?',
-//             [purchased_quantity, supplierId, medicine_id]
-//         );
+        await connection.commit(); 
+        connection.release();
 
-//         res.render("success", {
-//             username: req.session.user?.username,
-//             profile: "admin",
-//             pagetitle: "Success",
-//             message: "Order approved successfully"
-//         });
+        if (insertResult.affectedRows === 0) {
+            return res.status(500).render("500", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Internal Server Error",
+                error: "Unable to insert into database."
+            });
+        }
 
-//     } catch (err) {
-//         console.error("Database Error:", err);
-//         res.status(500).render("500", {
-//             username: req.session.user?.username,
-//             profile: "admin",
-//             pagetitle: "Internal Server Error",
-//             error: err.message
-//         });
-//     }
-// }];
+        // Render success page
+        res.render("success", {
+            pdfName: null,
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Success",
+            message: 'Supplier added successfully!'
+        });
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];

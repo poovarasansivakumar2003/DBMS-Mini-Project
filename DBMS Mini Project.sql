@@ -26,7 +26,7 @@ describe customers;
 
 -- Customers Addresses Table
 CREATE TABLE customer_addresses (
-    address_id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_address_id INT AUTO_INCREMENT PRIMARY KEY,
     address_type ENUM('Home', 'Work', 'Other'),  -- Categorizing addresses
     customer_id INT,
     street VARCHAR(100),
@@ -68,14 +68,13 @@ CREATE TABLE suppliers (
     supplier_id INT AUTO_INCREMENT PRIMARY KEY,
     supplier_name VARCHAR(50) NOT NULL,
     supplier_email VARCHAR(50) UNIQUE,
-    supplier_ph_no VARCHAR(15) NOT NULL UNIQUE,
-    supplier_address VARCHAR(100)
+    supplier_ph_no VARCHAR(15) NOT NULL UNIQUE
 );
 describe suppliers;
 
 -- Suppliers Addresses Table
 CREATE TABLE supplier_addresses (
-    address_id INT AUTO_INCREMENT PRIMARY KEY,
+    supplier_address_id INT AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT,
     street VARCHAR(100),
     city VARCHAR(50),
@@ -467,21 +466,21 @@ INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medi
 select * from medicines;
 
 -- Suppliers Table
-INSERT INTO suppliers (supplier_name, supplier_email, supplier_ph_no, supplier_address) VALUES 
-('MediSuppliers Inc.', 'contact@medisuppliers.com', '9988776655', '1st Avenue, NY'),
-('Pharma Distributors', 'sales@pharmadist.com', '9988776644', 'Market Street, LA'),
-('Wellness Suppliers', 'info@wellnesssup.com', '9988776633', 'Health Road, TX'),
-('Pharma Inc.', 'contact@pharmainc.com', '8800112233', '789 Pharma St, City'),
-('MediCo', 'support@medico.com', '8000223344', '321 Health Rd, City');
+INSERT INTO suppliers (supplier_name, supplier_email, supplier_ph_no) VALUES 
+('MediSuppliers Inc.', 'contact@medisuppliers.com', '9988776655'),
+('Pharma Distributors', 'sales@pharmadist.com', '9988776644'),
+('Wellness Suppliers', 'info@wellnesssup.com', '9988776633'),
+('Pharma Inc.', 'contact@pharmainc.com', '8800112233'),
+('MediCo', 'support@medico.com', '8000223344');
 select * from suppliers;
 
 -- Suppliers Addresses Table
 INSERT INTO supplier_addresses (supplier_id, street, city, state, zip_code) VALUES 
-(1, '123', 'Main Street', 'NY', '001203'),
+(1, '123', 'Market Street', 'NY', '001203'),
 (2, '456', 'Elm Street', 'LA', '034203'),
-(3, '789', 'Pine Street', 'TX', '671203'),
-(4, '456', 'Elm Street', 'LA', '034203'),
-(5, '456', 'Avenue', 'City', '001323');
+(3, '789', 'Health Road', 'TX', '671203'),
+(4, '789', 'Pharma St', 'LA', '034203'),
+(5, '321', 'Health Rd', 'City', '001323');
 select * from supplier_addresses;
 
 -- Stocks Table

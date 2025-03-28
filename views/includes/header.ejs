@@ -85,35 +85,6 @@
 
         <% if (profile==='admin' ) { %>
         <a href="/admin/adminDashboard" class="block text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 transition">Admin</a>
-
-        <div class="navbar">
-          <div class="notification">
-            <span id="notificationIcon">0</span> <!-- Notification count -->
-            <ul id="notificationDropdown" class="dropdown-menu"></ul>
-          </div>
-        </div>
-
-        <script>
-          async function fetchNotifications() {
-            try {
-              const response = await fetch('/admin/notifications');
-              const data = await response.json();
-
-              let notificationIcon = document.getElementById('notificationIcon');
-              notificationIcon.innerHTML = data.length; // Show count in navbar
-
-              let dropdown = document.getElementById('notificationDropdown');
-              dropdown.innerHTML = data.length > 0 ?
-                data.map(n => `<li>[${n.type.toUpperCase()}] ${n.message}</li>`).join('') :
-                '<li>No notifications</li>';
-            } catch (error) {
-              console.error("Error fetching notifications:", error);
-            }
-          }
-
-          setInterval(fetchNotifications, 5000); // Refresh every 5 seconds
-          fetchNotifications();
-        </script>
         <% } %>
 
         <% if (!username) { %>

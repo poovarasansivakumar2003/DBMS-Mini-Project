@@ -2,6 +2,8 @@
 
 <div class="bg-gradient-to-br from-blue-50 to-white mx-auto p-6">
   <h1 class="text-3xl font-semibold text-gray-700 text-center mb-6">Admin Panel</h1>
+  <p>Total Income: <%= totalIncome %></p>
+  <p>Your Income: <%= adminIncome %></p>
 
   <% if (customers?.length > 0) { %>
   <h2 class="text-2xl font-semibold text-gray-600 mt-10 mb-4">Manage Customers</h2>
@@ -29,7 +31,7 @@
       <% }); %>
 
       <div class="flex gap-2 mt-3">
-        <form action="/admin/adminDashboard/editDeleteCustomer" method="POST" class="w-full">
+        <form action="/admin/adminDashboard/customer/editDeleteCustomer" method="POST" class="w-full">
           <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
           <button type="submit" name="action" value="delete" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition" onclick="return confirm('Are you sure you want to delete this customer?')">Delete</button>
         </form>
@@ -38,7 +40,7 @@
       <button onclick="toggleEditForm('customer-<%= customer.customer_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit</button>
 
       <!-- Edit Customer Form -->
-      <form id="edit-form-customer-<%= customer.customer_id %>" action="/admin/adminDashboard/editDeleteCustomer" method="POST" enctype="multipart/form-data" class="mt-4 space-y-2 hidden">
+      <form id="edit-form-customer-<%= customer.customer_id %>" action="/admin/adminDashboard/customer/editDeleteCustomer" method="POST" enctype="multipart/form-data" class="mt-4 space-y-2 hidden">
         <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
 
         <label class="block text-sm font-medium text-gray-700">Name</label>
@@ -64,12 +66,12 @@
       </form>
 
       <% customer.addresses.forEach(address => { %>
-      <button onclick="toggleEditForm('address-<%= address.address_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit Address</button>
+      <button onclick="toggleEditForm('address-<%= address.customer_address_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit Address</button>
 
       <!-- Edit Address Form -->
-      <form id="edit-form-address-<%= address.address_id %>" action="/admin/adminDashboard/editDeleteCustomer" method="POST" class="mt-4 space-y-2 hidden">
+      <form id="edit-form-address-<%= address.customer_address_id %>" action="/admin/adminDashboard/customer/editDeleteCustomer" method="POST" class="mt-4 space-y-2 hidden">
         <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
-        <input type="hidden" name="address_id" value="<%= address.address_id %>">
+        <input type="hidden" name="customer_address_id" value="<%= address.customer_address_id %>">
         <label class="block text-sm font-medium text-gray-700">Address</label>
         <select name="address_type" required class="w-full border p-2 rounded mt-1">
           <option value="Home" <%= address.address_type === 'Home' ? 'selected' : '' %>>Home</option>
@@ -89,7 +91,7 @@
       <button onclick="toggleEditForm('feedback-<%= feedback.feedback_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit Feedback</button>
 
       <!-- Edit Feedback Form -->
-      <form id="edit-form-feedback-<%= feedback.feedback_id %>" action="/admin/adminDashboard/editDeleteCustomer" method="POST" class="mt-4 space-y-2 hidden">
+      <form id="edit-form-feedback-<%= feedback.feedback_id %>" action="/admin/adminDashboard/customer/editDeleteCustomer" method="POST" class="mt-4 space-y-2 hidden">
         <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
         <input type="hidden" name="feedback_id" value="<%= feedback.feedback_id %>">
         <label class="block text-sm font-medium text-gray-700">Rating (1-5)</label>
@@ -110,7 +112,7 @@
 
 <h2 class="text-2xl font-semibold text-gray-600 mt-10 mb-4">Add Medicine</h2>
 <div class="bg-white p-6 rounded-lg shadow-md">
-  <form action="/admin/adminDashboard/addMedicine" method="POST" enctype="multipart/form-data" class="space-y-4">
+  <form action="/admin/adminDashboard/medicine/addMedicine" method="POST" enctype="multipart/form-data" class="space-y-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <label for="medicine_type" class="block text-sm font-medium text-gray-700 mb-1">
         Medicine Type
@@ -179,7 +181,7 @@
       <p class="text-gray-600 text-sm">Total Stock: <%= medicine.total_stock %></p>
 
       <div class="flex gap-2 mt-3">
-        <form action="/admin/adminDashboard/editDeleteMedicine" method="POST" class="w-full">
+        <form action="/admin/adminDashboard/medicine/editDeleteMedicine" method="POST" class="w-full">
           <input type="hidden" name="medicine_id" value="<%= medicine.medicine_id %>">
           <button type="submit" name="action" value="delete" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition" onclick="return confirm('Are you sure you want to delete this medicine?')">Delete</button>
         </form>
@@ -187,7 +189,7 @@
 
       <button onclick="toggleEditForm('medicine-<%= medicine.medicine_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit</button>
 
-      <form id="edit-form-medicine-<%= medicine.medicine_id %>" action="/admin/adminDashboard/editDeleteMedicine" method="POST" enctype="multipart/form-data" class="mt-4 space-y-2 hidden">
+      <form id="edit-form-medicine-<%= medicine.medicine_id %>" action="/admin/adminDashboard/medicine/editDeleteMedicine" method="POST" enctype="multipart/form-data" class="mt-4 space-y-2 hidden">
         <input type="hidden" name="medicine_id" value="<%= medicine.medicine_id %>">
 
         <select name="medicine_type" required class="w-full border p-2 rounded mt-1">
@@ -265,5 +267,41 @@ function removeImage(formId) {
 }
 
 </script>
+
+<div class="container mx-auto p-6">
+  <h1 class="text-3xl font-semibold text-gray-700 text-center mb-6">Manage Suppliers</h1>
+
+  <% if (suppliers.length > 0) { %>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <% suppliers.forEach(supplier => { %>
+      <div class="border rounded-lg shadow-md p-4 bg-white">
+        <h2 class="text-lg font-semibold text-gray-800"><%= supplier.supplier_name %></h2>
+        <p class="text-gray-600 text-sm"><strong>Email:</strong> <%= supplier.supplier_email %></p>
+        <p class="text-gray-600 text-sm"><strong>Phone:</strong> <%= supplier.supplier_ph_no %></p>
+
+        <form action="/admin/adminDashboard/supplier/editDeleteSupplier" method="POST">
+          <input type="hidden" name="supplier_id" value="<%= supplier.supplier_id %>">
+          <button type="submit" class="w-full bg-red-600 text-white py-2 rounded-lg mt-2">Delete</button>
+        </form>
+      </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <p class="text-center text-gray-500">No Suppliers Found.</p>
+  <% } %>
+
+  <!-- Add Supplier Form -->
+  <form action="/admin/adminDashboard/supplier/addSupplier" method="POST" class="bg-white p-6 rounded-lg shadow-md mb-6">
+    <h2 class="text-xl font-semibold text-gray-600 mb-4">Add Supplier</h2>
+    <input type="text" name="supplier_name" placeholder="Supplier Name" required class="w-full border p-2 rounded">
+    <input type="email" name="supplier_email" placeholder="Email" required class="w-full border p-2 rounded mt-2">
+    <input type="text" name="supplier_ph_no" placeholder="Phone Number" required class="w-full border p-2 rounded mt-2">
+    <input type="text" name="supplier_address" placeholder="Address" class="w-full border p-2 rounded mt-2">
+    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg mt-2">Add Supplier</button>
+  </form>
+
+  
+</div>
+
 
 <%- include('includes/footer') %>

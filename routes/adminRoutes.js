@@ -28,9 +28,10 @@ router.use(checkSession);
 router.use(checkAdmin);
 
 router.get('/adminDashboard', adminController.getAdminDashboard);
-router.post('/adminDashboard/editDeleteCustomer', adminController.deleteOrEditCustomer);
-router.post('/adminDashboard/addMedicine', adminController.addMedicine);
-router.post('/adminDashboard/editDeleteMedicine', adminController.deleteOrEditMedicine);
+router.post('/adminDashboard/customer/editDeleteCustomer', adminController.deleteOrEditCustomer);
+router.post('/adminDashboard/medicine/addMedicine', adminController.addMedicine);
+router.post('/adminDashboard/medicine/editDeleteMedicine', adminController.deleteOrEditMedicine);
+router.post('/adminDashboard/supplier/addSupplier', adminController.addSupplier);
 
 // router.post('/processOrder', adminController.processOrder);
 
