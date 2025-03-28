@@ -1,36 +1,62 @@
 <%- include('includes/header') %>
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-white flex flex-col items-center justify-center px-4">
-  <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+  <div class="max-w-xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <!-- Animated Medical Scene -->
+    <div class="relative h-64 bg-blue-100 flex items-center justify-center overflow-hidden">
+      <!-- Medical Maze Background -->
+      <div class="absolute inset-0 opacity-10">
+        <svg class="w-full h-full" viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,160 Q200,100 400,160 T800,160" fill="none" stroke="#2563EB" stroke-width="2" stroke-dasharray="5,5" />
+          <path d="M0,200 Q200,140 400,200 T800,200" fill="none" stroke="#2563EB" stroke-width="2" stroke-dasharray="5,5" />
+        </svg>
+      </div>
 
-    <!-- 404 Icon -->
-    <div class="mx-auto h-32 w-32 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-      <i class="fas fa-exclamation-triangle text-blue-600 text-4xl"></i>
+      <!-- Playful Medical Characters -->
+      <div class="relative z-10 flex items-center justify-center space-x-4">
+        <div class="w-32 h-32 bg-white rounded-full shadow-lg flex items-center justify-center transform rotate-12">
+          <i class="fa-solid fa-capsules text-6xl text-blue-600 opacity-70"></i>
+        </div>
+        <div class="w-48 h-48 bg-white rounded-full shadow-xl flex items-center justify-center -rotate-6">
+          <i class="fas fa-exclamation-triangle text-7xl text-yellow-500 opacity-80"></i>
+        </div>
+        <div class="w-32 h-32 bg-white rounded-full shadow-lg flex items-center justify-center rotate-6">
+          <i class="fas fa-prescription-bottle text-5xl text-green-600 opacity-70"></i>
+        </div>
+      </div>
     </div>
+
 
     <!-- Title -->
-    <h1 class="text-4xl font-bold text-gray-800 mb-4">404</h1>
-    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Page Not Found</h2>
-    <% if (typeof error !=="undefined" && error) { %>
-    <p class="text-gray-600 mb-8">
-      <%= error %>
-    </p>
-    <% } else { %>
-    <p class="text-gray-600 mb-8">Oops! It looks like the page you're looking for doesn't exist.</p>
-    <% } %>
-    <!-- Return Home Button -->
-    <div class="flex flex-col sm:flex-row justify-center gap-4">
-      <a href="/" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-        <i class="fas fa-home mr-2"></i>Go Home
-      </a>
-      <button onclick="history.back()" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors">
-        <i class="fas fa-arrow-left mr-2"></i>Go Back
-      </button>
-    </div>
+    <div class="p-8 text-center">
+      <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400 mb-4">
+        404 Oops!
+      </h1>
+      <h2 class="text-2xl font-semibold text-gray-700 mb-4">
+        Page Not Found
+      </h2>
+      <% if (typeof error !=="undefined" && error) { %>
+      <p class="text-gray-600 mb-8 text-lg">
+        <%= error %>
+      </p>
+      <% } else { %>
+      <p class="text-gray-600 mb-8 text-lg">Oops! It looks like the page you're looking for doesn't exist.</p>
+      <% } %>
+      <!-- Return Home Button -->
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+        <a href="/" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all transform hover:scale-105 flex items-center justify-center">
+          <i class="fas fa-home mr-2"></i>Return to Home
+        </a>
+        <button onclick="history.back()" class="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-all transform hover:scale-105 flex items-center justify-center">
+          <i class="fas fa-arrow-left mr-2"></i>Backtrack Safely
+        </button>
+      </div>
 
-    <!-- Additional Text for Fun or Context -->
-    <p class="mt-6 text-sm text-gray-500">
-      Need assistance? <a href="contact" class="text-gray-500">Contact me</a> or explore our pharmacy management system.
-    </p>
+
+      <!-- Helpful Hint -->
+      <p class="mt-6 text-sm text-gray-500">
+        Need a navigation boost? <a href="/contact" class="text-blue-600 hover:underline">Contact our support team</a>
+      </p>
+    </div>
   </div>
 </div>
 

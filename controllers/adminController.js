@@ -105,23 +105,32 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
 
         const [totalIncomeResult] = await pool.execute(
             `SELECT SUM(payment_amt) AS total_income FROM payments`
-          );
-          const [adminIncomeResult] = await pool.execute(
-            "SELECT SUM(net_total) AS income_generated_by_admin FROM invoice WHERE admin_username = ?", 
+        );
+        const [adminIncomeResult] = await pool.execute(
+            "SELECT SUM(net_total) AS income_generated_by_admin FROM invoice WHERE admin_username = ?",
             [admin_username]
-          );
-          
-          // Extract values correctly
-          const totalIncome = totalIncomeResult[0]?.total_income || 0;
-          const adminIncome = adminIncomeResult[0]?.income_generated_by_admin || 0;
+        );
 
-        const [suppliersQuery] = await pool.execute(`SELECT s.*, sa.supplier_address_id, sa.street, sa.city, sa.state, sa.zip_code
-        FROM suppliers s
-        LEFT JOIN supplier_addresses sa ON s.supplier_id = sa.supplier_id`);
+        // Extract values correctly
+        const totalIncome = totalIncomeResult[0]?.total_income || 0;
+        const adminIncome = adminIncomeResult[0]?.income_generated_by_admin || 0;
 
+        const [suppliersQuery] = await pool.execute(`
+            SELECT 
+                s.supplier_id, s.supplier_name, s.supplier_email, s.supplier_ph_no,
+                sa.supplier_address_id, sa.street, sa.city, sa.state, sa.zip_code,
+                m.medicine_id, m.medicine_name,
+                st.stock_quantity
+            FROM suppliers s
+            LEFT JOIN supplier_addresses sa ON s.supplier_id = sa.supplier_id
+            LEFT JOIN stocks st ON s.supplier_id = st.supplier_id
+            LEFT JOIN medicines m ON st.medicine_id = m.medicine_id
+            ORDER BY s.supplier_id ASC;
+        `);
+        
         const suppliers = [];
         const supplierMap = new Map();
-
+        
         suppliersQuery.forEach(row => {
             if (!supplierMap.has(row.supplier_id)) {
                 supplierMap.set(row.supplier_id, {
@@ -129,14 +138,25 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     supplier_name: row.supplier_name,
                     supplier_email: row.supplier_email,
                     supplier_ph_no: row.supplier_ph_no,
-                    supplier_address: row.supplier_address,
-                    addresses: []
+                    addresses: [],
+                    medicines: []
                 });
                 suppliers.push(supplierMap.get(row.supplier_id));
             }
-            if (row.customer_address_id) {
+        
+            // Add medicine if it's not already in the array
+            if (row.medicine_id && !supplierMap.get(row.supplier_id).medicines.some(m => m.medicine_id === row.medicine_id)) {
+                supplierMap.get(row.supplier_id).medicines.push({
+                    medicine_id: row.medicine_id,
+                    medicine_name: row.medicine_name,
+                    stock_quantity: row.stock_quantity || 0 // Default to 0 if null
+                });
+            }
+        
+            // Add address if it's not already in the array
+            if (row.supplier_address_id && !supplierMap.get(row.supplier_id).addresses.some(a => a.supplier_address_id === row.supplier_address_id)) {
                 supplierMap.get(row.supplier_id).addresses.push({
-                    customer_address_id: row.customer_address_id,
+                    supplier_address_id: row.supplier_address_id,
                     street: row.street,
                     city: row.city,
                     state: row.state,
@@ -144,13 +164,6 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                 });
             }
         });
-
-        const [stocks] = await pool.execute(`
-            SELECT m.medicine_name, m.medicine_composition ,s.supplier_name, st.stock_quantity 
-            FROM stocks st 
-            JOIN medicines m ON st.medicine_id = m.medicine_id 
-            JOIN suppliers s ON st.supplier_id = s.supplier_id;
-        `);
 
         // Render EJS page with data
         res.render('adminDashboard', {
@@ -161,8 +174,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             medicines,
             totalIncome,
             adminIncome,
-            suppliers,
-            stocks
+            suppliers
         });
 
     } catch (err) {
@@ -236,8 +248,8 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
             await pool.query(
                 `UPDATE customers SET customer_name=?, customer_email=?, customer_ph_no=?, 
                  customer_balance_amt=? ${customer_photo ? ', customer_photo=?' : ''} WHERE customer_id=?`,
-                customer_photo ? [customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_photo, customer_id] 
-                              : [customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_id]
+                customer_photo ? [customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_photo, customer_id]
+                    : [customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_id]
             );
 
             return res.render("success", {
@@ -246,8 +258,8 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Customer details updated successfully!"
             });
-        } else if (action === "editAddress"){
-            if (!street || !city || !state || !zip_code ) {
+        } else if (action === "editAddress") {
+            if (!street || !city || !state || !zip_code) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
                     profile: "admin",
@@ -256,8 +268,8 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 });
             }
 
-             // Update address
-             await pool.execute(
+            // Update address
+            await pool.execute(
                 `UPDATE customer_addresses SET street=?, city=?, state=?, zip_code=?, address_type=? 
                  WHERE customer_id=? AND customer_address_id=?`,
                 [street, city, state, zip_code, address_type, customer_id, customer_address_id]
@@ -269,8 +281,8 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Customer details updated successfully!"
             });
-        } else if (action === "editFeedback"){
-            if (!rating || !feedback_text ) {
+        } else if (action === "editFeedback") {
+            if (!rating || !feedback_text) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
                     profile: "admin",
@@ -296,10 +308,10 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
 
         return res.status(400).render("400", {
             username: req.session.user?.username,
-            profile: "customer",
+            profile: "admin",
             pagetitle: "Bad Request",
             error: "Invalid action provided."
-        });    
+        });
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).render("500", {
@@ -332,7 +344,7 @@ exports.addMedicine = [isAdmin, async (req, res) => {
         const { medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_type } = req.body;
         let medicine_img = req.file ? req.file.buffer : null;
 
-        
+
         if (!medicine_name || !medicine_composition || !medicine_price || !medicine_expiry_date || !medicine_type) {
             return res.status(400).render("400", {
                 username: req.session.user?.username,
@@ -426,7 +438,7 @@ exports.deleteOrEditMedicine = [isAdmin, async (req, res) => {
             });
 
         } else if (action === "edit") {
-            
+
             if (!medicine_name || !medicine_composition || !medicine_price || !medicine_expiry_date || !medicine_type) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
@@ -456,7 +468,7 @@ exports.deleteOrEditMedicine = [isAdmin, async (req, res) => {
             profile: "customer",
             pagetitle: "Bad Request",
             error: "Invalid action provided."
-        });    
+        });
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).render("500", {
@@ -471,8 +483,8 @@ exports.deleteOrEditMedicine = [isAdmin, async (req, res) => {
 // Add Medicine
 exports.addSupplier = [isAdmin, async (req, res) => {
     try {
-        const {supplier_name, supplier_email, supplier_ph_no, street, city, state, zip_code } = req.body;
-        if (!supplier_name || !supplier_email || !supplier_ph_no || !street || !city|| !state || !zip_code) {
+        const { supplier_name, supplier_email, supplier_ph_no, street, city, state, zip_code } = req.body;
+        if (!supplier_name || !supplier_email || !supplier_ph_no || !street || !city || !state || !zip_code) {
             return res.status(400).render("400", {
                 username: req.session.user?.username,
                 profile: "admin",
@@ -504,7 +516,7 @@ exports.addSupplier = [isAdmin, async (req, res) => {
             throw new Error("Failed to insert supplier address.");
         }
 
-        await connection.commit(); 
+        await connection.commit();
         connection.release();
 
         if (insertResult.affectedRows === 0) {
@@ -523,6 +535,100 @@ exports.addSupplier = [isAdmin, async (req, res) => {
             profile: "admin",
             pagetitle: "Success",
             message: 'Supplier added successfully!'
+        });
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
+    try {
+        const { action, supplier_id, supplier_name, supplier_email, supplier_ph_no, supplier_address_id, street, city, state, zip_code } = req.body;
+
+        if (!supplier_id) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Bad Request",
+                error: "Supplier ID is required."
+            });
+        }
+
+        if (action === "delete") {
+            const [deleteResult] = await pool.query('DELETE FROM suppliers WHERE supplier_id = ?', [supplier_id]);
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Not Found",
+                    error: "Supplier not found or already deleted."
+                });
+            }
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Supplier deleted successfully!"
+            });
+        } else if (action === "edit") {
+            !supplier_name || !supplier_email || !supplier_ph_no
+            if (!supplier_name || !supplier_email || !supplier_ph_no) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "All fields must be provided for editing."
+                });
+            }
+
+            // Update customer info
+            await pool.query(
+                `UPDATE suppliers SET supplier_name = ?, supplier_email = ?, supplier_ph_no = ? WHERE supplier_id=?`,
+                [supplier_name, supplier_email, supplier_ph_no, supplier_id]
+            );
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Supplier details updated successfully!"
+            });
+        } else if (action === "editAddress") {
+            if (!street || !city || !state || !zip_code) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "All fields must be provided for editing."
+                });
+            }
+
+            // Update address
+            await pool.execute(
+                `UPDATE supplier_addresses SET street=?, city=?, state=?, zip_code=? 
+                 WHERE supplier_id=? AND supplier_address_id=?`,
+                [street, city, state, zip_code, supplier_id, supplier_address_id]
+            );
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Supplier details updated successfully!"
+            });
+        } 
+
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Bad Request",
+            error: "Invalid action provided."
         });
     } catch (err) {
         console.error("Database Error:", err);

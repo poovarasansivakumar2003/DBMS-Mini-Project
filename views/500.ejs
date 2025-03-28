@@ -1,55 +1,71 @@
 <%- include('includes/header') %>
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-white flex flex-col items-center justify-center px-4">
-  <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-    <!-- Error Icon -->
-    <div class="mb-6">
-      <i class="fas fa-cogs text-yellow-500 text-6xl"></i>
-    </div>
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-white flex flex-col items-center justify-center px-4 relative overflow-hidden">
+  <!-- Diagnostic Background Pattern -->
+  <div class="absolute inset-0 opacity-10 pointer-events-none">
+      <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-blue-100 to-transparent" style="clip-path: polygon(0 0, 100% 0, 0 100%)"></div>
+      <div class="absolute bottom-0 right-0 w-full h-full bg-gradient-to-l from-green-100 to-transparent" style="clip-path: polygon(100% 0, 0 100%, 100% 100%)"></div>
+  </div>
 
-    <!-- Error Content -->
-    <h1 class="text-4xl font-bold text-gray-800 mb-4">500</h1>
-    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Internal Server Error</h2>
-    <% if (typeof error !== "undefined" && error) { %>
-    <p class="text-gray-600 mb-8">
-      <%= error %>
-    </p>
-    <% } else { %>
-    <p class="text-gray-600 mb-8">Sorry! Something went wrong on our end. Our team has been notified and is working to fix the issue.</p>
-    <% } %>
-    <p class="text-sm text-gray-500 mb-8">Error ID: <%= Date.now().toString(36) %></p>
+  <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center relative z-10 border-4 border-blue-100">
+      <!-- Animated Error Icon -->
+      <div class="mb-6 relative">
+          <div class="absolute -inset-4 bg-yellow-100 rounded-full animate-pulse"></div>
+          <i class="fas fa-cogs text-yellow-500 text-6xl relative z-10 transform hover:rotate-45 transition-transform duration-300"></i>
+      </div>
 
-    <!-- Action Buttons -->
-    <div class="flex flex-col sm:flex-row justify-center gap-4">
-      <a href="/" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-        <i class="fas fa-home mr-2"></i>Go Home
-      </a>
-      <a href="/contact" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
-        <i class="fas fa-envelope mr-2"></i>Contact Support
-      </a>
-      <button onclick="history.back()" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors">
-        <i class="fas fa-arrow-left mr-2"></i>Go Back
-      </button>
-    </div>
+      <!-- Error Content -->
+      <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-red-500 mb-4">500</h1>
+      <h2 class="text-2xl font-semibold text-gray-700 mb-4">Internal Server Error</h2>
+      
+      <% if (typeof error !== "undefined" && error) { %>
+      <p class="text-gray-600 mb-8">
+          <%= error %>
+      </p>
+      <% } else { %>
+      <p class="text-gray-600 mb-8">Sorry! Something went wrong on our end. Our team has been notified and is working to fix the issue.</p>
+      <% } %>
+      
+      <p class="text-sm text-gray-500 mb-8 bg-gray-100 rounded-lg py-2 px-4 inline-block">
+          Error ID: <%= Date.now().toString(36) %>
+      </p>
 
-    <!-- Refresh Timer -->
-    <div class="mt-8 text-sm text-gray-500">
-      <p>This page will refresh in <span id="countdown">30</span> seconds</p>
-    </div>
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+          <a href="/" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all transform hover:scale-105 flex items-center justify-center">
+              <i class="fas fa-home mr-2"></i>Go Home
+          </a>
+          <a href="/contact" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all transform hover:scale-105 flex items-center justify-center">
+              <i class="fas fa-envelope mr-2"></i>Contact Support
+          </a>
+          <button onclick="history.back()" class="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-all transform hover:scale-105 flex items-center justify-center">
+              <i class="fas fa-arrow-left mr-2"></i>Go Back
+          </button>
+      </div>
+
+      <!-- Refresh Timer -->
+      <div class="mt-8 text-sm text-gray-500">
+          <p>This page will refresh in <span id="countdown" class="font-bold text-blue-600">30</span> seconds</p>
+          <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+              <div id="countdown-bar" class="bg-blue-600 h-1.5 rounded-full" style="width: 100%"></div>
+          </div>
+      </div>
   </div>
 </div>
 
 <script>
   let timeLeft = 30;
   const countdownElement = document.getElementById('countdown');
+  const countdownBar = document.getElementById('countdown-bar');
 
   const countdown = setInterval(() => {
-    timeLeft--;
-    countdownElement.textContent = timeLeft;
+      timeLeft--;
+      countdownElement.textContent = timeLeft;
+      countdownBar.style.width = `${(timeLeft / 30) * 100}%`;
 
-    if (timeLeft <= 0) {
-      clearInterval(countdown);
-      location.reload();
-    }
+      if (timeLeft <= 0) {
+          clearInterval(countdown);
+          location.reload();
+      }
   }, 1000);
 </script>
 <%- include('includes/footer') %>
