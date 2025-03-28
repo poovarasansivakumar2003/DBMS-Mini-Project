@@ -37,13 +37,20 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
         const [medicines] = await pool.query(`
             SELECT m.medicine_id, m.medicine_name, m.medicine_composition, m.medicine_price, 
                    m.medicine_type, m.medicine_expiry_date, m.medicine_img, 
-                   SUM(s.stock_quantity) AS total_stock
+                   IFNULL(SUM(s.stock_quantity), 0) AS total_stock
             FROM medicines m
             LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
-            WHERE m.medicine_expiry_date > CURDATE()
             GROUP BY m.medicine_id
-            HAVING total_stock > 0
         `);
+
+        medicines.forEach(medicine => {
+            if (medicine.medicine_img) {
+                medicine.medicine_img = `data:image/jpeg;base64,${medicine.medicine_img.toString('base64')}`;
+            } else {
+                // Use default image if no image exists
+                medicine.medicine_img = '/img/noImg.jpg';
+            }
+        });
 
         const [customersQuery] = await pool.query(`
             SELECT 
@@ -128,7 +135,6 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
 
 // ✅ Edit or Delete Customer (Supports Image Update)
 exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
-    console.log("Received Data:", req.body); // Debugging line
     try {
 
         // Upload customer photo (if provided)
@@ -175,7 +181,7 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 message: "Customer deleted successfully!"
             });
         } else if (action === "edit") {
-            if (!customer_name || !customer_email || !customer_ph_no || !customer_balance_amt || !street || !city || !state || !zip_code || !rating || !feedback_text) {
+            if (!customer_name || !customer_email || !customer_ph_no || !customer_balance_amt) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
                     profile: "admin",
@@ -192,12 +198,44 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                               : [customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_id]
             );
 
-            // Update address
-            await pool.execute(
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Customer details updated successfully!"
+            });
+        } else if (action === "editAddress"){
+            if (!street || !city || !state || !zip_code ) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "All fields must be provided for editing."
+                });
+            }
+
+             // Update address
+             await pool.execute(
                 `UPDATE customer_addresses SET street=?, city=?, state=?, zip_code=?, address_type=? 
                  WHERE customer_id=? AND address_id=?`,
                 [street, city, state, zip_code, address_type, customer_id, address_id]
             );
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Customer details updated successfully!"
+            });
+        } else if (action === "editFeedback"){
+            if (!rating || !feedback_text ) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "All fields must be provided for editing."
+                });
+            }
 
             // Update feedback
             await pool.execute(
@@ -210,16 +248,16 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 username: req.session.user?.username,
                 profile: "admin",
                 pagetitle: "Success",
-                message: "Customer updated successfully!"
+                message: "Customer details updated successfully!"
             });
         }
+
         return res.status(400).render("400", {
             username: req.session.user?.username,
             profile: "customer",
             pagetitle: "Bad Request",
             error: "Invalid action provided."
-        });
-        
+        });    
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).render("500", {
@@ -231,132 +269,164 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
     }
 }];
 
-// // Add Medicine
-// exports.addMedicine = [isAdmin, async (req, res) => {
-//     try {
-//         const { medicine_name, medicine_composition, medicine_price, medicine_expiry_date } = req.body;
-//         if (!medicine_name || !medicine_composition || !medicine_price || !medicine_expiry_date || !req.file) {
-//             return res.status(400).render("400", {
-//                 username: req.session.user?.username,
-//                 profile: "admin",
-//                 pagetitle: "Bad Request",
-//                 error: "All fields are required"
-//             });
-//         }
-
-//         const ext_medi = path.extname(req.file.originalname);
-//         const newFileName_medi = `${medicine_name}${ext_medi}`;
-//         newFilePath = `/img/medicinesImg/${newFileName_medi}`;
-
-//         // Move the uploaded file to retain the same name
-//         const destinationPath = path.join(__dirname, '../public', newFilePath);
-//         await fs.promises.rename(req.file.path, destinationPath);
-
-//         // Set the image URL for database storage
-//         imgUrl = newFilePath;
-
-//         await pool.query(
-//             `INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img)
-//              VALUES (?, ?, ?, ?, ?)`,
-//             [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, imgUrl]
-//         );
-//         // Render success page
-//         res.render("success", {
-//             pdfName: null,
-//             username: req.session.user?.username,
-//             profile: "admin",
-//             pagetitle: "Success",
-//             message: 'Medicine added successfully!'
-//         });
-//     } catch (err) {
-//         console.error("Database Error:", err);
-//         res.status(500).render("500", {
-//             username: req.session.user?.username,
-//             profile: "admin",
-//             pagetitle: "Internal Server Error",
-//             error: err.message
-//         });
-//     }
-// }];
-
-// // Edit or Delete Medicine
-// exports.deleteOrEditMedicine = [isAdmin, uploadMedicine.single('medicine_img'), async (req, res) => {
-//     try {
-//         const { action, medicine_id, medicine_name, medicine_composition, medicine_price, medicine_expiry_date } = req.body;
-//         // First get the current image path to delete the file
-//         const [currentMedicine] = await pool.query('SELECT medicine_img FROM medicines WHERE medicine_id = ?', [medicine_id]);
-
-//         if (action === "delete") {
 
 
-//             if (currentMedicine.length > 0 && currentMedicine[0].medicine_img) {
-//                 const imagePath = path.join(__dirname, '../public', currentMedicine[0].medicine_img);
-//                 // Delete the image file if it exists
-//                 if (fs.existsSync(imagePath)) {
-//                     fs.unlinkSync(imagePath);
-//                 }
-//             }
+// Add Medicine
+exports.addMedicine = [isAdmin, async (req, res) => {
+    try {
+        // Upload customer photo (if provided)
+        await new Promise((resolve, reject) => {
+            upload.single("medicine_img")(req, res, (err) => {
+                if (err) {
+                    return reject(res.status(500).render("500", {
+                        username: req.session.user?.username,
+                        profile: "admin",
+                        pagetitle: "Internal Server Error",
+                        error: "File upload error"
+                    }));
+                }
+                resolve();
+            });
+        });
 
-//             await pool.query('DELETE FROM medicines WHERE medicine_id = ?', [medicine_id]);
-//             res.render("success", {
-//                 pdfName: null,
-//                 username: req.session.user?.username,
-//                 profile: "admin",
-//                 pagetitle: "Success",
-//                 message: 'Medicine deleted successfully!'
-//             });
-//         } else if (action === "edit") {
-//             if (req.file) {
-//                 const ext_medi = path.extname(req.file.originalname);
-//                 const newFileName_medi = `${medicine_name}${ext_medi}`;
-//                 newFilePath_medi = `/img/medicinesImg/${newFileName_medi}`;
+        const { medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_type } = req.body;
+        let medicine_img = req.file ? req.file.buffer : null;
 
-//                 // Move the uploaded file
-//                 const destinationPath = path.join(__dirname, '../public', newFilePath_medi);
-//                 await fs.promises.rename(req.file.path, destinationPath);
+        
+        if (!medicine_name || !medicine_composition || !medicine_price || !medicine_expiry_date || !medicine_type) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Bad Request",
+                error: "All fields are required"
+            });
+        }
 
-//                 if (currentMedicine.length > 0 && currentMedicine[0].medicine_img) {
-//                     const oldImagePath = path.join(__dirname, '../public', currentMedicine[0].medicine_img);
+        const [insertResult] = await pool.query(
+            `INSERT INTO medicines (medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img, medicine_type)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_img, medicine_type]
+        );
 
-//                     if (fs.existsSync(oldImagePath)) {
-//                         await fs.promises.unlink(oldImagePath);
-//                     }
-//                 }
+        if (insertResult.affectedRows === 0) {
+            return res.status(500).render("500", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Internal Server Error",
+                error: "Unable to insert into database."
+            });
+        }
 
-//                 // Update database with new image
-//                 await pool.query(
-//                     `UPDATE medicines
-//                      SET medicine_name = ?, medicine_composition = ?, medicine_price = ?, medicine_expiry_date = ?, medicine_img = ?
-//                      WHERE medicine_id = ?`,
-//                     [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, newFilePath_medi, medicine_id]
-//                 );
-//             } else {
-//                 // Update without changing image
-//                 await pool.query(
-//                     `UPDATE medicines
-//                      SET medicine_name = ?, medicine_composition = ?, medicine_price = ?, medicine_expiry_date = ?
-//                      WHERE medicine_id = ?`,
-//                     [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_id]
-//                 );
-//             }
-//             return res.render("success", {
-//                 pdfName: null,
-//                 username: req.session.user?.username,
-//                 profile: "admin",
-//                 pagetitle: "Success",
-//                 message: 'Medicine Edited Successfully!'
-//             });
-//         }
-//     } catch (err) {
-//         console.error("Database Error:", err);
-//         res.status(500).render("500", {
-//             username: req.session.user?.username,
-//             profile: "admin",
-//             pagetitle: "Internal Server Error",
-//             error: err.message
-//         });
-//     }
-// }];
+        // Render success page
+        res.render("success", {
+            pdfName: null,
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Success",
+            message: 'Medicine added successfully!'
+        });
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+
+// Edit or Delete Medicine
+exports.deleteOrEditMedicine = [isAdmin, async (req, res) => {
+    try {
+        await new Promise((resolve, reject) => {
+            upload.single("medicine_img")(req, res, (err) => {
+                if (err) {
+                    return reject(res.status(500).render("500", {
+                        username: req.session.user?.username,
+                        profile: "admin",
+                        pagetitle: "Internal Server Error",
+                        error: "File upload error"
+                    }));
+                }
+                resolve();
+            });
+        });
+
+        let medicine_img = req.file ? req.file.buffer : null;
+
+        const { action, medicine_id, medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_type } = req.body;
+        if (!medicine_id) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Bad Request",
+                error: "Medicine ID is required."
+            });
+        }
+
+        if (action === "delete") {
+            const [deleteResult] = await pool.query('DELETE FROM medicines WHERE medicine_id = ?', [medicine_id]);
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Not Found",
+                    error: "Medicine not found or already deleted."
+                });
+            }
+
+            res.render("success", {
+                pdfName: null,
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: 'Medicine deleted successfully!'
+            });
+
+        } else if (action === "edit") {
+            
+            if (!medicine_name || !medicine_composition || !medicine_price || !medicine_expiry_date || !medicine_type) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "All fields must be provided for editing."
+                });
+            }
+
+            await pool.query(
+                `UPDATE medicines
+                 SET medicine_name = ?, medicine_composition = ?, medicine_price = ?, medicine_expiry_date = ?, medicine_type = ?
+                 WHERE medicine_id = ?`,
+                [medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_type, medicine_id]
+            );
+
+            return res.render("success", {
+                pdfName: null,
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: 'Medicine Edited Successfully!'
+            });
+        }
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Bad Request",
+            error: "Invalid action provided."
+        });    
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
 
 // exports.processOrder = [isAdmin, async (req, res) => {
 //     try {

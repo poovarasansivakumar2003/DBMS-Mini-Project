@@ -29,10 +29,9 @@ router.use(checkAdmin);
 
 router.get('/adminDashboard', adminController.getAdminDashboard);
 router.post('/adminDashboard/editDeleteCustomer', adminController.deleteOrEditCustomer);
+router.post('/adminDashboard/addMedicine', adminController.addMedicine);
+router.post('/adminDashboard/editDeleteMedicine', adminController.deleteOrEditMedicine);
 
-
-// router.post('/adminDashboard/addMedicine', adminController.addMedicine);
-// router.post('/adminDashboard/editDeleteMedicine', adminController.deleteOrEditMedicine);
 // router.post('/processOrder', adminController.processOrder);
 
 module.exports = router;
