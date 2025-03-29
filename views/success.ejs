@@ -215,4 +215,59 @@ window.location.href = "/admin/adminDashboard";
 }, 3000); // 3 seconds delay
 </script>
 <% } %>
+<% if (message==="Stocks added successfully!" ) { %>
+  <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+</div>
+</div>
+</div>
+<script>
+setTimeout(() => {
+window.location.href = "/admin/adminDashboard";
+}, 3000); // 3 seconds delay
+</script>
+<% } %>
+<% if (message==="Stock deleted successfully!" ) { %>
+  <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+</div>
+</div>
+</div>
+<script>
+setTimeout(() => {
+window.location.href = "/admin/adminDashboard";
+}, 3000); // 3 seconds delay
+</script>
+<% } %>
+<% if (message==="Stock details updated successfully!" ) { %>
+  <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+</div>
+</div>
+</div>
+<script>
+setTimeout(() => {
+window.location.href = "/admin/adminDashboard";
+}, 3000); // 3 seconds delay
+</script>
+<% } %>
+<% if (message==="Address deleted successfully!" ) { %>
+  <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+</div>
+</div>
+</div>
+<script>
+setTimeout(() => {
+window.location.href = "/admin/adminDashboard";
+}, 3000); // 3 seconds delay
+</script>
+<% } %>
+<% if (message==="Feedback deleted successfully!" ) { %>
+  <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+</div>
+</div>
+</div>
+<script>
+setTimeout(() => {
+window.location.href = "/admin/adminDashboard";
+}, 3000); // 3 seconds delay
+</script>
+<% } %>
 <%- include('includes/footer') %>

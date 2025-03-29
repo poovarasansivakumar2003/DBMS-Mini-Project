@@ -77,13 +77,14 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     customer_photo: row.customer_photo
                         ? `data:image/jpeg;base64,${row.customer_photo.toString('base64')}`
                         : '/img/defaultPhoto.jpg',
-                    addresses: [],
-                    feedbacks: []
+                    addresses: new Map(),  // Store addresses in a Map to prevent duplicates
+                    feedbacks: new Map()   // Store feedbacks in a Map to prevent duplicates
                 };
             }
-
-            if (row.customer_address_id) {
-                customers[row.customer_id].addresses.push({
+        
+            // Add address if not already present
+            if (row.customer_address_id && !customers[row.customer_id].addresses.has(row.customer_address_id)) {
+                customers[row.customer_id].addresses.set(row.customer_address_id, {
                     customer_address_id: row.customer_address_id,
                     street: row.street,
                     city: row.city,
@@ -92,9 +93,10 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     address_type: row.address_type
                 });
             }
-
-            if (row.feedback_id) {
-                customers[row.customer_id].feedbacks.push({
+        
+            // Add feedback if not already present
+            if (row.feedback_id && !customers[row.customer_id].feedbacks.has(row.feedback_id)) {
+                customers[row.customer_id].feedbacks.set(row.feedback_id, {
                     feedback_id: row.feedback_id,
                     rating: row.rating,
                     feedback_text: row.feedback_text,
@@ -102,6 +104,12 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                 });
             }
         });
+
+        const customersArray = Object.values(customers).map(customer => ({
+            ...customer,
+            addresses: Array.from(customer.addresses.values()),  // Convert Map to array
+            feedbacks: Array.from(customer.feedbacks.values())   // Convert Map to array
+        }));
 
         const [totalIncomeResult] = await pool.execute(
             `SELECT SUM(payment_amt) AS total_income FROM payments`
@@ -128,34 +136,23 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             ORDER BY s.supplier_id ASC;
         `);
         
-        const suppliers = [];
-        const supplierMap = new Map();
+        let suppliers = {};
         
         suppliersQuery.forEach(row => {
-            if (!supplierMap.has(row.supplier_id)) {
-                supplierMap.set(row.supplier_id, {
+            if (!suppliers[row.supplier_id]) {
+                suppliers[row.supplier_id] = {
                     supplier_id: row.supplier_id,
                     supplier_name: row.supplier_name,
                     supplier_email: row.supplier_email,
                     supplier_ph_no: row.supplier_ph_no,
-                    addresses: [],
-                    medicines: []
-                });
-                suppliers.push(supplierMap.get(row.supplier_id));
+                    addresses: new Map(),  // Prevent duplicate addresses
+                    medicines: new Map()   // Prevent duplicate medicines
+                };
             }
         
-            // Add medicine if it's not already in the array
-            if (row.medicine_id && !supplierMap.get(row.supplier_id).medicines.some(m => m.medicine_id === row.medicine_id)) {
-                supplierMap.get(row.supplier_id).medicines.push({
-                    medicine_id: row.medicine_id,
-                    medicine_name: row.medicine_name,
-                    stock_quantity: row.stock_quantity || 0 // Default to 0 if null
-                });
-            }
-        
-            // Add address if it's not already in the array
-            if (row.supplier_address_id && !supplierMap.get(row.supplier_id).addresses.some(a => a.supplier_address_id === row.supplier_address_id)) {
-                supplierMap.get(row.supplier_id).addresses.push({
+            // Add address if not already present
+            if (row.supplier_address_id && !suppliers[row.supplier_id].addresses.has(row.supplier_address_id)) {
+                suppliers[row.supplier_id].addresses.set(row.supplier_address_id, {
                     supplier_address_id: row.supplier_address_id,
                     street: row.street,
                     city: row.city,
@@ -163,18 +160,34 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     zip_code: row.zip_code
                 });
             }
+        
+            // Add medicine if not already present
+            if (row.medicine_id && !suppliers[row.supplier_id].medicines.has(row.medicine_id)) {
+                suppliers[row.supplier_id].medicines.set(row.medicine_id, {
+                    medicine_id: row.medicine_id,
+                    medicine_name: row.medicine_name,
+                    stock_quantity: row.stock_quantity || 0 // Default to 0 if null
+                });
+            }
         });
-
+        
+        // Convert Maps to arrays for JSON response
+        const suppliersArray = Object.values(suppliers).map(supplier => ({
+            ...supplier,
+            addresses: Array.from(supplier.addresses.values()),  // Convert Map to array
+            medicines: Array.from(supplier.medicines.values())   // Convert Map to array
+        }));
+        
         // Render EJS page with data
         res.render('adminDashboard', {
             pagetitle: `Admin Panel - ${req.session.user.username}`,
             username: req.session.user.username,
             profile: "admin",
-            customers: Object.values(customers),
+            customers: Object.values(customersArray),
             medicines,
             totalIncome,
             adminIncome,
-            suppliers
+            suppliers: Object.values(suppliersArray)
         });
 
     } catch (err) {
@@ -258,7 +271,23 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Customer details updated successfully!"
             });
-        } else if (action === "editAddress") {
+        } else if (action === "deleteAddress") {
+            const [deleteResult] = await pool.query('DELETE FROM customer_addresses WHERE customer_address_id=? AND customer_id = ?' , [customer_address_id, customer_id]);
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Not Found",
+                    error: "Address not found or already deleted."
+                });
+            }
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Address deleted successfully!"
+            });
+        }else if (action === "editAddress") {
             if (!street || !city || !state || !zip_code) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
@@ -281,7 +310,23 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Customer details updated successfully!"
             });
-        } else if (action === "editFeedback") {
+        } else if (action === "deleteFeedback") {
+            const [deleteResult] = await pool.query('DELETE FROM feedbacks WHERE customer_id=? AND feedback_id=?' , [customer_id, feedback_id]);
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Not Found",
+                    error: "Feedback not found or already deleted."
+                });
+            }
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Feedback deleted successfully!"
+            });
+        }else if (action === "editFeedback") {
             if (!rating || !feedback_text) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
@@ -480,7 +525,7 @@ exports.deleteOrEditMedicine = [isAdmin, async (req, res) => {
     }
 }];
 
-// Add Medicine
+// Add Supplier
 exports.addSupplier = [isAdmin, async (req, res) => {
     try {
         const { supplier_name, supplier_email, supplier_ph_no, street, city, state, zip_code } = req.body;
@@ -493,38 +538,25 @@ exports.addSupplier = [isAdmin, async (req, res) => {
             });
         }
 
-        await connection.beginTransaction(); // Start Transaction
-
         // Insert into suppliers table
-        const [supplierInsertResult] = await connection.query(
+        const [supplierInsertResult] = await pool.query(
             `INSERT INTO suppliers (supplier_name, supplier_email, supplier_ph_no) VALUES (?, ?, ?)`,
             [supplier_name, supplier_email, supplier_ph_no]
         );
 
-        if (supplierInsertResult.affectedRows === 0) {
-            throw new Error("Failed to insert supplier.");
-        }
-
         const supplier_id = supplierInsertResult.insertId;
 
-        const [addressInsertResult] = await connection.query(
+        const [addressInsertResult] = await pool.query(
             `INSERT INTO supplier_addresses (supplier_id, street, city, state, zip_code) VALUES (?, ?, ?, ?, ?)`,
             [supplier_id, street, city, state, zip_code]
         );
 
-        if (addressInsertResult.affectedRows === 0) {
-            throw new Error("Failed to insert supplier address.");
-        }
-
-        await connection.commit();
-        connection.release();
-
-        if (insertResult.affectedRows === 0) {
+        if (supplierInsertResult.affectedRows === 0 && addressInsertResult.affectedRows === 0) {
             return res.status(500).render("500", {
                 username: req.session.user?.username,
                 profile: "admin",
                 pagetitle: "Internal Server Error",
-                error: "Unable to insert into database."
+                error: "Failed to insert supplier."
             });
         }
 
@@ -549,7 +581,7 @@ exports.addSupplier = [isAdmin, async (req, res) => {
 
 exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
     try {
-        const { action, supplier_id, supplier_name, supplier_email, supplier_ph_no, supplier_address_id, street, city, state, zip_code } = req.body;
+        const { action, supplier_id, supplier_name, supplier_email, supplier_ph_no, supplier_address_id, street, city, state, zip_code, stock_quantity } = req.body;
 
         if (!supplier_id) {
             return res.status(400).render("400", {
@@ -577,7 +609,6 @@ exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
                 message: "Supplier deleted successfully!"
             });
         } else if (action === "edit") {
-            !supplier_name || !supplier_email || !supplier_ph_no
             if (!supplier_name || !supplier_email || !supplier_ph_no) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
@@ -599,7 +630,23 @@ exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Supplier details updated successfully!"
             });
-        } else if (action === "editAddress") {
+        } if (action === "deleteAddress") {
+            const [deleteResult] = await pool.query('DELETE FROM supplier_addresses WHERE supplier_address_id=? AND supplier_id = ?' , [supplier_address_id, supplier_id]);
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Not Found",
+                    error: "Address not found or already deleted."
+                });
+            }
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Address deleted successfully!"
+            });
+        }else if (action === "editAddress") {
             if (!street || !city || !state || !zip_code) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
@@ -623,13 +670,128 @@ exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
                 message: "Supplier details updated successfully!"
             });
         } 
-
         return res.status(400).render("400", {
             username: req.session.user?.username,
             profile: "admin",
             pagetitle: "Bad Request",
             error: "Invalid action provided."
         });
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.addStocks = [isAdmin, async (req, res) => {
+    try{
+    const { supplier_id, medicine_id, stock_quantity } = req.body;
+
+        if (!supplier_id || !stock_quantity || !medicine_id) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Bad Request",
+                error: "All fields must be provided for editing."
+            });
+        }
+
+       // Check if stock already exists
+        const [existingStock] = await pool.execute(
+            `SELECT stock_quantity FROM stocks WHERE supplier_id = ? AND medicine_id = ?`,
+            [supplier_id, medicine_id]
+        );
+
+        if (existingStock.length > 0) {
+            // If stock exists, update it by adding new quantity
+            const newQuantity = existingStock[0].stock_quantity + parseInt(stock_quantity, 10);
+
+            await pool.execute(
+                `UPDATE stocks SET stock_quantity = ? WHERE supplier_id = ? AND medicine_id = ?`,
+                [newQuantity, supplier_id, medicine_id]
+            );
+        } else {
+            // If stock does not exist, insert a new record
+            await pool.execute(
+                `INSERT INTO stocks (supplier_id, medicine_id, stock_quantity) VALUES (?, ?, ?)`,
+                [supplier_id, medicine_id, stock_quantity]
+            );
+        }
+
+        return res.render("success", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Success",
+            message: "Stocks added successfully!"
+        });
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.deleteOrEditStocks = [isAdmin, async (req, res) => {
+    try{
+        const { action, supplier_id, medicine_id, stock_quantity } = req.body;
+
+        if (!supplier_id || !medicine_id) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Bad Request",
+                error: "Supplier ID and Medicine ID is required."
+            });
+        }
+
+        if (action === "delete") {
+            const [deleteResult] = await pool.query('DELETE FROM stocks WHERE supplier_id = ? AND medicine_id = ?' , [supplier_id, medicine_id]);
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Not Found",
+                    error: "Stock not found or already deleted."
+                });
+            }
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Stock deleted successfully!"
+            });
+        }else  if (action === "edit") {
+            if (!supplier_id || !stock_quantity || !medicine_id) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "All fields must be provided for editing."
+                });
+            }
+
+            // Update customer info
+            await pool.query(
+                `UPDATE stocks SET stock_quantity = ? WHERE supplier_id = ? AND medicine_id = ?`,
+                [stock_quantity, supplier_id, medicine_id]
+            );
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Stock details updated successfully!"
+            });
+        }
+
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).render("500", {
