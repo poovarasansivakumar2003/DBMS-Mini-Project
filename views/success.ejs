@@ -125,6 +125,28 @@
   }, 3000); // 3 seconds delay
 </script>
       <% } %>
+      <% if (message==="Your cart has been deleted successfully!" ) { %>
+        <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+      </div>
+    </div>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.href = "/customer/CustomerDashboard";
+    }, 3000); // 3 seconds delay
+  </script>
+        <% } %>
+        <% if (message==="Your purchase details has been updated successfully!" ) { %>
+          <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+        </div>
+      </div>
+    </div>
+    <script>
+      setTimeout(() => {
+        window.location.href = "/customer/CustomerDashboard";
+      }, 3000); // 3 seconds delay
+    </script>
+          <% } %>
       <% if (message ==='Medicine added successfully!' ) { %>
         <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
     </div>
@@ -136,6 +158,32 @@
   }, 3000); // 3 seconds delay
 </script>
       <% } %>
+      <% if (message==='Added to cart' ) { %>
+        <p class="text-gray-600 text-sm sm:text-base mb-12">
+          <%= message %>
+        </p>
+      </div>
+    </div>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.href = "/admin/adminDashboard";
+    }, 3000); // 3 seconds delay
+  </script>
+        <% } %>
+        <% if (message==='Cart has been deleted successfully!' ) { %>
+          <p class="text-gray-600 text-sm sm:text-base mb-12">
+            <%= message %>
+          </p>
+        </div>
+      </div>
+    </div>
+    <script>
+      setTimeout(() => {
+        window.location.href = "/admin/adminDashboard";
+      }, 3000); // 3 seconds delay
+    </script>
+          <% } %>
       <% if (message==='Medicine deleted successfully!' ) { %>
       <p class="text-gray-600 text-sm sm:text-base mb-12">
         <%= message %>
@@ -149,6 +197,19 @@
   }, 3000); // 3 seconds delay
 </script>
       <% } %>
+      <% if (message==='Purchase details has been updated successfully!' ) { %>
+        <p class="text-gray-600 text-sm sm:text-base mb-12">
+          <%= message %>
+        </p>
+      </div>
+    </div>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.href = "/admin/adminDashboard";
+    }, 3000); // 3 seconds delay
+  </script>
+        <% } %>
       <% if (message === 'Medicine Edited Successfully!' ) { %>
         <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
     </div>

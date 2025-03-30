@@ -60,22 +60,22 @@
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12 justify-center">
       <% const stats = [
-        { title: 'Admins', count: admins, color: 'blue', icon: 'fa-user-shield' }, 
-        { title: 'Customers', count: customers, color: 'green', icon: 'fa-users' },
-        { title: 'Feedbacks', count: feedbacks, color: 'purple', icon: 'fa-comment-dots' }, 
-        { title: 'Medicines', count: medicines, color: 'yellow', icon: 'fa-pills' }, 
-        { title: 'Suppliers', count: suppliers, color: 'red', icon: 'fa-truck' },
-        { title: 'Purchases', count: purchases, color: 'orange', icon: 'fa-shopping-cart' }, 
-        { title: 'Payments', count: payments, color: 'blue', icon: 'fa-credit-card' }, 
-        { title: 'Invoice', count: invoice, color: 'purple', icon: 'fa-file-invoice-dollar' }, 
-        { title: 'Stocks', count: stocks, color: 'gray', icon: 'fa-boxes' }
-      ];%>
+      { title: 'Admins', count: admins, bgColor: 'bg-blue-500', textColor: 'text-blue-100', icon: 'fa-user-shield' }, 
+      { title: 'Customers', count: customers, bgColor: 'bg-green-500', textColor: 'text-green-100', icon: 'fa-users' },
+      { title: 'Feedbacks', count: feedbacks, bgColor: 'bg-purple-500', textColor: 'text-purple-100', icon: 'fa-comment-dots' }, 
+      { title: 'Medicines', count: medicines, bgColor: 'bg-yellow-500', textColor: 'text-yellow-100', icon: 'fa-pills' }, 
+      { title: 'Suppliers', count: suppliers, bgColor: 'bg-red-500', textColor: 'text-red-100', icon: 'fa-truck' },
+      { title: 'Purchases', count: purchases, bgColor: 'bg-orange-500', textColor: 'text-orange-100', icon: 'fa-shopping-cart' }, 
+      { title: 'Payments', count: payments, bgColor: 'bg-blue-500', textColor: 'text-blue-100', icon: 'fa-credit-card' }, 
+      { title: 'Invoice', count: invoice, bgColor: 'bg-purple-500', textColor: 'text-purple-100', icon: 'fa-file-invoice-dollar' }, 
+      { title: 'Stocks', count: stocks, bgColor: 'bg-gray-500', textColor: 'text-gray-100', icon: 'fa-boxes' }
+    ];%>
 
 
-      <% stats.forEach(stat=> { %>
+      <% stats.forEach(stat => { %>
       <div class="transform hover:scale-105 transition-transform duration-300">
-        <div class="relative bg-gradient-to-r from-<%= stat.color %>-500 to-<%= stat.color %>-600 rounded-xl shadow-lg overflow-hidden">
-          <div class="absolute top-0 right-0 -mt-3 -mr-3 bg-<%= stat.color %>-400 rounded-full p-2">
+        <div class="relative <%= stat.bgColor %> rounded-xl shadow-lg overflow-hidden">
+          <div class="absolute top-0 right-0 -mt-3 -mr-3 <%= stat.bgColor.replace('-500', '-400') %> rounded-full p-2">
             <i class="fas <%= stat.icon %> text-white text-xl"></i>
           </div>
           <div class="px-4 py-5 sm:p-6">
@@ -86,7 +86,7 @@
               <p class="text-4xl font-bold text-white">
                 <%= stat.count %>
               </p>
-              <p class="text-sm font-medium text-<%= stat.color %>-100">Active</p>
+              <p class="text-sm font-medium <%= stat.textColor %>">Active</p>
             </div>
           </div>
         </div>

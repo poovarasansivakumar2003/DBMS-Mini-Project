@@ -38,6 +38,8 @@ router.post("/customerDashboard/feedback/add", customerController.addFeedback);
 router.post("/customerDashboard/address/deleteOrEdit", customerController.deleteOrEditAddress);
 router.post("/customerDashboard/feedback/deleteOrEdit", customerController.deleteOrEditFeedback);
 
-router.post("/customerDashboard/purchase", customerController.purchaseMedicine);
+router.post("/customerDashboard/cart/addToCart", customerController.purchaseMedicine);
+router.post("/customerDashboard/cart/deleteOrEdit", customerController.deleteOrEditPurchaseMedicine);
+router.post("/customerDashboard/cart/pay", customerController.payPurchaseMedicine);
 
 module.exports = router;

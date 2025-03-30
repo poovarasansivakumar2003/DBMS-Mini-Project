@@ -35,7 +35,7 @@ router.post('/adminDashboard/supplier/addSupplier', adminController.addSupplier)
 router.post('/adminDashboard/supplier/deleteOrEditSupplier', adminController.deleteOrEditSupplier);
 router.post('/adminDashboard/stocks/addStocks', adminController.addStocks);
 router.post('/adminDashboard/stocks/deleteOrEditStocks', adminController.deleteOrEditStocks);
-
-// router.post('/processOrder', adminController.processOrder);
+router.post("/adminDashboard/cart/addToCart", adminController.purchaseMedicine);
+router.post('/adminDashboard/cart/processCart', adminController.processCart);
 
 module.exports = router;

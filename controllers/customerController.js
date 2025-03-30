@@ -106,29 +106,18 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
       GROUP BY m.medicine_id
       HAVING total_stock > 0`
         );
-        const [cartItems] = await pool.query(`SELECT 
-                p.purchase_id,
+        const [cartItems] = await pool.query(`SELECT p.purchase_id,
                 m.medicine_id,
                 m.medicine_name,
                 m.medicine_composition,
                 m.medicine_price,
                 p.purchased_quantity,
-                (m.medicine_price * p.purchased_quantity) AS total_price,
-                m.medicine_img,
-                ps.purchase_time
+                p.total_amt,
+                m.medicine_img
             FROM purchases p
-            JOIN purchase_sessions ps 
-                ON p.customer_id = ps.customer_id 
-                AND p.purchase_time = ps.purchase_time
-            JOIN medicines m 
-                ON p.medicine_id = m.medicine_id
-            WHERE p.customer_id = ?
-            AND ps.purchase_time = (
-                SELECT MAX(purchase_time) 
-                FROM purchase_sessions 
-                WHERE customer_id = ?
-            )
-`, [customerId, customerId]);
+            JOIN medicines m ON m.medicine_id = p.medicine_id
+            WHERE p.customer_id = ? AND p.supplier_id IS NULL
+`, [customerId]);
 
         res.render('customerDashboard', {
             pagetitle: `Customer Panel - ${req.session.user.username}`,
@@ -942,26 +931,33 @@ exports.downloadInvoice = [isCustomer, async (req, res) => {
 
 exports.purchaseMedicine = [isCustomer, async (req, res) => {
     try {
-        const { medicineId, quantity } = req.body;
         const customerId = req.session.customerId;
 
-        // Fetch medicine price
-        const [medicine] = await pool.query('SELECT medicine_price FROM medicines WHERE medicine_id = ?', [medicineId]);
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
+        const { medicine_id, purchased_quantity } = req.body;
 
-        if (!medicine.length) {
-            return res.status(404).render("400", {
-                profile: req.session.user?.role,
+        if (!medicine_id || !purchased_quantity) {
+            return res.status(400).render("400", {
+                profile: "customer",
                 username: req.session.user?.username,
                 pagetitle: "Bad Request",
-                error: "Invalid medicine ID"
+                error: "Missing required fields."
             });
         }
 
-        // Insert purchase record
-        await pool.query(
-            'INSERT INTO purchases (customer_id, medicine_id, purchased_quantity) VALUES (?, ?, ?)',
-            [customerId, medicineId, quantity]
-        );
+        // Insert into purchases table
+        const query = `
+            INSERT INTO purchases (customer_id, medicine_id, supplier_id, purchased_quantity)
+            VALUES (?, ?, NULL, ?)`;
+
+        await pool.query(query, [customerId, medicine_id, purchased_quantity]);
 
         res.render("success", {
             pdfName: null,
@@ -970,6 +966,173 @@ exports.purchaseMedicine = [isCustomer, async (req, res) => {
             pagetitle: "Success",
             message: "Added to cart, wait for admin approval"
         });
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.deleteOrEditPurchaseMedicine = [isCustomer, async (req, res) => {
+    try {
+        const customerId = req.session.customerId;
+
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
+        const { action, purchase_id, medicine_id, purchased_quantity } = req.body;
+
+        if (action === "delete") {
+            // Delete the address
+            const [deleteResult] = await pool.execute(
+                "DELETE FROM purchases WHERE customer_id = ? AND purchase_id = ?",
+                [customerId, purchase_id]
+            );
+
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "customer",
+                    pagetitle: "Not Found",
+                    error: "Cart not found or already deleted."
+                });
+            }
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Success",
+                message: "Your cart has been deleted successfully!"
+            });
+        }
+
+        else if (action === "edit") {
+            // Validate input fields
+            if (!purchase_id || !medicine_id || !purchased_quantity) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "customer",
+                    pagetitle: "Bad Request",
+                    error: "All details fields must be provided."
+                });
+            }
+
+            // Update the address
+            await pool.execute(
+                "UPDATE purchases SET medicine_id = ?, purchased_quantity = ? WHERE customer_id = ? AND purchase_id=?",
+                [medicine_id, purchased_quantity, customerId, purchase_id]
+            );
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Success",
+                message: "Your purchase details has been updated successfully!"
+            });
+        }
+
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Bad Request",
+            error: "Invalid action provided."
+        });
+
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.payPurchaseMedicine = [isCustomer, async (req, res) => {
+    try {
+        const customerId = req.session.customerId;
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
+
+        let purchaseIds = req.body.purchase_id;
+        let action = req.body.action;
+
+        // Ensure purchaseIds is always an array
+        if (!Array.isArray(purchaseIds)) {
+            purchaseIds = [purchaseIds];
+        }
+
+        if (!purchaseIds.length) {
+            return res.redirect('/customer/customerDashboard/cart'); // No items selected, go back
+        }
+
+        if (action === 'proceedToPay') {
+
+            //check if supplier_id is assigned
+            
+
+            await pool.query(
+                'UPDATE purchases SET purchase_time = CURRENT_TIMESTAMP WHERE purchase_id IN (?)',
+                [purchaseIds]
+            );
+
+            res.render('payment', {
+                pagetitle: `Customer Panel - ${req.session.user.username}`,
+                username: req.session.user.username,
+                profile: "customer",
+                customerId,
+                purchaseIds
+            });
+        }else if (action === 'payment') {
+            const [detailsForPayment] = await pool.query(`
+                SELECT  
+                GROUP_CONCAT(m.medicine_name ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_names,
+                GROUP_CONCAT(m.medicine_composition ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_compositions,
+                GROUP_CONCAT(DATE_FORMAT(m.medicine_expiry_date, '%Y-%m-%d') ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_expiry_dates,
+                GROUP_CONCAT(m.medicine_price ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_prices,
+                GROUP_CONCAT(p.purchased_quantity ORDER BY m.medicine_name SEPARATOR ', ') AS purchased_quantities,
+                GROUP_CONCAT(p.total_amt ORDER BY m.medicine_name SEPARATOR ', ') AS total_amt,
+                ps.actual_amt_to_pay,
+                i.prev_balance, 
+                i.total_amt_to_pay,
+                i.discount,
+                i.net_total,
+                py.payment_amt AS amount_paid, 
+                py.payment_time AS payment_date,
+                i.curr_balance    
+                FROM invoice i
+                JOIN purchase_sessions ps ON i.purchase_session_id = ps.purchase_session_id 
+                JOIN purchases p ON ps.customer_id = p.customer_id AND ps.purchase_time = p.purchase_time
+                JOIN medicines m ON p.medicine_id = m.medicine_id
+                LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
+                JOIN customers c ON ps.customer_id = c.customer_id  
+                LEFT JOIN admin a ON i.admin_username = a.admin_username  
+                LEFT JOIN payments py ON i.payment_id = py.payment_id  
+                WHERE ps.customer_id = ?
+                GROUP BY i.invoice_no
+                ORDER BY i.invoice_time DESC
+            `, [customerId]);
+    
+
+        }
+
+
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).render("500", {

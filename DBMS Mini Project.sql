@@ -131,6 +131,7 @@ CREATE TABLE payments (
     customer_id INT,
     payment_amt DECIMAL(10,2),
     payment_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    payment_method ENUM('creditCard', 'debitCard', 'cash', 'upi'),
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 describe payments;
@@ -168,16 +169,41 @@ BEGIN
 END$$
 
 -- Stored Procedure: Calculate Total Amount for Purchases
-CREATE PROCEDURE CalculateTotalAmount(IN p_medicine_id INT, IN p_purchased_quantity INT, OUT p_total_amount DECIMAL(10,2))
+CREATE PROCEDURE CalculateTotalAmount(
+    IN p_medicine_id INT, 
+    IN p_purchased_quantity INT, 
+    OUT p_total_amount DECIMAL(10,2)
+)
 BEGIN
     DECLARE price DECIMAL(10,2);
-    SELECT medicine_price INTO price FROM medicines WHERE medicine_id = p_medicine_id LIMIT 1;
+    DECLARE available_stock INT;
+
+    -- Get the medicine price
+    SELECT medicine_price INTO price 
+    FROM medicines 
+    WHERE medicine_id = p_medicine_id 
+    LIMIT 1;
+
+    -- If medicine not found, throw an error
     IF price IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Medicine not found!';
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Medicine not found!';
     ELSE
+        -- Get total available stock
+        SELECT SUM(stock_quantity) INTO available_stock
+        FROM stocks
+        WHERE medicine_id = p_medicine_id;
+
+        -- Check if enough stock is available
+        IF available_stock IS NULL OR available_stock < p_purchased_quantity THEN
+            SIGNAL SQLSTATE '45000' 
+            SET MESSAGE_TEXT = 'Not enough stock available!';
+        END IF;
+
+        -- Calculate total amount
         SET p_total_amount = p_purchased_quantity * price;
     END IF;
-END$$
+END $$
 
 -- Trigger: Calculate total amount before insert/update
 CREATE TRIGGER calculate_total_amt_before_insert
@@ -187,7 +213,7 @@ BEGIN
     DECLARE calculated_amount DECIMAL(10,2);
     CALL CalculateTotalAmount(NEW.medicine_id, NEW.purchased_quantity, calculated_amount);
     SET NEW.total_amt = calculated_amount;
-END$$
+END $$
 
 CREATE TRIGGER calculate_total_amt_before_update
 BEFORE UPDATE ON purchases
@@ -196,7 +222,7 @@ BEGIN
     DECLARE calculated_amount DECIMAL(10,2);
     CALL CalculateTotalAmount(NEW.medicine_id, NEW.purchased_quantity, calculated_amount);
     SET NEW.total_amt = calculated_amount;
-END$$
+END $$
 
 -- Stored Procedure: Reduce Stock on Purchase
 CREATE PROCEDURE ReduceStockOnPurchase(

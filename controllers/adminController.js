@@ -34,6 +34,15 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             });
         }
 
+        const [medicinesForPurchase] = await pool.query(`SELECT m.medicine_id, m.medicine_name, m.medicine_composition, 
+                     m.medicine_price, m.medicine_type, m.medicine_expiry_date, m.medicine_img, SUM(s.stock_quantity) as total_stock
+              FROM medicines m
+              LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
+              WHERE m.medicine_expiry_date > CURDATE()
+              GROUP BY m.medicine_id
+              HAVING total_stock > 0`
+        );
+
         const [medicines] = await pool.query(`
             SELECT m.medicine_id, m.medicine_name, m.medicine_composition, m.medicine_price, 
                    m.medicine_type, m.medicine_expiry_date, m.medicine_img, 
@@ -178,6 +187,20 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             medicines: Array.from(supplier.medicines.values())   // Convert Map to array
         }));
 
+        const [cartItems] = await pool.query(`SELECT p.purchase_id,
+            p.customer_id,
+                        m.medicine_id,
+                        m.medicine_name,
+                        m.medicine_composition,
+                        m.medicine_price,
+                        p.purchased_quantity,
+                        p.total_amt,
+                        m.medicine_img
+                    FROM purchases p
+                    JOIN medicines m ON m.medicine_id = p.medicine_id
+                    WHERE p.supplier_id IS NULL
+        `);
+
         // Render EJS page with data
         res.render('adminDashboard', {
             pagetitle: `Admin Panel - ${req.session.user.username}`,
@@ -187,7 +210,9 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             medicines,
             totalIncome,
             adminIncome,
-            suppliers: Object.values(suppliersArray)
+            suppliers: Object.values(suppliersArray),
+            cartItems,
+            medicinesForPurchase
         });
 
     } catch (err) {
@@ -276,7 +301,7 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 "INSERT INTO customer_addresses (customer_id, street, city, state, zip_code, address_type) VALUES (?, ?, ?, ?, ?, ?)",
                 [customer_id, street, city, state, zip_code, address_type]
             );
-            
+
             res.render("success", {
                 username: req.session.user?.username,
                 profile: "admin",
@@ -641,12 +666,12 @@ exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Supplier details updated successfully!"
             });
-        }else if (action === "addAddress") {
+        } else if (action === "addAddress") {
             await pool.execute(
                 "INSERT INTO supplier_addresses (supplier_id, street, city, state, zip_code) VALUES (?, ?, ?, ?, ?)",
                 [supplier_id, street, city, state, zip_code]
             );
-            
+
             res.render("success", {
                 username: req.session.user?.username,
                 profile: "admin",
@@ -814,6 +839,117 @@ exports.deleteOrEditStocks = [isAdmin, async (req, res) => {
                 message: "Stock details updated successfully!"
             });
         }
+
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.purchaseMedicine = [isAdmin, async (req, res) => {
+    try {
+        const { customer_id, medicine_id, purchased_quantity } = req.body;
+
+        if (!customer_id || !medicine_id || !purchased_quantity) {
+            return res.status(400).render("400", {
+                profile: "admin",
+                username: req.session.user?.username,
+                pagetitle: "Bad Request",
+                error: "Missing required fields."
+            });
+        }
+
+        // Insert into purchases table
+        const query = `
+            INSERT INTO purchases (customer_id, medicine_id, supplier_id, purchased_quantity)
+            VALUES (?, ?, NULL , ?)`;
+
+        await pool.query(query, [customer_id, medicine_id, purchased_quantity]);
+
+        res.render("success", {
+            pdfName: null,
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Success",
+            message: "Added to cart"
+        });
+
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.processCart = [isAdmin, async (req, res) => {
+    try {
+        const { action, customer_id, purchase_id, supplier_id, medicine_id, purchased_quantity } = req.body;
+
+        if (action === "delete") {
+            // Delete the address
+            const [deleteResult] = await pool.execute(
+                "DELETE FROM purchases WHERE customer_id = ? AND purchase_id = ?",
+                [customer_id, purchase_id]
+            );
+
+            if (deleteResult.affectedRows === 0) {
+                return res.status(404).render("404", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Not Found",
+                    error: "Cart not found or already deleted."
+                });
+            }
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Cart has been deleted successfully!"
+            });
+        }
+        else if (action === "edit") {
+            // Validate input fields
+            if (!customer_id || !purchase_id || !supplier_id || !medicine_id || !purchased_quantity) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "customer",
+                    pagetitle: "Bad Request",
+                    error: "All details fields must be provided."
+                });
+            }
+
+            // Update the address
+            await pool.execute(
+                "UPDATE purchases SET medicine_id = ?, purchased_quantity = ?, supplier_id =? WHERE customer_id = ? AND purchase_id=?",
+                [medicine_id, purchased_quantity, supplier_id, customer_id, purchase_id]
+            );
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Purchase details has been updated successfully!"
+            });
+        }
+
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Bad Request",
+            error: "Invalid action provided."
+        });
+
+
 
     } catch (err) {
         console.error("Database Error:", err);
