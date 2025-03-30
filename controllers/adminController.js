@@ -81,7 +81,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     feedbacks: new Map()   // Store feedbacks in a Map to prevent duplicates
                 };
             }
-        
+
             // Add address if not already present
             if (row.customer_address_id && !customers[row.customer_id].addresses.has(row.customer_address_id)) {
                 customers[row.customer_id].addresses.set(row.customer_address_id, {
@@ -93,7 +93,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     address_type: row.address_type
                 });
             }
-        
+
             // Add feedback if not already present
             if (row.feedback_id && !customers[row.customer_id].feedbacks.has(row.feedback_id)) {
                 customers[row.customer_id].feedbacks.set(row.feedback_id, {
@@ -135,9 +135,9 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             LEFT JOIN medicines m ON st.medicine_id = m.medicine_id
             ORDER BY s.supplier_id ASC;
         `);
-        
+
         let suppliers = {};
-        
+
         suppliersQuery.forEach(row => {
             if (!suppliers[row.supplier_id]) {
                 suppliers[row.supplier_id] = {
@@ -149,7 +149,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     medicines: new Map()   // Prevent duplicate medicines
                 };
             }
-        
+
             // Add address if not already present
             if (row.supplier_address_id && !suppliers[row.supplier_id].addresses.has(row.supplier_address_id)) {
                 suppliers[row.supplier_id].addresses.set(row.supplier_address_id, {
@@ -160,7 +160,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     zip_code: row.zip_code
                 });
             }
-        
+
             // Add medicine if not already present
             if (row.medicine_id && !suppliers[row.supplier_id].medicines.has(row.medicine_id)) {
                 suppliers[row.supplier_id].medicines.set(row.medicine_id, {
@@ -170,14 +170,14 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                 });
             }
         });
-        
+
         // Convert Maps to arrays for JSON response
         const suppliersArray = Object.values(suppliers).map(supplier => ({
             ...supplier,
             addresses: Array.from(supplier.addresses.values()),  // Convert Map to array
             medicines: Array.from(supplier.medicines.values())   // Convert Map to array
         }));
-        
+
         // Render EJS page with data
         res.render('adminDashboard', {
             pagetitle: `Admin Panel - ${req.session.user.username}`,
@@ -271,8 +271,20 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Customer details updated successfully!"
             });
+        } else if (action === "addAddress") {
+            await pool.execute(
+                "INSERT INTO customer_addresses (customer_id, street, city, state, zip_code, address_type) VALUES (?, ?, ?, ?, ?, ?)",
+                [customer_id, street, city, state, zip_code, address_type]
+            );
+            
+            res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Customer address has been added successfully!"
+            });
         } else if (action === "deleteAddress") {
-            const [deleteResult] = await pool.query('DELETE FROM customer_addresses WHERE customer_address_id=? AND customer_id = ?' , [customer_address_id, customer_id]);
+            const [deleteResult] = await pool.query('DELETE FROM customer_addresses WHERE customer_address_id=? AND customer_id = ?', [customer_address_id, customer_id]);
             if (deleteResult.affectedRows === 0) {
                 return res.status(404).render("404", {
                     username: req.session.user?.username,
@@ -287,7 +299,7 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Address deleted successfully!"
             });
-        }else if (action === "editAddress") {
+        } else if (action === "editAddress") {
             if (!street || !city || !state || !zip_code) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
@@ -311,7 +323,7 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 message: "Customer details updated successfully!"
             });
         } else if (action === "deleteFeedback") {
-            const [deleteResult] = await pool.query('DELETE FROM feedbacks WHERE customer_id=? AND feedback_id=?' , [customer_id, feedback_id]);
+            const [deleteResult] = await pool.query('DELETE FROM feedbacks WHERE customer_id=? AND feedback_id=?', [customer_id, feedback_id]);
             if (deleteResult.affectedRows === 0) {
                 return res.status(404).render("404", {
                     username: req.session.user?.username,
@@ -326,7 +338,7 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Feedback deleted successfully!"
             });
-        }else if (action === "editFeedback") {
+        } else if (action === "editFeedback") {
             if (!rating || !feedback_text) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
@@ -388,7 +400,6 @@ exports.addMedicine = [isAdmin, async (req, res) => {
 
         const { medicine_name, medicine_composition, medicine_price, medicine_expiry_date, medicine_type } = req.body;
         let medicine_img = req.file ? req.file.buffer : null;
-
 
         if (!medicine_name || !medicine_composition || !medicine_price || !medicine_expiry_date || !medicine_type) {
             return res.status(400).render("400", {
@@ -630,8 +641,20 @@ exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Supplier details updated successfully!"
             });
-        } if (action === "deleteAddress") {
-            const [deleteResult] = await pool.query('DELETE FROM supplier_addresses WHERE supplier_address_id=? AND supplier_id = ?' , [supplier_address_id, supplier_id]);
+        }else if (action === "addAddress") {
+            await pool.execute(
+                "INSERT INTO supplier_addresses (supplier_id, street, city, state, zip_code) VALUES (?, ?, ?, ?, ?)",
+                [supplier_id, street, city, state, zip_code]
+            );
+            
+            res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Supplier address has been added successfully!"
+            });
+        } else if (action === "deleteAddress") {
+            const [deleteResult] = await pool.query('DELETE FROM supplier_addresses WHERE supplier_address_id=? AND supplier_id = ?', [supplier_address_id, supplier_id]);
             if (deleteResult.affectedRows === 0) {
                 return res.status(404).render("404", {
                     username: req.session.user?.username,
@@ -646,7 +669,7 @@ exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Address deleted successfully!"
             });
-        }else if (action === "editAddress") {
+        } else if (action === "editAddress") {
             if (!street || !city || !state || !zip_code) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
@@ -669,7 +692,7 @@ exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Supplier details updated successfully!"
             });
-        } 
+        }
         return res.status(400).render("400", {
             username: req.session.user?.username,
             profile: "admin",
@@ -688,8 +711,8 @@ exports.deleteOrEditSupplier = [isAdmin, async (req, res) => {
 }];
 
 exports.addStocks = [isAdmin, async (req, res) => {
-    try{
-    const { supplier_id, medicine_id, stock_quantity } = req.body;
+    try {
+        const { supplier_id, medicine_id, stock_quantity } = req.body;
 
         if (!supplier_id || !stock_quantity || !medicine_id) {
             return res.status(400).render("400", {
@@ -700,7 +723,7 @@ exports.addStocks = [isAdmin, async (req, res) => {
             });
         }
 
-       // Check if stock already exists
+        // Check if stock already exists
         const [existingStock] = await pool.execute(
             `SELECT stock_quantity FROM stocks WHERE supplier_id = ? AND medicine_id = ?`,
             [supplier_id, medicine_id]
@@ -740,7 +763,7 @@ exports.addStocks = [isAdmin, async (req, res) => {
 }];
 
 exports.deleteOrEditStocks = [isAdmin, async (req, res) => {
-    try{
+    try {
         const { action, supplier_id, medicine_id, stock_quantity } = req.body;
 
         if (!supplier_id || !medicine_id) {
@@ -753,7 +776,7 @@ exports.deleteOrEditStocks = [isAdmin, async (req, res) => {
         }
 
         if (action === "delete") {
-            const [deleteResult] = await pool.query('DELETE FROM stocks WHERE supplier_id = ? AND medicine_id = ?' , [supplier_id, medicine_id]);
+            const [deleteResult] = await pool.query('DELETE FROM stocks WHERE supplier_id = ? AND medicine_id = ?', [supplier_id, medicine_id]);
             if (deleteResult.affectedRows === 0) {
                 return res.status(404).render("404", {
                     username: req.session.user?.username,
@@ -768,7 +791,7 @@ exports.deleteOrEditStocks = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Stock deleted successfully!"
             });
-        }else  if (action === "edit") {
+        } else if (action === "edit") {
             if (!supplier_id || !stock_quantity || !medicine_id) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,

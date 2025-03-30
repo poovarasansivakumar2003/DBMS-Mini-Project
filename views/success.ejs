@@ -270,4 +270,26 @@ window.location.href = "/admin/adminDashboard";
 }, 3000); // 3 seconds delay
 </script>
 <% } %>
+<% if (message==="Customer address has been added successfully!" ) { %>
+  <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+</div>
+</div>
+</div>
+<script>
+setTimeout(() => {
+window.location.href = "/admin/adminDashboard";
+}, 3000); // 3 seconds delay
+</script>
+<% } %>
+<% if (message==="Supplier address has been added successfully!" ) { %>
+  <p class="text-gray-600 text-sm sm:text-base mb-12"><%= message %></p>
+</div>
+</div>
+</div>
+<script>
+setTimeout(() => {
+window.location.href = "/admin/adminDashboard";
+}, 3000); // 3 seconds delay
+</script>
+<% } %>
 <%- include('includes/footer') %>
