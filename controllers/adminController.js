@@ -35,7 +35,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
         }
 
         const [medicinesForPurchase] = await pool.query(`SELECT m.medicine_id, m.medicine_name, m.medicine_composition, 
-                     m.medicine_price, m.medicine_type, m.medicine_expiry_date, m.medicine_img, SUM(s.stock_quantity) as total_stock
+              m.medicine_price, m.medicine_type, m.medicine_expiry_date, m.medicine_img, SUM(s.stock_quantity) as total_stock
               FROM medicines m
               LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
               WHERE m.medicine_expiry_date > CURDATE()
@@ -63,15 +63,36 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
 
         const [customersQuery] = await pool.query(`
             SELECT 
-                c.customer_id, c.customer_created_at, c.customer_name, c.customer_email, 
-                c.customer_ph_no, c.customer_balance_amt, c.customer_photo, 
-                ca.customer_address_id, ca.address_type, ca.street, ca.city, ca.state, ca.zip_code, 
-                f.feedback_id, f.rating, f.feedback_text, f.feedback_date
+                c.customer_id, 
+                c.customer_created_at, 
+                c.customer_name, 
+                c.customer_email, 
+                c.customer_ph_no, 
+                c.customer_balance_amt, 
+                c.customer_photo, 
+                ca.customer_address_id, 
+                ca.address_type, 
+                ca.street, 
+                ca.city, 
+                ca.state, 
+                ca.zip_code, 
+                f.feedback_id, 
+                f.rating, 
+                f.feedback_text, 
+                f.feedback_date,
+                COALESCE(SUM(p.payment_amt), 0) AS total_amt_spent
             FROM customers c
             LEFT JOIN customer_addresses ca ON c.customer_id = ca.customer_id
             LEFT JOIN feedbacks f ON c.customer_id = f.customer_id
+            LEFT JOIN payments p ON c.customer_id = p.customer_id
+            GROUP BY c.customer_id, c.customer_created_at, c.customer_name, 
+                     c.customer_email, c.customer_ph_no, c.customer_balance_amt, 
+                     c.customer_photo, ca.customer_address_id, ca.address_type, 
+                     ca.street, ca.city, ca.state, ca.zip_code, 
+                     f.feedback_id, f.rating, f.feedback_text, f.feedback_date
             ORDER BY c.customer_id, ca.customer_address_id, f.feedback_id;
         `);
+
 
         let customers = {};
         customersQuery.forEach(row => {
@@ -86,6 +107,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     customer_photo: row.customer_photo
                         ? `data:image/jpeg;base64,${row.customer_photo.toString('base64')}`
                         : '/img/defaultPhoto.jpg',
+                    total_amt_spent: row.total_amt_spent || 0,
                     addresses: new Map(),  // Store addresses in a Map to prevent duplicates
                     feedbacks: new Map()   // Store feedbacks in a Map to prevent duplicates
                 };
@@ -187,8 +209,10 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             medicines: Array.from(supplier.medicines.values())   // Convert Map to array
         }));
 
-        const [cartItems] = await pool.query(`SELECT p.purchase_id,
-            p.customer_id,
+        const [cartItems] = await pool.query(`SELECT 
+                        p.purchase_id,
+                        ps.purchase_session_id,
+                        p.customer_id,
                         m.medicine_id,
                         m.medicine_name,
                         m.medicine_composition,
@@ -198,8 +222,42 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                         m.medicine_img
                     FROM purchases p
                     JOIN medicines m ON m.medicine_id = p.medicine_id
-                    WHERE p.supplier_id IS NULL
+                    LEFT JOIN purchase_sessions ps ON p.purchase_time = ps.purchase_time
+                    LEFT JOIN invoice i ON ps.purchase_session_id = i.purchase_session_id
+                    WHERE i.invoice_no IS NULL
         `);
+
+        const [invoice] = await pool.query(`
+                    SELECT 
+                    i.invoice_no, 
+                    i.invoice_time, 
+                    a.admin_username, 
+                    GROUP_CONCAT(m.medicine_name ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_names,
+                    GROUP_CONCAT(m.medicine_composition ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_compositions,
+                    GROUP_CONCAT(COALESCE(s.supplier_name, 'Unknown') ORDER BY m.medicine_name SEPARATOR ', ') AS supplier_names,
+                    GROUP_CONCAT(DATE_FORMAT(m.medicine_expiry_date, '%Y-%m-%d') ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_expiry_dates,
+                    GROUP_CONCAT(m.medicine_price ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_prices,
+                    GROUP_CONCAT(p.purchased_quantity ORDER BY m.medicine_name SEPARATOR ', ') AS purchased_quantities,
+                    GROUP_CONCAT(p.total_amt ORDER BY m.medicine_name SEPARATOR ', ') AS total_amt,
+                    ps.actual_amt_to_pay,
+                    i.prev_balance, 
+                    i.total_amt_to_pay,
+                    i.discount,
+                    i.net_total,
+                    py.payment_amt AS amount_paid, 
+                    py.payment_time AS payment_date,
+                    i.curr_balance    
+                    FROM invoice i
+                    JOIN purchase_sessions ps ON i.purchase_session_id = ps.purchase_session_id 
+                    JOIN purchases p ON ps.customer_id = p.customer_id AND ps.purchase_time = p.purchase_time
+                    JOIN medicines m ON p.medicine_id = m.medicine_id
+                    LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
+                    JOIN customers c ON ps.customer_id = c.customer_id  
+                    LEFT JOIN admin a ON i.admin_username = a.admin_username  
+                    LEFT JOIN payments py ON i.payment_id = py.payment_id  
+                    GROUP BY i.invoice_no
+                    ORDER BY i.invoice_time DESC
+                `);
 
         // Render EJS page with data
         res.render('adminDashboard', {
@@ -212,7 +270,8 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             adminIncome,
             suppliers: Object.values(suppliersArray),
             cartItems,
-            medicinesForPurchase
+            medicinesForPurchase,
+            invoice
         });
 
     } catch (err) {
@@ -892,7 +951,7 @@ exports.purchaseMedicine = [isAdmin, async (req, res) => {
 
 exports.processCart = [isAdmin, async (req, res) => {
     try {
-        const { action, customer_id, purchase_id, supplier_id, medicine_id, purchased_quantity } = req.body;
+        const { action, customer_id, purchase_id, supplier_id, medicine_id, purchased_quantity, purchase_session_id } = req.body;
 
         if (action === "delete") {
             // Delete the address
@@ -919,7 +978,7 @@ exports.processCart = [isAdmin, async (req, res) => {
         }
         else if (action === "edit") {
             // Validate input fields
-            if (!customer_id || !purchase_id || !supplier_id || !medicine_id || !purchased_quantity) {
+            if (!customer_id || !purchase_id || !supplier_id || !medicine_id || !purchased_quantity || !purchase_session_id) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
                     profile: "customer",

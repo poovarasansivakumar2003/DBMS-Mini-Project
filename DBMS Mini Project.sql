@@ -141,7 +141,7 @@ CREATE TABLE invoice (
     invoice_no INT AUTO_INCREMENT PRIMARY KEY,
 	invoice_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     purchase_session_id INT,
-    admin_username VARCHAR(20),
+    admin_username VARCHAR(20) NULL,
     discount DECIMAL(10, 2) DEFAULT 0,
     payment_id INT,
     prev_balance DECIMAL(10, 2),
@@ -326,7 +326,7 @@ BEGIN
     END IF;
 END$$
 
--- Trigger: Assign purchase session
+-- Trigger: Assign purchase session after INSERT
 CREATE TRIGGER create_purchase_session
 AFTER INSERT ON purchases
 FOR EACH ROW
@@ -341,6 +341,35 @@ BEGIN
     
     -- Call the stored procedure
     CALL AssignPurchaseSession(NEW.customer_id, NEW.purchase_time, total_amount);
+END$$
+
+-- Trigger: Update purchase session after UPDATE
+CREATE TRIGGER update_purchase_session
+AFTER UPDATE ON purchases
+FOR EACH ROW
+BEGIN
+    DECLARE total_amount DECIMAL(10,2);
+    
+    -- Calculate total amount for the session (use OLD.customer_id and OLD.purchase_time in case they were changed)
+    SELECT SUM(total_amt) INTO total_amount 
+    FROM purchases 
+    WHERE customer_id = OLD.customer_id 
+    AND purchase_time = OLD.purchase_time;
+
+    -- Call the stored procedure with the old values
+    CALL AssignPurchaseSession(OLD.customer_id, OLD.purchase_time, total_amount);
+
+    -- If customer_id or purchase_time is updated, handle the new session separately
+    IF OLD.customer_id != NEW.customer_id OR OLD.purchase_time != NEW.purchase_time THEN
+        -- Recalculate total amount for the new session
+        SELECT SUM(total_amt) INTO total_amount 
+        FROM purchases 
+        WHERE customer_id = NEW.customer_id 
+        AND purchase_time = NEW.purchase_time;
+
+        -- Assign the new purchase session
+        CALL AssignPurchaseSession(NEW.customer_id, NEW.purchase_time, total_amount);
+    END IF;
 END$$
 
 -- Stored Procedure: Calculate Total Amount to Pay for Invoice
