@@ -34,19 +34,33 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             });
         }
 
-        const [medicinesForPurchase] = await pool.query(`SELECT m.medicine_id, m.medicine_name, m.medicine_composition, 
-              m.medicine_price, m.medicine_type, m.medicine_expiry_date, m.medicine_img, SUM(s.stock_quantity) as total_stock
-              FROM medicines m
-              LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
-              WHERE m.medicine_expiry_date > CURDATE()
-              GROUP BY m.medicine_id
-              HAVING total_stock > 0`
+        const [medicinesForPurchase] = await pool.query(`
+            SELECT 
+            m.medicine_id, 
+            m.medicine_name, 
+            m.medicine_composition, 
+            m.medicine_price, 
+            m.medicine_type,
+            m.medicine_expiry_date,
+            m.medicine_img, 
+            SUM(s.stock_quantity) as total_stock
+            FROM medicines m
+            LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
+            WHERE m.medicine_expiry_date > CURDATE()
+            GROUP BY m.medicine_id
+            HAVING total_stock > 0`
         );
 
         const [medicines] = await pool.query(`
-            SELECT m.medicine_id, m.medicine_name, m.medicine_composition, m.medicine_price, 
-                   m.medicine_type, m.medicine_expiry_date, m.medicine_img, 
-                   IFNULL(SUM(s.stock_quantity), 0) AS total_stock
+            SELECT 
+            m.medicine_id, 
+            m.medicine_name, 
+            m.medicine_composition, 
+            m.medicine_price, 
+            m.medicine_type, 
+            m.medicine_expiry_date, 
+            m.medicine_img, 
+            IFNULL(SUM(s.stock_quantity), 0) AS total_stock
             FROM medicines m
             LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
             GROUP BY m.medicine_id
@@ -63,33 +77,33 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
 
         const [customersQuery] = await pool.query(`
             SELECT 
-                c.customer_id, 
-                c.customer_created_at, 
-                c.customer_name, 
-                c.customer_email, 
-                c.customer_ph_no, 
-                c.customer_balance_amt, 
-                c.customer_photo, 
-                ca.customer_address_id, 
-                ca.address_type, 
-                ca.street, 
-                ca.city, 
-                ca.state, 
-                ca.zip_code, 
-                f.feedback_id, 
-                f.rating, 
-                f.feedback_text, 
-                f.feedback_date,
-                COALESCE(SUM(p.payment_amt), 0) AS total_amt_spent
+            c.customer_id, 
+            c.customer_created_at, 
+            c.customer_name, 
+            c.customer_email, 
+            c.customer_ph_no, 
+            c.customer_balance_amt, 
+            c.customer_photo, 
+            ca.customer_address_id, 
+            ca.address_type, 
+            ca.street, 
+            ca.city, 
+            ca.state, 
+            ca.zip_code, 
+            f.feedback_id, 
+            f.rating, 
+            f.feedback_text, 
+            f.feedback_date,
+            COALESCE(SUM(p.payment_amt), 0) AS total_amt_spent
             FROM customers c
             LEFT JOIN customer_addresses ca ON c.customer_id = ca.customer_id
             LEFT JOIN feedbacks f ON c.customer_id = f.customer_id
             LEFT JOIN payments p ON c.customer_id = p.customer_id
             GROUP BY c.customer_id, c.customer_created_at, c.customer_name, 
-                     c.customer_email, c.customer_ph_no, c.customer_balance_amt, 
-                     c.customer_photo, ca.customer_address_id, ca.address_type, 
-                     ca.street, ca.city, ca.state, ca.zip_code, 
-                     f.feedback_id, f.rating, f.feedback_text, f.feedback_date
+            c.customer_email, c.customer_ph_no, c.customer_balance_amt, 
+            c.customer_photo, ca.customer_address_id, ca.address_type, 
+            ca.street, ca.city, ca.state, ca.zip_code, 
+            f.feedback_id, f.rating, f.feedback_text, f.feedback_date
             ORDER BY c.customer_id, ca.customer_address_id, f.feedback_id;
         `);
 
@@ -156,10 +170,10 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
 
         const [suppliersQuery] = await pool.execute(`
             SELECT 
-                s.supplier_id, s.supplier_name, s.supplier_email, s.supplier_ph_no,
-                sa.supplier_address_id, sa.street, sa.city, sa.state, sa.zip_code,
-                m.medicine_id, m.medicine_name,
-                st.stock_quantity
+            s.supplier_id, s.supplier_name, s.supplier_email, s.supplier_ph_no,
+            sa.supplier_address_id, sa.street, sa.city, sa.state, sa.zip_code,
+            m.medicine_id, m.medicine_name,
+            st.stock_quantity
             FROM suppliers s
             LEFT JOIN supplier_addresses sa ON s.supplier_id = sa.supplier_id
             LEFT JOIN stocks st ON s.supplier_id = st.supplier_id
@@ -176,8 +190,8 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     supplier_name: row.supplier_name,
                     supplier_email: row.supplier_email,
                     supplier_ph_no: row.supplier_ph_no,
-                    addresses: new Map(),  // Prevent duplicate addresses
-                    medicines: new Map()   // Prevent duplicate medicines
+                    addresses: new Map(),  
+                    medicines: new Map()  
                 };
             }
 
@@ -304,7 +318,7 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
         });
 
         const { action, customer_id, customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_address_id, street, city, state, zip_code, address_type, feedback_id, rating, feedback_text } = req.body;
-        let customer_photo = req.file ? req.file.buffer : null;
+        
 
         if (!customer_id) {
             return res.status(400).render("400", {
@@ -315,8 +329,10 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
             });
         }
 
+        const customerId = Array.isArray(customer_id) ? customer_id[0] : customer_id;
+
         if (action === "delete") {
-            const [deleteResult] = await pool.query('DELETE FROM customers WHERE customer_id = ?', [customer_id]);
+            const [deleteResult] = await pool.query('DELETE FROM customers WHERE customer_id = ?', [customerId]);
             if (deleteResult.affectedRows === 0) {
                 return res.status(404).render("404", {
                     username: req.session.user?.username,
@@ -341,13 +357,16 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
                 });
             }
 
+            let customer_photo = req.file ? req.file.buffer : null;
+
             // Update customer info
             await pool.query(
                 `UPDATE customers SET customer_name=?, customer_email=?, customer_ph_no=?, 
                  customer_balance_amt=? ${customer_photo ? ', customer_photo=?' : ''} WHERE customer_id=?`,
-                customer_photo ? [customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_photo, customer_id]
-                    : [customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_id]
-            );
+                customer_photo 
+                    ? [customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_photo, customerId] // Fix: Use `customerId`
+                    : [customer_name, customer_email, customer_ph_no, customer_balance_amt, customerId] // Fix: Use `customerId` instead of `customer_id`
+            );            
 
             return res.render("success", {
                 username: req.session.user?.username,

@@ -95,24 +95,34 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
             ORDER BY i.invoice_time DESC
         `, [customerId]);
 
-        const [medicines] = await pool.query(`SELECT m.medicine_id, m.medicine_name, m.medicine_composition, 
-             m.medicine_price, m.medicine_type, m.medicine_expiry_date, m.medicine_img, SUM(s.stock_quantity) as total_stock
-      FROM medicines m
-      LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
-      WHERE m.medicine_expiry_date > CURDATE()
-      GROUP BY m.medicine_id
-      HAVING total_stock > 0`
+        const [medicines] = await pool.query(`
+            SELECT 
+            m.medicine_id, 
+            m.medicine_name, 
+            m.medicine_composition, 
+            m.medicine_price, 
+            m.medicine_type, 
+            m.medicine_expiry_date, 
+            m.medicine_img, 
+            SUM(s.stock_quantity) as total_stock
+            FROM medicines m
+            LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
+            WHERE m.medicine_expiry_date > CURDATE()
+            GROUP BY m.medicine_id
+            HAVING total_stock > 0`
         );
 
-        const [cartItems] = await pool.query(`SELECT 
-                p.purchase_id,
-                m.medicine_id,
-                m.medicine_name,
-                m.medicine_composition,
-                m.medicine_price,
-                p.purchased_quantity,
-                p.total_amt,
-                m.medicine_img
+        const [cartItems] = await pool.query(`
+            SELECT 
+            p.purchase_id,
+            m.medicine_id,
+            m.medicine_name,
+            m.medicine_composition,
+            m.medicine_type,
+            m.medicine_price,
+            p.purchased_quantity,
+            p.total_amt,
+            m.medicine_img
             FROM purchases p
             JOIN medicines m ON m.medicine_id = p.medicine_id
             LEFT JOIN purchase_sessions ps ON p.purchase_time = ps.purchase_time
@@ -955,7 +965,7 @@ exports.purchaseMedicine = [isCustomer, async (req, res) => {
 
         const [insertResult] = await pool.execute(
             `INSERT INTO purchases (customer_id, medicine_id, supplier_id, purchased_quantity)
-            VALUES (?, ?, NULL, ?)`,[customerId, medicine_id, purchased_quantity]
+            VALUES (?, ?, NULL, ?)`, [customerId, medicine_id, purchased_quantity]
         );
 
         if (insertResult.affectedRows === 0) {
@@ -972,7 +982,7 @@ exports.purchaseMedicine = [isCustomer, async (req, res) => {
             username: req.session.user?.username,
             profile: "customer",
             pagetitle: "Success",
-            message: "Added to cart"
+            message: "Added to cart successfully"
         });
 
     } catch (err) {
@@ -1113,27 +1123,23 @@ exports.payPurchaseMedicine = [isCustomer, async (req, res) => {
 
             const [paymentResult] = await pool.query(`
                 SELECT 
-                    c.customer_name,
-                    GROUP_CONCAT(DISTINCT m.medicine_name ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_names,
-                    GROUP_CONCAT(DISTINCT m.medicine_img ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_img,
-                    GROUP_CONCAT(DISTINCT m.medicine_composition ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_compositions,
-                    GROUP_CONCAT(DISTINCT COALESCE(s.supplier_name, 'Unknown') ORDER BY m.medicine_name SEPARATOR ', ') AS supplier_names,
-                    GROUP_CONCAT(DISTINCT DATE_FORMAT(m.medicine_expiry_date, '%Y-%m-%d') ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_expiry_dates,
-                    GROUP_CONCAT(DISTINCT m.medicine_price ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_prices,
-                    GROUP_CONCAT(DISTINCT pur.purchased_quantity ORDER BY m.medicine_name SEPARATOR ', ') AS purchased_quantities,
-                    GROUP_CONCAT(DISTINCT pur.total_amt ORDER BY m.medicine_name SEPARATOR ', ') AS total_amt,
-                    ps.purchase_session_id,
-                    ps.actual_amt_to_pay,
-                    c.customer_balance_amt
+                c.customer_name,
+                GROUP_CONCAT(DISTINCT m.medicine_name ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_names,
+                GROUP_CONCAT(DISTINCT m.medicine_composition ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_compositions,
+                GROUP_CONCAT(DISTINCT COALESCE(s.supplier_name, 'Unknown') ORDER BY m.medicine_name SEPARATOR ', ') AS supplier_names,
+                GROUP_CONCAT(DISTINCT DATE_FORMAT(m.medicine_expiry_date, '%Y-%m-%d') ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_expiry_dates,
+                GROUP_CONCAT(DISTINCT m.medicine_price ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_prices,
+                GROUP_CONCAT(DISTINCT pur.purchased_quantity ORDER BY m.medicine_name SEPARATOR ', ') AS purchased_quantities,
+                GROUP_CONCAT(DISTINCT pur.total_amt ORDER BY m.medicine_name SEPARATOR ', ') AS total_amt,
+                ps.purchase_session_id,
+                ps.actual_amt_to_pay,
+                c.customer_balance_amt
                 FROM customers c
                 JOIN purchases pur ON c.customer_id = pur.customer_id
                 JOIN medicines m ON pur.medicine_id = m.medicine_id
                 LEFT JOIN suppliers s ON pur.supplier_id = s.supplier_id
-                JOIN purchase_sessions ps ON pur.customer_id = ps.customer_id 
-                                          AND pur.purchase_time = ps.purchase_time
-                WHERE c.customer_id = ? 
-                  AND pur.purchase_id IN (?) 
-                  AND pur.purchase_time = ps.purchase_time
+                JOIN purchase_sessions ps ON pur.customer_id = ps.customer_id AND pur.purchase_time = ps.purchase_time
+                WHERE c.customer_id = ? AND pur.purchase_id IN (?) AND pur.purchase_time = ps.purchase_time
                 GROUP BY ps.purchase_session_id, c.customer_name, ps.actual_amt_to_pay, c.customer_balance_amt;
             `, [customerId, purchaseIds]);
 

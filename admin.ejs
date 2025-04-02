@@ -1,0 +1,544 @@
+<%- include('includes/header') %>
+<div class="bg-gradient-to-br from-blue-50 to-white mx-auto p-6">
+  <h1 class="text-3xl font-semibold text-gray-700 text-center mb-6">Admin Panel</h1>
+  <p>Total Income: <%= totalIncome %></p>
+  <p>Your Income: <%= adminIncome %></p>
+
+  <% if (customers?.length > 0) { %>
+  <h2 class="text-2xl font-semibold text-gray-600 mt-10 mb-4">Manage Customers</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mx-auto">
+    <% customers.forEach(customer => { %>
+    <div class="border rounded-lg shadow-md p-4 bg-white hover:shadow-lg transition">
+      <div class="flex justify-center mb-4">
+        <img src="<%= customer.customer_photo %>" alt="Profile Photo" class="w-28 h-28 rounded-full border-4 border-white shadow-lg object-cover">
+      </div>
+      <h2 class="text-lg font-semibold text-gray-800 text-center">
+        <%= customer.customer_id %>: <%= customer.customer_name %> <%= customer.customer_created_at %>
+      </h2>
+      <p class="text-gray-600 text-sm"><strong>Email:</strong> <%= customer.customer_email %></p>
+      <p class="text-gray-600 text-sm"><strong>Phone:</strong> <%= customer.customer_ph_no %></p>
+      <p class="text-blue-600 font-bold text-lg mt-2 text-center">Balance: &#8377;<%= customer.customer_balance_amt %></p>
+
+      <% customer.addresses.forEach(address => { %>
+      <p class="text-gray-600 text-sm truncate"><strong>Address:</strong> <%= address.street %>, <%= address.city %>, <%= address.state %> - <%= address.zip_code %> (<%= address.address_type %>)</p>
+
+      <!-- Buttons -->
+      <div class="flex flex-col space-y-2 mt-4">
+        <form action="/admin/adminDashboard/customer/deleteOrEditCustomer" method="POST">
+          <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
+          <input type="hidden" name="customer_address_id" value="<%= address.customer_address_id %>">
+          <button type="submit" name="action" value="deleteAddress" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition" onclick="return confirm('Are you sure you want to delete this address?')">
+            Delete Address
+          </button>
+        </form>
+      </div>
+
+      <button onclick="toggleEditForm('customerAddress-<%= address.customer_address_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit Address</button>
+
+      <!-- Edit Address Form -->
+      <form id="edit-form-customerAddress-<%= address.customer_address_id %>" action="/admin/adminDashboard/customer/deleteOrEditCustomer" method="POST" class="mt-4 space-y-2 hidden">
+        <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
+        <input type="hidden" name="customer_address_id" value="<%= address.customer_address_id %>">
+        <label class="block text-sm font-medium text-gray-700">Address</label>
+        <select name="address_type" required class="w-full border p-2 rounded mt-1">
+          <option value="Home" <%= address.address_type === 'Home' ? 'selected' : '' %>>Home</option>
+          <option value="Work" <%= address.address_type === 'Work' ? 'selected' : '' %>>Work</option>
+          <option value="Other" <%= address.address_type === 'Other' ? 'selected' : '' %>>Other</option>
+        </select>
+        <input type="text" name="street" value="<%= address.street %>" required class="w-full border p-2 rounded">
+        <input type="text" name="city" value="<%= address.city %>" required class="w-full border p-2 rounded">
+        <input type="text" name="state" value="<%= address.state %>" required class="w-full border p-2 rounded">
+        <input type="text" name="zip_code" value="<%= address.zip_code %>" required class="w-full border p-2 rounded">
+
+        <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+        <button type="submit" name="action" value="editAddress" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Save Changes</button>
+      </form>
+
+      <% }); %>
+
+      <% customer.feedbacks.forEach(feedback => { %>
+      <p class="text-gray-600 text-sm truncate"><strong>Feedback Date:</strong> <%= feedback.feedback_date %></p>
+      <p class="text-gray-600 text-sm truncate"><strong>Rating:</strong> <%= feedback.rating %> / 5</p>
+      <p class="text-gray-600 text-sm truncate"><strong>Feedback:</strong> <%= feedback.feedback_text %></p>
+
+      <!-- Buttons -->
+      <div class="flex flex-col space-y-2 mt-4">
+        <form action="/admin/adminDashboard/customer/deleteOrEditCustomer" method="POST">
+          <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
+          <input type="hidden" name="feedback_id" value="<%= feedback.feedback_id %>">
+          <button type="submit" name="action" value="deleteFeedback" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition" onclick="return confirm('Are you sure you want to delete this feedback?')">
+            Delete Feedback
+          </button>
+        </form>
+      </div>
+
+
+      <button onclick="toggleEditForm('feedback-<%= feedback.feedback_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit Feedback</button>
+
+      <!-- Edit Feedback Form -->
+      <form id="edit-form-feedback-<%= feedback.feedback_id %>" action="/admin/adminDashboard/customer/deleteOrEditCustomer" method="POST" class="mt-4 space-y-2 hidden">
+        <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
+        <input type="hidden" name="feedback_id" value="<%= feedback.feedback_id %>">
+        <label class="block text-sm font-medium text-gray-700">Rating (1-5)</label>
+        <input type="number" name="rating" value="<%= feedback.rating %>" min="1" max="5" required class="w-full border p-2 rounded">
+        <label class="block text-sm font-medium text-gray-700">Feedback</label>
+        <textarea name="feedback_text" required class="w-full border p-2 rounded"><%= feedback.feedback_text %></textarea>
+
+        <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+        <button type="submit" name="action" value="editFeedback" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Save Changes</button>
+      </form>
+
+      <% }); %>
+
+      <div class="flex gap-2 mt-3">
+        <form action="/admin/adminDashboard/customer/deleteOrEditCustomer" method="POST" class="w-full">
+          <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
+          <button type="submit" name="action" value="delete" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition" onclick="return confirm('Are you sure you want to delete this customer?')">Delete Profile</button>
+        </form>
+      </div>
+
+      <button onclick="toggleEditForm('customer-<%= customer.customer_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit Profile</button>
+
+      <!-- Edit Customer Form -->
+      <form id="edit-form-customer-<%= customer.customer_id %>" action="/admin/adminDashboard/customer/deleteOrEditCustomer" method="POST" enctype="multipart/form-data" class="mt-4 space-y-2 hidden">
+        <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
+
+        <label class="block text-sm font-medium text-gray-700">Name</label>
+        <input type="text" name="customer_name" value="<%= customer.customer_name %>" required class="w-full border p-2 rounded">
+
+        <label class="block text-sm font-medium text-gray-700">Email</label>
+        <input type="email" name="customer_email" value="<%= customer.customer_email %>" required class="w-full border p-2 rounded">
+
+        <label class="block text-sm font-medium text-gray-700">Phone</label>
+        <input type="text" name="customer_ph_no" value="<%= customer.customer_ph_no %>" required class="w-full border p-2 rounded">
+
+        <label class="block text-sm font-medium text-gray-700">Profile Photo</label>
+        <input type="file" id="photo-<%= customer.customer_id %>" name="customer_photo" accept="image/*" class="w-full border p-2 rounded" onchange="previewImage(event, 'customer-<%= customer.customer_id %>')">
+        <div class="mt-3 flex items-center gap-4">
+          <img id="preview-customer-<%= customer.customer_id %>" class="w-16 h-16 rounded-full border border-gray-300 object-cover hidden" alt="Profile Preview">
+          <button type="button" id="remove-image-customer-<%= customer.customer_id %>" class="hidden text-sm text-red-500 hover:text-red-700 font-medium" onclick="removeImage('customer-<%= customer.customer_id %>')">Remove</button>
+        </div>
+
+        <label class="block text-sm font-medium text-gray-700">Balance Amount</label>
+        <input type="number" name="customer_balance_amt" value="<%= customer.customer_balance_amt %>" required class="w-full border p-2 rounded">
+
+        <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+        <button type="submit" name="action" value="edit" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Save Changes</button>
+      </form>
+
+
+      <button onclick="toggleEditForm('addCustomerAddress-<%= customer.customer_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Add Address</button>
+      <!-- Edit Address Form -->
+      <form id="edit-form-addCustomerAddress-<%= customer.customer_id %>" action="/admin/adminDashboard/customer/deleteOrEditCustomer" method="POST" class="mt-4 space-y-2 hidden">
+        <input type="hidden" name="customer_id" value="<%= customer.customer_id %>">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Street:</label>
+            <input type="text" name="street" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">City:</label>
+            <input type="text" name="city" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">State:</label>
+            <input type="text" name="state" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ZIP Code:</label>
+            <input type="text" name="zip_code" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Address Type:</label>
+          <select name="address_type" class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="Home">Home</option>
+            <option value="Work">Work</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+          <button type="submit" name="action" value="addAddress" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Save Address</button>
+        </div>
+      </form>
+    </div>
+    <% }) %>
+  </div>
+  <% } else { %>
+  <p class="text-gray-500 text-center">No Customers Found.</p>
+  <a href="/customerRegister" class="text-blue-600 hover:text-blue-800">+ Add Customer</a>
+  <% } %>
+
+  <h2 class="text-2xl font-semibold text-gray-600 mt-10 mb-4">Add Medicine</h2>
+  <div class="bg-white p-6 rounded-lg shadow-md">
+    <form action="/admin/adminDashboard/medicine/addMedicine" method="POST" enctype="multipart/form-data" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label for="medicine_type" class="block text-sm font-medium text-gray-700 mb-1">
+          Medicine Type
+        </label>
+        <select id="medicine_type" name="medicine_type" class="appearance-none block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200">
+          <option value="Tablet" selected>Tablet</option>
+          <option value="Syrup">Syrup</option>
+          <option value="Capsule">Capsule</option>
+          <option value="Injection">Injection</option>
+          <option value="Ointment">Ointment</option>
+        </select>
+        <div>
+          <label for="medicine_name" class="block text-sm font-medium text-gray-700">Name</label>
+          <input type="text" id="medicine_name" name="medicine_name" placeholder="Medicine Name" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+        </div>
+        <div>
+          <label for="medicine_composition" class="block text-sm font-medium text-gray-700">Composition</label>
+          <input type="text" id="medicine_composition" name="medicine_composition" placeholder="Composition" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+        </div>
+        <div>
+          <label for="medicine_price" class="block text-sm font-medium text-gray-700">Price</label>
+          <input type="number" id="medicine_price" name="medicine_price" placeholder="Price" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+        </div>
+        <div>
+          <label for="medicine_expiry_date" class="block text-sm font-medium text-gray-700">Expiry Date</label>
+          <input type="date" id="medicine_expiry_date" name="medicine_expiry_date" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+        </div>
+        <div>
+          <label for="medicine_img" class="block text-sm font-medium text-gray-700">Medicine Image</label>
+          <input type="file" id="medicine_img_input" name="medicine_img" accept="image/*" class="w-full border p-2 rounded" onchange="previewImage(event)">
+          <div class="mt-3 flex items-center gap-4">
+            <img id="medicine_img_preview" class="w-16 h-16 rounded-full border border-gray-300 object-cover hidden" alt="Image Preview">
+            <button type="button" id="remove_img_button" class="hidden text-sm text-red-500 hover:text-red-700 font-medium" onclick="removeImage()">Remove</button>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Add Medicine</button>
+    </form>
+  </div>
+  <% if (medicines && medicines.length > 0) { %>
+  <h2 class="text-2xl font-semibold text-gray-600 mt-6 mb-4">Manage Medicines</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <% medicines.forEach(medicine => { %>
+    <div class="border rounded-lg shadow-md p-4 bg-white hover:shadow-lg transition">
+      <img src="<%= medicine.medicine_img %>" alt="<%= medicine.medicine_name %>" class="w-full h-40 object-cover rounded-md mb-3">
+      <h2 class="text-lg font-semibold text-gray-800"><%= medicine.medicine_id %>: <%= medicine.medicine_name %></h2>
+      <p class="text-gray-600 text-sm"><%= medicine.medicine_composition %></p>
+      <p class="text-blue-600 font-bold text-lg mt-2">&#8377;<%= medicine.medicine_price %></p>
+      <p class="text-red-500 text-sm">Expiry: <%= new Date(medicine.medicine_expiry_date).toDateString() %></p>
+      <p class="text-gray-600 text-sm mt-2">Type: <%= medicine.medicine_type %></p>
+      <p class="text-gray-600 text-sm">Total Stock: <%= medicine.total_stock %></p>
+      <div class="flex gap-2 mt-3">
+        <form action="/admin/adminDashboard/medicine/deleteOrEditMedicine" method="POST" class="w-full">
+          <input type="hidden" name="medicine_id" value="<%= medicine.medicine_id %>">
+          <button type="submit" name="action" value="delete" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition" onclick="return confirm('Are you sure you want to delete this medicine?')">Delete</button>
+        </form>
+      </div>
+      <button onclick="toggleEditForm('medicine-<%= medicine.medicine_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit</button>
+      <form id="edit-form-medicine-<%= medicine.medicine_id %>" action="/admin/adminDashboard/medicine/deleteOrEditMedicine" method="POST" enctype="multipart/form-data" class="mt-4 space-y-2 hidden">
+        <input type="hidden" name="medicine_id" value="<%= medicine.medicine_id %>">
+        <select name="medicine_type" required class="w-full border p-2 rounded mt-1">
+          <option value="Tablet" <%= medicine.medicine_type === 'Tablet' ? 'selected' : '' %>>Tablet</option>
+          <option value="Syrup" <%= medicine.medicine_type === 'Syrup' ? 'selected' : '' %>>Syrup</option>
+          <option value="Capsule" <%= medicine.medicine_type === 'Capsule' ? 'selected' : '' %>>Capsule</option>
+          <option value="Injection" <%= medicine.medicine_type === 'Injection' ? 'selected' : '' %>>Injection</option>
+          <option value="Ointment" <%= medicine.medicine_type === 'Capsule' ? 'selected' : '' %>>Ointment</option>
+        </select>
+        <div class="mb-2">
+          <label for="medicine_name_<%= medicine.medicine_id %>" class="block text-sm font-medium text-gray-700">Name</label>
+          <input type="text" id="medicine_name_<%= medicine.medicine_id %>" name="medicine_name" value="<%= medicine.medicine_name %>" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+        </div>
+        <div class="mb-2">
+          <label for="medicine_composition_<%= medicine.medicine_id %>" class="block text-sm font-medium text-gray-700">Composition</label>
+          <input type="text" id="medicine_composition_<%= medicine.medicine_id %>" name="medicine_composition" value="<%= medicine.medicine_composition %>" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+        </div>
+        <div class="mb-2">
+          <label for="medicine_price_<%= medicine.medicine_id %>" class="block text-sm font-medium text-gray-700">Price</label>
+          <input type="number" id="medicine_price_<%= medicine.medicine_id %>" name="medicine_price" value="<%= medicine.medicine_price %>" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+        </div>
+        <div class="mb-2">
+          <label for="medicine_expiry_date_<%= medicine.medicine_id %>" class="block text-sm font-medium text-gray-700">Expiry Date</label>
+          <input type="date" id="medicine_expiry_date_<%= medicine.medicine_id %>" name="medicine_expiry_date" value="<%= medicine.medicine_expiry_date.toISOString().split('T')[0] %>" required class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+        </div>
+        <div class="mb-2">
+          <label for="medicine_img_<%= medicine.medicine_id %>" class="block text-sm font-medium text-gray-700">Upload Image</label>
+          <input type="file" id="medicine_img_<%= medicine.medicine_id %>" name="medicine_img" accept="image/*" class="mt-1 w-full">
+        </div>
+        <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+        <button type="submit" name="action" value="edit" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Save Changes</button>
+      </form>
+    </div>
+    <% }) %>
+  </div>
+  <% } else { %>
+  <p class="text-lg text-gray-600">No medicines available or expired medicines.</p>
+  <% } %>
+  </div>
+
+  <div class="container mx-auto p-6">
+    <h1 class="text-3xl font-semibold text-gray-700 text-center mb-6">Manage Suppliers</h1>
+    <% if (suppliers.length > 0) { %>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <% suppliers.forEach(supplier => { %>
+      <div class="border rounded-lg shadow-lg p-6 bg-white">
+        <h2 class="text-lg font-semibold text-gray-800 mb-2">
+          <%= supplier.supplier_id %> - <%= supplier.supplier_name %>
+        </h2>
+        <p class="text-gray-600 text-sm"><strong>Email:</strong> <%= supplier.supplier_email %></p>
+        <p class="text-gray-600 text-sm mb-4"><strong>Phone:</strong> <%= supplier.supplier_ph_no %></p>
+        <h3 class="font-medium text-gray-700">Addresses:</h3>
+        <% if (supplier.addresses.length > 0) { %>
+        <ul class="mt-2 text-gray-600 text-sm space-y-2">
+          <% supplier.addresses.forEach(address => { %>
+          <li class="bg-gray-100 p-2 rounded-lg">
+            <strong>Street:</strong> <%= address.street %>, <strong>City:</strong> <%= address.city %>,
+            <strong>State:</strong> <%= address.state %>, <strong>Zip:</strong> <%= address.zip_code %>
+          </li>
+          <div class="flex flex-col space-y-2 mt-4">
+            <form action="/admin/adminDashboard/supplier/deleteOrEditSupplier" method="POST">
+              <input type="hidden" name="supplier_id" value="<%= supplier.supplier_id %>">
+              <input type="hidden" name="supplier_address_id" value="<%= address.supplier_address_id %>">
+              <button type="submit" name="action" value="deleteAddress" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition" onclick="return confirm('Are you sure you want to delete this Address?')">Delete</button>
+            </form>
+            <button onclick="toggleEditForm('supplierAddress-<%= address.supplier_address_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Edit Address</button>
+            <form id="edit-form-supplierAddress-<%= address.supplier_address_id %>" action="/admin/adminDashboard/supplier/deleteOrEditSupplier" method="POST" class="mt-4 space-y-2 hidden">
+              <input type="hidden" name="supplier_id" value="<%= supplier.supplier_id %>">
+              <input type="hidden" name="supplier_address_id" value="<%= address.supplier_address_id %>">
+              <label class="block text-sm font-medium text-gray-700">Street</label>
+              <input type="text" name="street" value="<%= address.street %>" required class="w-full border p-2 rounded">
+              <label class="block text-sm font-medium text-gray-700">City</label>
+              <input type="text" name="city" value="<%= address.city %>" required class="w-full border p-2 rounded">
+              <label class="block text-sm font-medium text-gray-700">State</label>
+              <input type="text" name="state" value="<%= address.state %>" required class="w-full border p-2 rounded">
+              <label class="block text-sm font-medium text-gray-700">Zip Code</label>
+              <input type="text" name="zip_code" value="<%= address.zip_code %>" required class="w-full border p-2 rounded">
+              <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+              <button type="submit" name="action" value="editAddress" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Save Changes</button>
+            </form>
+            <% }) %>
+        </ul>
+        <% } else { %><p class="text-gray-500 text-sm mt-2">No address available.</p><% } %>
+        <h3 class="mt-6 text-lg font-semibold text-gray-800">Supplied Medicines</h3>
+        <% if (supplier.medicines.length > 0) { %>
+        <ul class="mt-3 space-y-4">
+          <% supplier.medicines.forEach(medicine => { %>
+          <li class="bg-white shadow-md p-4 rounded-lg border border-gray-200">
+            <div class="flex justify-between items-center">
+              <div>
+                <h4 class="font-semibold text-gray-900"><%= medicine.medicine_name %></h4>
+                <p class="text-sm text-gray-600">Stock: <span class="font-medium"><%= medicine.stock_quantity %></span></p>
+              </div>
+              <div class="flex space-x-2">
+                <button onclick="toggleEditForm('editStock-<%= medicine.medicine_id %>')" class="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                  Edit Stock
+                </button>
+                <form action="/admin/adminDashboard/stocks/deleteOrEditStocks" method="POST">
+                  <input type="hidden" name="supplier_id" value="<%= supplier.supplier_id %>">
+                  <input type="hidden" name="medicine_id" value="<%= medicine.medicine_id %>">
+                  <button type="submit" name="action" value="delete" class="bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700 transition" onclick="return confirm('Are you sure you want to delete this medicine?')">Delete</button>
+                </form>
+              </div>
+            </div>
+            <form id="edit-form-editStock-<%= medicine.medicine_id %>" action="/admin/adminDashboard/stocks/deleteOrEditStocks" method="POST" class="mt-4 hidden bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-inner">
+              <input type="hidden" name="supplier_id" value="<%= supplier.supplier_id %>">
+              <input type="hidden" name="medicine_id" value="<%= medicine.medicine_id %>">
+              <label class="block text-sm font-medium text-gray-700" for="stock_quantity">Stock Quantity</label>
+              <input type="number" name="stock_quantity" value="<%= medicine.stock_quantity %>" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+              <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+              <button type="submit" name="action" value="edit" class="mt-3 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">
+                Save Changes
+              </button>
+            </form>
+          </li>
+          <% }) %>
+        </ul>
+        <% } else { %><p class="text-gray-500 text-sm mt-3">No medicine supplied.</p><% } %>
+        <div class="flex flex-col space-y-2 mt-4">
+          <form action="/admin/adminDashboard/supplier/deleteOrEditSupplier" method="POST">
+            <input type="hidden" name="supplier_id" value="<%= supplier.supplier_id %>">
+            <button type="submit" name="action" value="delete" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition" onclick="return confirm('Are you sure you want to delete this supplier?')">
+              Delete
+            </button>
+          </form>
+          <button onclick="toggleEditForm('supplier-<%= supplier.supplier_id %>')" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+            Edit Supplier
+          </button>
+        </div>
+        <form id="edit-form-supplier-<%= supplier.supplier_id %>" action="/admin/adminDashboard/supplier/deleteOrEditSupplier" method="POST" class="mt-4 space-y-2 hidden">
+          <input type="hidden" name="supplier_id" value="<%= supplier.supplier_id %>">
+          <label class="block text-sm font-medium text-gray-700">Name</label>
+          <input type="text" name="supplier_name" value="<%= supplier.supplier_name %>" required class="w-full border p-2 rounded">
+          <label class="block text-sm font-medium text-gray-700">Email</label>
+          <input type="email" name="supplier_email" value="<%= supplier.supplier_email %>" required class="w-full border p-2 rounded">
+          <label class="block text-sm font-medium text-gray-700">Phone</label>
+          <input type="text" name="supplier_ph_no" value="<%= supplier.supplier_ph_no %>" required class="w-full border p-2 rounded">
+          <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+          <button type="submit" name="action" value="edit" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
+            Save Changes
+          </button>
+        </form>
+        <button onclick="toggleEditForm('addStock-<%= supplier.supplier_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Add Stock</button>
+        <form id="edit-form-addStock-<%= supplier.supplier_id %>" action="/admin/adminDashboard/stocks/addStocks" method="POST" class="hidden space-y-4">
+          <div>
+            <input type="hidden" name="supplier_id" value="<%= supplier.supplier_id %>">
+            <label class="block text-sm font-medium text-gray-700" for="medicine_id">Medicine</label>
+            <select name="medicine_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              <% medicines.forEach(medicine => { %>
+              <option value="<%= medicine.medicine_id %>"><%= medicine.medicine_name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div><label class="block text-sm font-medium text-gray-700" for="stock_quantity">Stock Quantity</label>
+            <input type="number" name="stock_quantity" min="1" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+          <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+          <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300">Add Stock</button>
+        </form>
+        <button onclick="toggleEditForm('addSupplierAddress-<%= supplier.supplier_id %>')" class="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Add Address</button>
+        <form id="edit-form-addSupplierAddress-<%= supplier.supplier_id %>" action="/admin/adminDashboard/supplier/deleteOrEditSupplier" method="POST" class="mt-4 space-y-2 hidden">
+          <input type="hidden" name="supplier_id" value="<%= supplier.supplier_id %>">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">Street:</label>
+              <input type="text" name="street" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">City:</label>
+              <input type="text" name="city" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">State:</label>
+              <input type="text" name="state" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">ZIP Code:</label>
+              <input type="text" name="zip_code" required class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="toggleEditForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">Cancel</button>
+            <button type="submit" name="action" value="addAddress" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Save Address</button>
+          </div>
+        </form>
+      </div>
+      <% }) %>
+    </div>
+    <% } else { %>
+    <p class="text-center text-gray-500">No Suppliers Found.</p>
+    <% } %>
+  </div>
+  <form action="/admin/adminDashboard/supplier/addSupplier" method="POST" class="bg-white p-6 rounded-lg shadow-md mb-6">
+    <h2 class="text-xl font-semibold text-gray-600 mb-4">Add Supplier</h2>
+    <input type="text" name="supplier_name" placeholder="Supplier Name" required class="w-full border p-2 rounded">
+    <input type="email" name="supplier_email" placeholder="Email" required class="w-full border p-2 rounded mt-2">
+    <input type="text" name="supplier_ph_no" placeholder="Phone Number" required class="w-full border p-2 rounded mt-2">
+    <input type="text" name="street" placeholder="Street" class="w-full border p-2 rounded mt-2">
+    <input type="text" name="city" placeholder="City" class="w-full border p-2 rounded mt-2">
+    <input type="text" name="state" placeholder="State" class="w-full border p-2 rounded mt-2">
+    <input type="text" name="zip_code" placeholder="Zip Code" class="w-full border p-2 rounded mt-2">
+    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg mt-2">Add Supplier</button>
+  </form>
+  </div>
+
+  <h1>Make Purchase</h1>
+  <% if (medicinesForPurchase.length > 0) { %>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <% medicinesForPurchase.forEach(medicine => { %>
+    <form action="/admin/adminDashboard/cart/addToCart" method="POST">
+      <input type="hidden" name="medicine_id" value="<%= medicine.medicine_id %>">
+      <div class="border rounded-lg shadow-md p-4 bg-white hover:shadow-lg transition cursor-pointer">
+        <% if (medicine.medicine_img) { %><img src="data:image/jpeg;base64,<%= medicine.medicine_img.toString('base64') %>" alt="<%= medicine.medicine_name %>" class="w-full h-40 object-cover rounded-md mb-3">
+        <% } else { %><img src="/img/noImg.jpg" alt="No Image Available" class="w-full h-40 object-cover rounded-md mb-3">
+        <% } %><h2 class="text-lg font-semibold text-gray-800"><%= medicine.medicine_name %></h2>
+        <p class="text-gray-600 text-sm"><%= medicine.medicine_composition %></p>
+        <p class="text-blue-600 font-bold text-lg mt-2">₹<%= medicine.medicine_price %></p>
+        <p class="text-gray-700 text-sm">Type: <%= medicine.medicine_type %></p>
+        <p class="text-red-500 text-sm">Expiry: <%= new Date(medicine.medicine_expiry_date).toDateString() %></p>
+        <label for="customer_id">Customer</label>
+        <select name="customer_id" id="customer_id">
+          <% customers.forEach(customer => { %>
+          <option value="<%= customer.customer_id %>">
+            <%= customer.customer_id %>: <%= customer.customer_name %>
+          </option>
+          <% }) %>
+        </select>
+        <div class="mt-3 flex items-center">
+          <label for="quantity-<%= medicine.medicine_id %>" class="text-gray-700 mr-2">Qty:</label>
+          <input type="number" name="purchased_quantity" id="purchased_quantity-<%= medicine.medicine_id %>" class="w-16 border px-2 py-1 rounded-md" min="1" value="1">
+        </div>
+        <button type="submit" class="mt-3 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
+          Add to Purchase
+        </button>
+    </form>
+  </div>
+  <% }) %>
+  </div>
+  <% } else { %>
+  <div class="col-span-2 py-8 text-center">
+    <div class="text-gray-400 mb-2"><i class="fa-solid fa-shopping-cart text-3xl"></i></div>
+    <p class="text-gray-500">No medicines found..</p>
+  </div>
+  <% } %>
+  <h1>Pending Purchase</h1>
+  <% if (cartItems.length === 0) { %>
+  <div class="col-span-3 py-8 text-center">
+    <div class="text-gray-400 mb-2"><i class="fa-solid fa-shopping-cart text-3xl"></i></div>
+    <p class="text-gray-500">Cart is empty.</p>
+  </div>
+  <% } %>
+  <% if (cartItems.length > 0) { %>
+  <div class="col-span-3 text-gray-500 mb-4">Total Items: <%= cartItems.length %></div>
+  <% cartItems.forEach(item => { %>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 bg-white shadow-lg rounded-lg p-4 transform transition-transform duration-300">
+    <div class="flex flex-col items-center">
+      <div class="flex gap-2 self-end">
+        <!-- <button onclick="toggleEditForm('purchase-<%= item.purchase_id %>')" class="text-blue-600 hover:text-blue-800">
+        <i class="fa-solid fa-edit"></i>
+      </button> -->
+        <form action="/admin/adminDashboard/cart/processCart" method="POST" class="inline">
+          <input type="hidden" name="purchase_id" value="<%= item.purchase_id %>">
+          <input type="hidden" name="customer_id" value="<%= item.customer_id %>">
+          <button type="submit" name="action" value="delete" class="text-red-600 hover:text-red-800" onclick="return confirm('Are you sure you want to delete this purchase?')">
+            <i class="fa-solid fa-trash-alt"></i>
+          </button>
+        </form>
+      </div>
+      <% if (item.medicine_img) { %>
+      <img src="data:image/jpeg;base64,<%= item.medicine_img.toString('base64') %>" alt="<%= item.medicine_name %>" class="w-32 h-32 object-cover rounded-md mb-3">
+      <% } else { %><img src="/img/noImg.jpg" alt="No Image Available" class="w-32 h-32 object-cover rounded-md mb-3"><% } %>
+      <p class="text-sm text-gray-500"> Purchase Id: <%= item.purchase_id %></p>
+      <p class="text-sm text-gray-500">Customer Id: <%= item.customer_id %></p>
+      <p class="text-sm text-gray-500">Purchase Session Id: <%= item.purchase_session_id %></p>
+      <h3 class="text-lg font-semibold text-gray-800"><%= item.medicine_name %></h3>
+      <p class="text-sm text-gray-500"><%= item.medicine_composition %></p>
+      <div class="mt-3 flex flex-col items-center">
+        <p class="text-lg font-bold text-green-600">₹<%= item.medicine_price %></p>
+        <p class="text-gray-700">Quantity: <%= item.purchased_quantity %></p>
+        <p class="text-gray-900 font-semibold mt-2">Total: ₹<%= item.total_amt %></p>
+      </div>
+      <form id="edit-form-purchase-<%= item.purchase_id %>" action="/admin/adminDashboard/cart/processCart" method="POST" class="w-full mt-4">
+        <input type="hidden" name="purchase_id" value="<%= item.purchase_id %>">
+        <input type="hidden" name="customer_id" value="<%= item.customer_id %>">
+        <label class="block text-sm font-medium text-gray-700 mt-2" for="medicine_id">Medicine</label>
+        <select name="medicine_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          <% medicines.forEach(medicine => { %>
+          <option value="<%= medicine.medicine_id %>" <%= medicine.medicine_id === item.medicine_id ? 'selected' : '' %>>
+            <%= medicine.medicine_id %>: <%= medicine.medicine_name %>
+          </option>
+          <% }) %>
+        </select>
+        <div class="flex items-center"><label for="quantity-<%= item.purchase_id %>" class="text-gray-700 mr-2">Qty:</label>
+          <input type="number" name="purchased_quantity" value="<%= item.purchased_quantity %>" id="quantity-<%= item.purchase_id %>" class="w-16 border px-2 py-1 rounded-md" min="1">
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mt-2" for="supplier_id">Supplier</label>
+        <select name="supplier_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          <% suppliers.forEach(supplier => { %><% supplier.medicines.forEach(medicine => { %><% if (medicine.medicine_id === item.medicine_id) { %>
+          <option value="<%= supplier.supplier_id %>">
+            <%= supplier.supplier_id %>: <%= supplier.supplier_name %>
+          </option>
+          <% } %><% }) %><% }) %>
+        </select>
+        <button type="submit" name="action" value="edit" class="text-blue-600 hover:text-blue-800 mt-2">
+          <i class="fa-solid fa-save"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+  <% }) %>
+  </div>
+  <% } %>
+<%- include('includes/footer') %>
