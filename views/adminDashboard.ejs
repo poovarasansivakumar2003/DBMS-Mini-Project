@@ -1042,6 +1042,8 @@
                           <td colspan="5" class="px-6 py-4 bg-gray-50">
                             <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="space-y-3">
                               <input type="hidden" name="purchase_id" value="<%= purchase.purchase_id %>">
+                              <% console.log(group.purchase_session_id) %>
+                              <input type="hidden" name="purchase_session_id_1" value="<%= group.purchase_session_id %>">
 
                               <div class="grid grid-cols-3 gap-4">
                                 <div>

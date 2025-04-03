@@ -128,8 +128,8 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                         ? `data:image/jpeg;base64,${row.customer_photo.toString('base64')}`
                         : '/img/defaultPhoto.jpg',
                     total_amt_spent: row.total_amt_spent || 0,
-                    addresses: new Map(), 
-                    feedbacks: new Map() 
+                    addresses: new Map(),
+                    feedbacks: new Map()
                 };
             }
 
@@ -196,8 +196,8 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     supplier_name: row.supplier_name,
                     supplier_email: row.supplier_email,
                     supplier_ph_no: row.supplier_ph_no,
-                    addresses: new Map(),  
-                    medicines: new Map()  
+                    addresses: new Map(),
+                    medicines: new Map()
                 };
             }
 
@@ -225,7 +225,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
         // Convert Maps to arrays for JSON response
         const suppliersArray = Object.values(suppliers).map(supplier => ({
             ...supplier,
-            addresses: Array.from(supplier.addresses.values()), 
+            addresses: Array.from(supplier.addresses.values()),
             medicines: Array.from(supplier.medicines.values())   // Convert Map to array
         }));
 
@@ -301,7 +301,9 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                         'supplier_id', s.supplier_id,
                         'supplier_name', s.supplier_name,
                         'purchased_quantity', p.purchased_quantity,
-                        'total_amt', p.total_amt
+                        'total_amt', p.total_amt,
+                        'purchase_time', p.purchase_time,
+                        'customer_id', p.customer_id
                     )
                 ) as purchases
             FROM purchase_sessions ps
@@ -366,7 +368,7 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
         });
 
         const { action, customer_id, customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_address_id, street, city, state, zip_code, address_type, feedback_id, rating, feedback_text } = req.body;
-        
+
 
         if (!customer_id) {
             return res.status(400).render("400", {
@@ -411,10 +413,10 @@ exports.deleteOrEditCustomer = [isAdmin, async (req, res) => {
             await pool.query(
                 `UPDATE customers SET customer_name=?, customer_email=?, customer_ph_no=?, 
                  customer_balance_amt=? ${customer_photo ? ', customer_photo=?' : ''} WHERE customer_id=?`,
-                customer_photo 
+                customer_photo
                     ? [customer_name, customer_email, customer_ph_no, customer_balance_amt, customer_photo, customerId] // Fix: Use `customerId`
                     : [customer_name, customer_email, customer_ph_no, customer_balance_amt, customerId] // Fix: Use `customerId` instead of `customer_id`
-            );            
+            );
 
             return res.render("success", {
                 username: req.session.user?.username,
@@ -1019,14 +1021,29 @@ exports.purchaseMedicine = [isAdmin, async (req, res) => {
 
 exports.processGroupPurchase = [isAdmin, async (req, res) => {
     try {
-        const { action, purchase_session_id, main_purchase_session_id, purchase_id, medicine_id, supplier_id, purchased_quantity } = req.body;
+        const { action, purchase_session_id, main_purchase_session_id, purchase_id, medicine_id, supplier_id, purchased_quantity, purchase_session_id_1 } = req.body;
 
         if (action === "merge") {
+            const invoiceCreated = await pool.query(`
+                SELECT i.invoice_no FROM invoice i
+                JOIN purchase_sessions ps ON i.purchase_session_id = ps.purchase_session_id
+                WHERE ps.purchase_session_id = ? OR ps.purchase_session_id = ?
+            `, [main_purchase_session_id, purchase_session_id]);
+
+            if (invoiceCreated[0].length > 0) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "Invoice has already been created for this purchase session."
+                });
+            }
+
             const purchaseTime = await pool.query('SELECT purchase_time FROM purchase_sessions WHERE purchase_session_id = ?', [main_purchase_session_id]);
             const mainCustomerId = await pool.query('SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?', [main_purchase_session_id]);
             const childCustomerId = await pool.query('SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?', [purchase_session_id]);
-            
-            if(mainCustomerId[0][0].customer_id != childCustomerId[0][0].customer_id) {
+
+            if (mainCustomerId[0][0].customer_id != childCustomerId[0][0].customer_id) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
                     profile: "admin",
@@ -1059,6 +1076,19 @@ exports.processGroupPurchase = [isAdmin, async (req, res) => {
                 message: "Purchase details have been merged successfully!"
             });
         } else if (action === "editItem") {
+
+            const invoiceCreated = await pool.query(`
+                SELECT i.invoice_no FROM invoice i
+                JOIN purchase_sessions ps ON i.purchase_session_id = ps.purchase_session_id
+                JOIN purchases p ON ps.purchase_time = p.purchase_time AND ps.customer_id = p.customer_id
+                WHERE p.purchase_id = ?
+            `, [purchase_id]);
+
+            const admin_username = req.session.user?.username;
+
+            if (invoiceCreated[0].length > 0) {
+                await pool.query(`UPDATE invoice SET admin_username = ? WHERE invoice_no = ?`, [admin_username, invoiceCreated[0][0].invoice_no])
+            }
             // Update purchase details
             await pool.query(`
                 UPDATE purchases 
@@ -1072,9 +1102,11 @@ exports.processGroupPurchase = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Purchase details have been updated successfully!"
             });
+
         } else if (action === "delete") {
             const invoiceCreated = await pool.query('SELECT invoice_no FROM invoice WHERE purchase_session_id = ?', [purchase_session_id]);
-            if(invoiceCreated.length > 0) {
+
+            if (invoiceCreated[0].length > 0) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
                     profile: "admin",
@@ -1085,7 +1117,7 @@ exports.processGroupPurchase = [isAdmin, async (req, res) => {
             // Delete entire purchase session
             await pool.query('DELETE FROM purchases WHERE customer_id IN (SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?) AND purchase_time IN (SELECT purchase_time FROM purchase_sessions WHERE purchase_session_id = ?)', [purchase_session_id, purchase_session_id]);
             await pool.query('DELETE FROM purchase_sessions WHERE purchase_session_id = ?', [purchase_session_id]);
-            
+
             return res.render("success", {
                 username: req.session.user?.username,
                 profile: "admin",
@@ -1093,13 +1125,17 @@ exports.processGroupPurchase = [isAdmin, async (req, res) => {
                 message: "Purchase details has been deleted successfully!"
             });
         } else if (action === "deleteItem") {
+
             const invoiceCreated = await pool.query(`
                 SELECT i.invoice_no FROM invoice i
                 JOIN purchase_sessions ps ON i.purchase_session_id = ps.purchase_session_id
-                JOIN purchases p ON ps.purchase_time = p.purchase_time AND ps.customer_id = p.customer_id
-                WHERE ps.purchase_session_id = ? AND p.purchase_id = ?
-            `, [purchase_session_id, purchase_id]);
-            if(invoiceCreated.length > 0) {
+                WHERE ps.purchase_session_id = ?
+            `, [purchase_session_id_1]);
+
+            console.log(purchase_session_id_1);
+            console.log(invoiceCreated);
+
+            if (invoiceCreated[0].length > 0) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
                     profile: "admin",
@@ -1109,7 +1145,7 @@ exports.processGroupPurchase = [isAdmin, async (req, res) => {
             }
             // Remove item from purchase session
             await pool.query('UPDATE purchases SET purchase_time = CURRENT_TIMESTAMP WHERE purchase_id = ?', [purchase_id]);
-            
+
             return res.render("success", {
                 username: req.session.user?.username,
                 profile: "admin",
