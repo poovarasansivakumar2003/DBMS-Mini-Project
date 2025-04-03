@@ -158,7 +158,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
 
         const customersArray = Object.values(customers).map(customer => ({
             ...customer,
-        addresses: Array.from(customer.addresses.values()),
+            addresses: Array.from(customer.addresses.values()),
             feedbacks: Array.from(customer.feedbacks.values())
         }));
 
@@ -294,7 +294,11 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                 GROUP_CONCAT(
                     JSON_OBJECT(
                         'purchase_id', p.purchase_id,
+                        'medicine_id', m.medicine_id,
                         'medicine_name', m.medicine_name,
+                        'medicine_composition', m.medicine_composition,
+                        'medicine_price', m.medicine_price,
+                        'supplier_id', s.supplier_id,
                         'supplier_name', s.supplier_name,
                         'purchased_quantity', p.purchased_quantity,
                         'total_amt', p.total_amt
@@ -1012,87 +1016,17 @@ exports.purchaseMedicine = [isAdmin, async (req, res) => {
     }
 }];
 
-exports.processCart = [isAdmin, async (req, res) => {
-    try {
-        const { action, customer_id, purchase_id, supplier_id, medicine_id, purchased_quantity, purchase_session_id } = req.body;
-
-        if (action === "delete") {
-            // Delete the address
-            const [deleteResult] = await pool.execute(
-                "DELETE FROM purchases WHERE customer_id = ? AND purchase_id = ?",
-                [customer_id, purchase_id]
-            );
-
-            if (deleteResult.affectedRows === 0) {
-                return res.status(404).render("404", {
-                    username: req.session.user?.username,
-                    profile: "admin",
-                    pagetitle: "Not Found",
-                    error: "Cart not found or already deleted."
-                });
-            }
-
-            return res.render("success", {
-                username: req.session.user?.username,
-                profile: "admin",
-                pagetitle: "Success",
-                message: "Cart has been deleted successfully!"
-            });
-        }
-        else if (action === "edit") {
-            // Validate input fields
-            if (!customer_id || !purchase_id || !supplier_id || !medicine_id || !purchased_quantity || !purchase_session_id) {
-                return res.status(400).render("400", {
-                    username: req.session.user?.username,
-                    profile: "customer",
-                    pagetitle: "Bad Request",
-                    error: "All details fields must be provided."
-                });
-            }
-
-            // Update the address
-            await pool.execute(
-                "UPDATE purchases SET medicine_id = ?, purchased_quantity = ?, supplier_id =? WHERE customer_id = ? AND purchase_id=?",
-                [medicine_id, purchased_quantity, supplier_id, customer_id, purchase_id]
-            );
-
-            return res.render("success", {
-                username: req.session.user?.username,
-                profile: "admin",
-                pagetitle: "Success",
-                message: "Purchase details has been updated successfully!"
-            });
-        }
-
-        return res.status(400).render("400", {
-            username: req.session.user?.username,
-            profile: "customer",
-            pagetitle: "Bad Request",
-            error: "Invalid action provided."
-        });
-
-
-
-    } catch (err) {
-        console.error("Database Error:", err);
-        res.status(500).render("500", {
-            username: req.session.user?.username,
-            profile: "admin",
-            pagetitle: "Internal Server Error",
-            error: err.message
-        });
-    }
-}];
 
 exports.processGroupPurchase = [isAdmin, async (req, res) => {
     try {
-        const { action, purchase_session_id, main_purchase_session_id, purchase_id } = req.body;
+        const { action, purchase_session_id, main_purchase_session_id, purchase_id, medicine_id, supplier_id, purchased_quantity } = req.body;
 
-        if (action === "merge"){
+        if (action === "merge") {
             const purchaseTime = await pool.query('SELECT purchase_time FROM purchase_sessions WHERE purchase_session_id = ?', [main_purchase_session_id]);
             const mainCustomerId = await pool.query('SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?', [main_purchase_session_id]);
-            const purchaseCustomerId = await pool.query('SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?', [purchase_session_id]);
-            if(mainCustomerId.customer_id != purchaseCustomerId.customer_id){
+            const childCustomerId = await pool.query('SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?', [purchase_session_id]);
+            
+            if(mainCustomerId[0][0].customer_id != childCustomerId[0][0].customer_id) {
                 return res.status(400).render("400", {
                     username: req.session.user?.username,
                     profile: "admin",
@@ -1100,46 +1034,96 @@ exports.processGroupPurchase = [isAdmin, async (req, res) => {
                     error: "Customer ID does not match."
                 });
             }
-            console.log(purchaseTime);
-            await pool.query('UPDATE purchase_sessions SET purchase_time = ? WHERE purchase_session_id = ?', [purchaseTime[0].purchase_time, purchase_session_id]);
+
+            // Get purchases to update
+            const [purchasesToUpdate] = await pool.query(`
+                SELECT p.purchase_id 
+                FROM purchases p
+                JOIN purchase_sessions ps ON p.purchase_time = ps.purchase_time AND p.customer_id = ps.customer_id
+                WHERE ps.purchase_session_id = ?
+            `, [purchase_session_id]);
+
+            // Update each purchase
+            for (const purchase of purchasesToUpdate) {
+                await pool.query(`
+                    UPDATE purchases 
+                    SET purchase_time = ?
+                    WHERE purchase_id = ?
+                `, [purchaseTime[0][0].purchase_time, purchase.purchase_id]);
+            }
+
             return res.render("success", {
                 username: req.session.user?.username,
                 profile: "admin",
                 pagetitle: "Success",
-                message: "Purchase details has been merged successfully!"
+                message: "Purchase details have been merged successfully!"
             });
-        }else if (action === "delete") {
+        } else if (action === "editItem") {
+            // Update purchase details
+            await pool.query(`
+                UPDATE purchases 
+                SET medicine_id = ?, supplier_id = ?, purchased_quantity = ?
+                WHERE purchase_id = ?
+            `, [medicine_id, supplier_id, purchased_quantity, purchase_id]);
+
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Purchase details have been updated successfully!"
+            });
+        } else if (action === "delete") {
+            const invoiceCreated = await pool.query('SELECT invoice_no FROM invoice WHERE purchase_session_id = ?', [purchase_session_id]);
+            if(invoiceCreated.length > 0) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "Invoice has already been created for this purchase session."
+                });
+            }
+            // Delete entire purchase session
             await pool.query('DELETE FROM purchases WHERE customer_id IN (SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?) AND purchase_time IN (SELECT purchase_time FROM purchase_sessions WHERE purchase_session_id = ?)', [purchase_session_id, purchase_session_id]);
             await pool.query('DELETE FROM purchase_sessions WHERE purchase_session_id = ?', [purchase_session_id]);
+            
             return res.render("success", {
                 username: req.session.user?.username,
                 profile: "admin",
                 pagetitle: "Success",
                 message: "Purchase details has been deleted successfully!"
             });
-        } else if (action === "addItem") {
-            await pool.query('UPDATE purchase SET purchase_time = ps.purchase_time FROM purchase_sessions ps WHERE purchase_id = ? AND purchase_session_id = ? ', [purchase_id, purchase_session_id]);
-            return res.render("success", {
-                username: req.session.user?.username,
-                profile: "admin",
-                pagetitle: "Success",
-                message: "Purchase details has been updated successfully!"
-            });
         } else if (action === "deleteItem") {
-            await pool.query('UPDATE purchases SET purchase_time = NULL WHERE purchase_id = ?', [purchase_id]);
+            const invoiceCreated = await pool.query(`
+                SELECT i.invoice_no FROM invoice i
+                JOIN purchase_sessions ps ON i.purchase_session_id = ps.purchase_session_id
+                JOIN purchases p ON ps.purchase_time = p.purchase_time AND ps.customer_id = p.customer_id
+                WHERE ps.purchase_session_id = ? AND p.purchase_id = ?
+            `, [purchase_session_id, purchase_id]);
+            if(invoiceCreated.length > 0) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "Invoice has already been created for this purchase session."
+                });
+            }
+            // Remove item from purchase session
+            await pool.query('UPDATE purchases SET purchase_time = CURRENT_TIMESTAMP WHERE purchase_id = ?', [purchase_id]);
+            
             return res.render("success", {
                 username: req.session.user?.username,
                 profile: "admin",
                 pagetitle: "Success",
-                message: "Purchase details has been updated successfully!"
+                message: "Item has been removed from the purchase session successfully!"
             });
-        } 
+        }
+
         return res.status(400).render("400", {
             username: req.session.user?.username,
-            profile: "customer",
+            profile: "admin",
             pagetitle: "Bad Request",
             error: "Invalid action provided."
-        }); 
+        });
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).render("500", {

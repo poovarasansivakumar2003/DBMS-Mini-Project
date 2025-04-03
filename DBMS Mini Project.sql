@@ -121,7 +121,6 @@ CREATE TABLE purchase_sessions (
     customer_id INT,
     purchase_time TIMESTAMP, -- have a relation through trigger
     actual_amt_to_pay DECIMAL(10,2),
-    CONSTRAINT unique_purchase UNIQUE (customer_id , purchase_time),
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 describe purchase_sessions;
