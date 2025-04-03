@@ -60,22 +60,22 @@
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12 justify-center">
       <% const stats = [
-      { title: 'Admins', count: admins, bgColor: 'bg-blue-500', textColor: 'text-blue-100', icon: 'fa-user-shield' }, 
-      { title: 'Customers', count: customers, bgColor: 'bg-green-500', textColor: 'text-green-100', icon: 'fa-users' },
-      { title: 'Feedbacks', count: feedbacks, bgColor: 'bg-purple-500', textColor: 'text-purple-100', icon: 'fa-comment-dots' }, 
-      { title: 'Medicines', count: medicines, bgColor: 'bg-yellow-500', textColor: 'text-yellow-100', icon: 'fa-pills' }, 
-      { title: 'Suppliers', count: suppliers, bgColor: 'bg-red-500', textColor: 'text-red-100', icon: 'fa-truck' },
-      { title: 'Purchases', count: purchases, bgColor: 'bg-orange-500', textColor: 'text-orange-100', icon: 'fa-shopping-cart' }, 
-      { title: 'Payments', count: payments, bgColor: 'bg-blue-500', textColor: 'text-blue-100', icon: 'fa-credit-card' }, 
-      { title: 'Invoice', count: invoice, bgColor: 'bg-purple-500', textColor: 'text-purple-100', icon: 'fa-file-invoice-dollar' }, 
-      { title: 'Stocks', count: stocks, bgColor: 'bg-gray-500', textColor: 'text-gray-100', icon: 'fa-boxes' }
+      { title: 'Admins', count: admins, bgGradient: 'bg-gradient-to-br from-blue-400 to-blue-600', textColor: 'text-blue-100', icon: 'fa-user-shield' }, 
+      { title: 'Customers', count: customers, bgGradient: 'bg-gradient-to-br from-green-400 to-green-600', textColor: 'text-green-100', icon: 'fa-users' },
+      { title: 'Feedbacks', count: feedbacks, bgGradient: 'bg-gradient-to-br from-purple-400 to-purple-600', textColor: 'text-purple-100', icon: 'fa-comment-dots' }, 
+      { title: 'Medicines', count: medicines, bgGradient: 'bg-gradient-to-br from-yellow-400 to-yellow-600', textColor: 'text-yellow-100', icon: 'fa-pills' }, 
+      { title: 'Suppliers', count: suppliers, bgGradient: 'bg-gradient-to-br from-red-400 to-red-600', textColor: 'text-red-100', icon: 'fa-truck' },
+      { title: 'Purchases', count: purchases, bgGradient: 'bg-gradient-to-br from-orange-400 to-orange-600', textColor: 'text-orange-100', icon: 'fa-shopping-cart' }, 
+      { title: 'Payments', count: payments, bgGradient: 'bg-gradient-to-br from-blue-400 to-blue-600', textColor: 'text-blue-100', icon: 'fa-credit-card' }, 
+      { title: 'Invoice', count: invoice, bgGradient: 'bg-gradient-to-br from-purple-400 to-purple-600', textColor: 'text-purple-100', icon: 'fa-file-invoice-dollar' }, 
+      { title: 'Stocks', count: stocks, bgGradient: 'bg-gradient-to-br from-gray-400 to-gray-600', textColor: 'text-gray-100', icon: 'fa-boxes' }
     ];%>
 
 
       <% stats.forEach(stat => { %>
       <div class="transform hover:scale-105 transition-transform duration-300">
-        <div class="relative <%= stat.bgColor %> rounded-xl shadow-lg overflow-hidden">
-          <div class="absolute top-0 right-0 -mt-3 -mr-3 <%= stat.bgColor.replace('-500', '-400') %> rounded-full p-2">
+        <div class="relative <%= stat.bgGradient %> rounded-xl shadow-lg overflow-hidden">
+          <div class="absolute top-0 right-0 -mt-3 -mr-3 <%= stat.bgGradient %> rounded-full p-2">
             <i class="fas <%= stat.icon %> text-white text-xl"></i>
           </div>
           <div class="px-4 py-5 sm:p-6">

@@ -37,5 +37,6 @@ router.post('/adminDashboard/stocks/addStocks', adminController.addStocks);
 router.post('/adminDashboard/stocks/deleteOrEditStocks', adminController.deleteOrEditStocks);
 router.post("/adminDashboard/cart/addToCart", adminController.purchaseMedicine);
 router.post('/adminDashboard/cart/processCart', adminController.processCart);
+router.post('/adminDashboard/groupPurchase/processGroupPurchase', adminController.processGroupPurchase);
 
 module.exports = router;

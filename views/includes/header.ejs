@@ -8,11 +8,6 @@
 
   <!-- External Stylesheets -->
   <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
-  <% if (profile === 'admin') { %>
-  <link rel="icon" type="image/x-icon" href="/admin/img/favicon.ico">
-  <% } else if (profile === 'customer') { %>
-  <link rel="icon" type="image/x-icon" href="/customer/img/favicon.ico">
-  <% } %>
 
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/output.css">
@@ -108,7 +103,7 @@
     </header>
   
     <!-- Add padding for fixed header -->
-    <div class="pt-20"></div>
+    <div style="padding-top: 3.5rem;"></div>
 
   <!-- Scripts -->
   <script defer>

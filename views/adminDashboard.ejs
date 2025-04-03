@@ -533,7 +533,7 @@
               </div>
             </div>
 
-            <h2 class="text-xl font-semibold text-gray-800 mt-6 mb-6">Add New Supplier</h2>
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-6">Add New Supplier</h2>
             <div class="bg-white rounded-xl shadow-md p-6">
               <form action="/admin/adminDashboard/supplier/addSupplier" method="POST" class="p-2">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -908,11 +908,13 @@
                       <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1" for="supplier_id">Supplier</label>
                         <select name="supplier_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
-                          <% suppliers.forEach(supplier => { %>
-                                    <option value="<%= supplier.supplier_id %>">
-                                      <%= supplier.supplier_id %>: <%= supplier.supplier_name %>
-                                    </option>
-                                    <% }); %>
+                          <% medicine.suppliers.forEach(supplier => { %>
+                          <% if (supplier.stock_quantity > 0) { %>
+                          <option value="<%= supplier.supplier_id %>">
+                            <%= supplier.supplier_id %>: <%= supplier.supplier_name %> (Stock: <%= supplier.stock_quantity %>)
+                          </option>
+                          <% } %>
+                          <% }); %>
                         </select>
                       </div>
 
@@ -948,10 +950,6 @@
             <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
               <div class="p-4 border-b border-gray-100 flex justify-between items-center">
                 <p class="text-gray-700 font-medium">Total Items: <span class="font-bold text-blue-600"><%= cartItems.length %></span></p>
-
-                <button class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition flex items-center">
-                  <i class="fa-solid fa-check-circle mr-2"></i> Complete Purchase
-                </button>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
@@ -978,8 +976,9 @@
 
                   <div class="bg-gray-50 p-4 flex justify-between items-center">
                     <div>
-                      <p class="text-xs text-gray-500">Customer ID: <%= item.customer_id %></p>
+                      <p class="text-xs text-gray-500">Customer: <%= item.customer_id %> <%= item.customer_name %></p>
                       <p class="text-xs text-gray-500">Purchase ID: <%= item.purchase_id %></p>
+                      <p class="text-xs text-gray-500">Supplier: <%= item.supplier_id %> <%= item.supplier_name %></p>
                       <p class="text-gray-800 font-semibold mt-1">Total: ₹<%= item.total_amt %></p>
                     </div>
 
@@ -1002,6 +1001,7 @@
                     <form action="/admin/adminDashboard/cart/processCart" method="POST" class="space-y-3">
                       <input type="hidden" name="purchase_id" value="<%= item.purchase_id %>">
                       <input type="hidden" name="customer_id" value="<%= item.customer_id %>">
+                      <input type="hidden" name="purchase_session_id" value="<%= item.purchase_session_id %>">
 
                       <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1" for="medicine_id">Medicine</label>
@@ -1015,23 +1015,23 @@
                       </div>
 
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" for="quantity-<%= item.purchase_id %>">Quantity</label>
-                        <input type="number" name="purchased_quantity" value="<%= item.purchased_quantity %>" id="quantity-<%= item.purchase_id %>" class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500" min="1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1" for="supplier_id">Supplier</label>
+                        <select name="supplier_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
+                          <% suppliers.forEach(supplier => {
+                            supplier.medicines.forEach(medicine => { 
+                               if (medicine.medicine_id === item.medicine_id) { %>
+                          <option value="<%= supplier.supplier_id %>" <%= supplier.supplier_id === item.supplier_id ? 'selected' : '' %>">
+                            <%= supplier.supplier_id %>: <%= supplier.supplier_name %>
+                          </option>
+                          <%   }  
+                            })  
+                          })  %>
+                        </select>
                       </div>
 
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" for="supplier_id">Supplier</label>
-                        <select name="supplier_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
-                          <% suppliers.forEach(supplier => { %>
-                          <% supplier.medicines.forEach(medicine => { %>
-                          <% if (medicine.medicine_id === item.medicine_id) { %>
-                          <option value="<%= supplier.supplier_id %>">
-                            <%= supplier.supplier_id %>: <%= supplier.supplier_name %>
-                          </option>
-                          <% } %>
-                          <% }) %>
-                          <% }) %>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" for="quantity-<%= item.purchase_id %>">Quantity</label>
+                        <input type="number" name="purchased_quantity" value="<%= item.purchased_quantity %>" id="quantity-<%= item.purchase_id %>" class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500" min="1">
                       </div>
 
                       <div class="flex justify-end">
@@ -1046,6 +1046,81 @@
               </div>
             </div>
             <% } %>
+
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-6">Group Purchases</h2>
+            <div class="grid grid-cols-1 gap-6">
+              <% groupPurchases.forEach(group => { %>
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                  <div class="p-4">
+                    <div class="flex justify-between items-center mb-4">
+                      <div>
+                        <h3 class="text-lg font-semibold text-gray-800">Customer: <%= group.customer_name %></h3>
+                        <p class="text-sm text-gray-500">Purchase Session ID: <%= group.purchase_session_id %></p>
+                        <p class="text-sm text-gray-500">Purchase Time: <%= new Date(group.purchase_time).toLocaleString() %></p>
+                        <p class="text-sm text-gray-500">Total Amount: ₹<%= group.actual_amt_to_pay %></p>
+                      </div>
+                      <div class="flex space-x-2">
+                        <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="inline">
+                          <input type="hidden" name="purchase_session_id" value="<%= group.purchase_session_id %>">
+                          <input type="hidden" name="action" value="delete">
+                          <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors">
+                            Delete Group
+                          </button>
+                        </form>
+                      </div>
+                      <div class="flex space-x-2">
+                        <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="inline">
+                          <input type="hidden" name="main_purchase_session_id" value="<%= group.purchase_session_id %>">
+                          <label for="purchase_session_id">Merge with Purchase Session ID:</label>
+                          <input type="number" name="purchase_session_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500" min="1">
+                          <button type="submit" name="action" value="merge" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors">
+                            Merge Group
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                      <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                          <% group.purchases.forEach(purchase => { %>
+                            <tr>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= purchase.medicine_name %></td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= purchase.supplier_name %></td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= purchase.purchased_quantity %></td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= purchase.total_amt %></td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div class="flex space-x-2">
+                                  <form action="/admin/processGroupPurchase" method="POST" class="inline">
+                                    <input type="hidden" name="purchase_id" value="<%= purchase.purchase_id %>">
+                                    <input type="hidden" name="purchase_session_id" value="<%= group.purchase_session_id %>">
+                                    <input type="hidden" name="action" value="addItem">
+                                    <button type="submit" class="text-green-600 hover:text-green-900">Add to Group</button>
+                                  </form>
+                                  <form action="/admin/processGroupPurchase" method="POST" class="inline">
+                                    <input type="hidden" name="purchase_id" value="<%= purchase.purchase_id %>">
+                                    <input type="hidden" name="action" value="deleteItem">
+                                    <button type="submit" class="text-red-600 hover:text-red-900">Remove from Group</button>
+                                  </form>
+                                </div>
+                              </td>
+                            </tr>
+                          <% }) %>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
           </div>
         </div>
       </main>

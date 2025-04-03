@@ -206,6 +206,32 @@
       }, 3000); // 3 seconds delay
     </script>
           <% } %>
+          <% if (message==='Purchase details has been deleted successfully!' ) { %>
+            <p class="text-gray-600 text-sm sm:text-base mb-12">
+              <%= message %>
+            </p>
+          </div>
+        </div>
+      </div>
+      <script>
+        setTimeout(() => {
+          window.location.href = "/admin/adminDashboard";
+        }, 3000); // 3 seconds delay
+      </script>
+            <% } %>
+            <% if (message==='Purchase details has been merged successfully!' ) { %>
+              <p class="text-gray-600 text-sm sm:text-base mb-12">
+                <%= message %>
+              </p>
+            </div>
+          </div>
+        </div>
+        <script>
+          setTimeout(() => {
+            window.location.href = "/admin/adminDashboard";
+          }, 3000); // 3 seconds delay
+        </script>
+              <% } %>
       <% if (message==='Medicine deleted successfully!' ) { %>
       <p class="text-gray-600 text-sm sm:text-base mb-12">
         <%= message %>

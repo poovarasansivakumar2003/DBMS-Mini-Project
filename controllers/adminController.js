@@ -43,9 +43,15 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             m.medicine_type,
             m.medicine_expiry_date,
             m.medicine_img, 
+            JSON_ARRAYAGG( JSON_OBJECT(
+                'supplier_id', su.supplier_id, 
+                'supplier_name', su.supplier_name,
+                'stock_quantity', s.stock_quantity
+            )) AS suppliers,
             SUM(s.stock_quantity) as total_stock
             FROM medicines m
             LEFT JOIN stocks s ON m.medicine_id = s.medicine_id
+            LEFT JOIN suppliers su ON s.supplier_id = su.supplier_id
             WHERE m.medicine_expiry_date > CURDATE()
             GROUP BY m.medicine_id
             HAVING total_stock > 0`
@@ -122,8 +128,8 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                         ? `data:image/jpeg;base64,${row.customer_photo.toString('base64')}`
                         : '/img/defaultPhoto.jpg',
                     total_amt_spent: row.total_amt_spent || 0,
-                    addresses: new Map(),  // Store addresses in a Map to prevent duplicates
-                    feedbacks: new Map()   // Store feedbacks in a Map to prevent duplicates
+                    addresses: new Map(), 
+                    feedbacks: new Map() 
                 };
             }
 
@@ -152,8 +158,8 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
 
         const customersArray = Object.values(customers).map(customer => ({
             ...customer,
-            addresses: Array.from(customer.addresses.values()),  // Convert Map to array
-            feedbacks: Array.from(customer.feedbacks.values())   // Convert Map to array
+        addresses: Array.from(customer.addresses.values()),
+            feedbacks: Array.from(customer.feedbacks.values())
         }));
 
         const [totalIncomeResult] = await pool.execute(
@@ -219,23 +225,28 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
         // Convert Maps to arrays for JSON response
         const suppliersArray = Object.values(suppliers).map(supplier => ({
             ...supplier,
-            addresses: Array.from(supplier.addresses.values()),  // Convert Map to array
+            addresses: Array.from(supplier.addresses.values()), 
             medicines: Array.from(supplier.medicines.values())   // Convert Map to array
         }));
 
         const [cartItems] = await pool.query(`SELECT 
                         p.purchase_id,
                         ps.purchase_session_id,
-                        p.customer_id,
+                        c.customer_id,
+                        c.customer_name,
                         m.medicine_id,
                         m.medicine_name,
                         m.medicine_composition,
                         m.medicine_price,
+                        s.supplier_id,
+                        s.supplier_name,
                         p.purchased_quantity,
                         p.total_amt,
                         m.medicine_img
                     FROM purchases p
                     JOIN medicines m ON m.medicine_id = p.medicine_id
+                    LEFT JOIN customers c ON c.customer_id = p.customer_id
+                    LEFT JOIN suppliers s ON s.supplier_id = p.supplier_id
                     LEFT JOIN purchase_sessions ps ON p.purchase_time = ps.purchase_time
                     LEFT JOIN invoice i ON ps.purchase_session_id = i.purchase_session_id
                     WHERE i.invoice_no IS NULL
@@ -273,6 +284,38 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     ORDER BY i.invoice_time DESC
                 `);
 
+        const [groupPurchases] = await pool.query(`
+            SELECT 
+                ps.purchase_session_id,
+                ps.customer_id,
+                ps.purchase_time,
+                ps.actual_amt_to_pay,
+                c.customer_name,
+                GROUP_CONCAT(
+                    JSON_OBJECT(
+                        'purchase_id', p.purchase_id,
+                        'medicine_name', m.medicine_name,
+                        'supplier_name', s.supplier_name,
+                        'purchased_quantity', p.purchased_quantity,
+                        'total_amt', p.total_amt
+                    )
+                ) as purchases
+            FROM purchase_sessions ps
+            JOIN customers c ON ps.customer_id = c.customer_id
+            JOIN purchases p ON ps.customer_id = p.customer_id AND ps.purchase_time = p.purchase_time
+            JOIN medicines m ON p.medicine_id = m.medicine_id
+            LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
+            GROUP BY ps.purchase_session_id, ps.customer_id, ps.purchase_time, ps.actual_amt_to_pay, c.customer_name
+            ORDER BY ps.purchase_time DESC
+        `);
+
+        // Parse the purchases JSON string for each group
+        groupPurchases.forEach(group => {
+            if (group.purchases) {
+                group.purchases = JSON.parse(`[${group.purchases}]`);
+            }
+        });
+
         // Render EJS page with data
         res.render('adminDashboard', {
             pagetitle: `Admin Panel - ${req.session.user.username}`,
@@ -285,7 +328,8 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             suppliers: Object.values(suppliersArray),
             cartItems,
             medicinesForPurchase,
-            invoice
+            invoice,
+            groupPurchases
         });
 
     } catch (err) {
@@ -931,9 +975,9 @@ exports.deleteOrEditStocks = [isAdmin, async (req, res) => {
 
 exports.purchaseMedicine = [isAdmin, async (req, res) => {
     try {
-        const { customer_id, medicine_id, purchased_quantity } = req.body;
+        const { customer_id, medicine_id, purchased_quantity, supplier_id } = req.body;
 
-        if (!customer_id || !medicine_id || !purchased_quantity) {
+        if (!customer_id || !medicine_id || !purchased_quantity || !supplier_id) {
             return res.status(400).render("400", {
                 profile: "admin",
                 username: req.session.user?.username,
@@ -945,9 +989,9 @@ exports.purchaseMedicine = [isAdmin, async (req, res) => {
         // Insert into purchases table
         const query = `
             INSERT INTO purchases (customer_id, medicine_id, supplier_id, purchased_quantity)
-            VALUES (?, ?, NULL , ?)`;
+            VALUES (?, ?, ?, ?)`;
 
-        await pool.query(query, [customer_id, medicine_id, purchased_quantity]);
+        await pool.query(query, [customer_id, medicine_id, supplier_id, purchased_quantity]);
 
         res.render("success", {
             pdfName: null,
@@ -1029,6 +1073,73 @@ exports.processCart = [isAdmin, async (req, res) => {
 
 
 
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "admin",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.processGroupPurchase = [isAdmin, async (req, res) => {
+    try {
+        const { action, purchase_session_id, main_purchase_session_id, purchase_id } = req.body;
+
+        if (action === "merge"){
+            const purchaseTime = await pool.query('SELECT purchase_time FROM purchase_sessions WHERE purchase_session_id = ?', [main_purchase_session_id]);
+            const mainCustomerId = await pool.query('SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?', [main_purchase_session_id]);
+            const purchaseCustomerId = await pool.query('SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?', [purchase_session_id]);
+            if(mainCustomerId.customer_id != purchaseCustomerId.customer_id){
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Bad Request",
+                    error: "Customer ID does not match."
+                });
+            }
+            console.log(purchaseTime);
+            await pool.query('UPDATE purchase_sessions SET purchase_time = ? WHERE purchase_session_id = ?', [purchaseTime[0].purchase_time, purchase_session_id]);
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Purchase details has been merged successfully!"
+            });
+        }else if (action === "delete") {
+            await pool.query('DELETE FROM purchases WHERE customer_id IN (SELECT customer_id FROM purchase_sessions WHERE purchase_session_id = ?) AND purchase_time IN (SELECT purchase_time FROM purchase_sessions WHERE purchase_session_id = ?)', [purchase_session_id, purchase_session_id]);
+            await pool.query('DELETE FROM purchase_sessions WHERE purchase_session_id = ?', [purchase_session_id]);
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Purchase details has been deleted successfully!"
+            });
+        } else if (action === "addItem") {
+            await pool.query('UPDATE purchase SET purchase_time = ps.purchase_time FROM purchase_sessions ps WHERE purchase_id = ? AND purchase_session_id = ? ', [purchase_id, purchase_session_id]);
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Purchase details has been updated successfully!"
+            });
+        } else if (action === "deleteItem") {
+            await pool.query('UPDATE purchases SET purchase_time = NULL WHERE purchase_id = ?', [purchase_id]);
+            return res.render("success", {
+                username: req.session.user?.username,
+                profile: "admin",
+                pagetitle: "Success",
+                message: "Purchase details has been updated successfully!"
+            });
+        } 
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Bad Request",
+            error: "Invalid action provided."
+        }); 
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).render("500", {
