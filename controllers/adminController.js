@@ -1018,7 +1018,6 @@ exports.purchaseMedicine = [isAdmin, async (req, res) => {
     }
 }];
 
-
 exports.processGroupPurchase = [isAdmin, async (req, res) => {
     try {
         const { action, purchase_session_id, main_purchase_session_id, purchase_id, medicine_id, supplier_id, purchased_quantity, purchase_session_id_1 } = req.body;
