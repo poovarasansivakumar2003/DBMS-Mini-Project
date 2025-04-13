@@ -1,31 +1,200 @@
 <%- include('includes/header') %>
-
+<style>
+  .sidebar-link.active {
+    background-color: #3b82f6;
+    color: white;
+  }
+  .sidebar {
+    transition: all 0.3s ease-in-out;
+  }
+  .sidebar-collapsed {
+    width: 4rem;
+  }
+  .sidebar-expanded {
+    width: 16rem;
+  }
+  .main-content {
+    transition: margin-left 0.3s ease-in-out;
+  }
+  @media (min-width: 768px) {
+    .main-content-with-sidebar {
+      margin-left: 16rem;
+    }
+    .main-content-with-sidebar-collapsed {
+      margin-left: 4rem;
+    }
+  }
+  .back-to-top {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 50;
+  }
+  @media (max-width: 768px) {
+    .sidebar {
+      position: fixed;
+      left: -16rem;
+      z-index: 30;
+    }
+    .sidebar.sidebar-expanded {
+      left: 0;
+    }
+    .main-content {
+      margin-left: 0 !important;
+    }
+    .stats-container {
+      flex-direction: column;
+      width: 100%;
+    }
+    .stat-box {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    .grid-cols-1 {
+      grid-template-columns: 1fr;
+    }
+    .grid-cols-2 {
+      grid-template-columns: 1fr;
+    }
+    .grid-cols-3 {
+      grid-template-columns: 1fr;
+    }
+    .grid-cols-4 {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .grid-cols-3 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .grid-cols-4 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .grid-cols-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .grid-cols-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+</style>
 <div class="bg-blue-50 min-h-screen">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="py-10">
-      <header>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 class="text-3xl text-center font-bold text-gray-900 mb-6">Admin Panel</h1>
-        </div>
-      </header>
+  
 
+  <!-- Sidebar Navigation -->
+  <aside id="sidebar" class="sidebar sidebar-expanded bg-white shadow-md fixed left-0 top-14 h-full z-20 overflow-x-hidden overflow-y-auto w-1/3">
+    <div class="py-6">
+      <ul class="space-y-1 px-2">
+        <li>
+          <a href="#" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-tachometer-alt w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="#manageCustomers" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-users w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Manage Customers</span>
+          </a>
+        </li>
+        <li>
+          <a href="#addNewMedicines" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-pills w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Add New Medicines</span>
+          </a>
+        </li>
+        <li>
+          <a href="#manageMedicines" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-capsules w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Manage Medicines</span>
+          </a>
+        </li>
+        <li>
+          <a href="#addNewSuppliers" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-truck w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Add New Suppliers</span>
+          </a>
+        </li>
+        <li>
+          <a href="#manageSuppliers" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-building w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Manage Suppliers</span>
+          </a>
+        </li>
+        <li>
+          <a href="#makePurchases" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-shopping-cart w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Make Purchases</span>
+          </a>
+        </li>
+        <li>
+          <a href="#pendingPurchases" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-clock w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Pending Purchases</span>
+          </a>
+        </li>
+        <li>
+          <a href="#groupPurchases" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-layer-group w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Group Purchases</span>
+          </a>
+        </li>
+        <li>
+          <a href="#paymentHistory" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-money-bill-wave w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Payment History</span>
+          </a>
+        </li>
+        <li>
+          <a href="#invoiceHistory" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors group">
+            <i class="fas fa-file-invoice w-5 text-center mr-3 text-gray-500 group-hover:text-blue-600"></i>
+            <span class="sidebar-text">Invoice History</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </aside>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-2/3" >
+    <nav class="bg-white shadow-md px-4 py-3 fixed top-20 w-full z-20">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="flex items-center w-full md:w-auto justify-between">
+          <button id="sidebar-toggle" class="p-2 mr-2 text-gray-600 hover:text-blue-600 focus:outline-none">
+            <i class="fas fa-bars text-xl"></i>
+          </button>
+          <div class="md:hidden">
+            <h2 class="text-lg font-semibold text-gray-800">Admin Dashboard</h2>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4 mt-4 md:mt-0 w-full md:w-auto justify-between">
+          <div class="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-lg">
+            <div>
+              <h3 class="text-xs font-medium text-gray-500">Total Income</h3>
+              <p class="text-sm font-semibold text-gray-900">₹<%= totalIncome %></p>
+            </div>
+            <div class="h-8 w-px bg-gray-300"></div>
+            <div>
+              <h3 class="text-xs font-medium text-gray-500">Your Income</h3>
+              <p class="text-sm font-semibold text-gray-900">₹<%= adminIncome %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div class="py-10">
       <main>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
           <div class="bg-white shadow-sm rounded-lg p-6">
+            <h2 id="manageCustomers" class="text-xl font-semibold text-gray-800 mb-6"><i class="fa-solid fa-users"></i>  Manage Customers</h2>
             <div class="flex flex-col md:flex-row justify-between items-center mb-8">
-              <div class="stats-container bg-blue-50 p-4 rounded-lg shadow-sm w-full md:w-auto mb-4 md:mb-0">
-                <div class="grid grid-cols-2 gap-4">
-                  <div class="stat-box">
-                    <h3 class="text-sm font-medium text-gray-500">Total Income</h3>
-                    <p class="text-2xl font-semibold text-gray-900">₹<%= totalIncome %></p>
-                  </div>
-                  <div class="stat-box">
-                    <h3 class="text-sm font-medium text-gray-500">Your Income</h3>
-                    <p class="text-2xl font-semibold text-gray-900">₹<%= adminIncome %></p>
-                  </div>
-                </div>
-              </div>
-
               <div class="flex space-x-4">
                 <a href="/customerRegister" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -44,7 +213,6 @@
             </div>
 
             <% if (customers?.length > 0) { %>
-            <h2 class="text-xl font-semibold text-gray-800 mb-6">Manage Customers</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <% customers.forEach(customer => { %>
               <div class="rounded-lg bg-white border border-gray-200 shadow-md overflow-hidden hover:shadow-lg transition">
@@ -361,7 +529,7 @@
             </div>
             <% } %>
 
-            <h2 class="text-xl font-semibold text-gray-800 mt-6 mb-6">Add New Medicine</h2>
+            <h2 id="addNewMedicines" class="text-xl font-semibold text-gray-800 mt-6 mb-6">Add New Medicine</h2>
             <div class="bg-white rounded-xl shadow-md">
               <form action="/admin/adminDashboard/medicine/addMedicine" method="POST" enctype="multipart/form-data" class="space-y-5">
                 <div>
@@ -424,7 +592,7 @@
               </form>
             </div>
 
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-6">Manage Medicines</h2>
+            <h2 id="manageMedicines" class="text-xl font-semibold text-gray-800 mb-4 mt-6">Manage Medicines</h2>
             <div class="bg-white rounded-xl shadow-md">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="medicine-list">
                 <% if (medicines && medicines.length > 0) { %>
@@ -533,7 +701,7 @@
               </div>
             </div>
 
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-6">Add New Supplier</h2>
+            <h2 id="addNewSuppliers" class="text-xl font-semibold text-gray-800 mb-4 mt-6">Add New Supplier</h2>
             <div class="bg-white rounded-xl shadow-md p-6">
               <form action="/admin/adminDashboard/supplier/addSupplier" method="POST" class="p-2">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -581,7 +749,7 @@
               </form>
             </div>
 
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-6">Manage Suppliers</h2>
+            <h2 id="manageSuppliers" class="text-xl font-semibold text-gray-800 mb-4 mt-6">Manage Suppliers</h2>
             <% if (suppliers.length > 0) { %>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <% suppliers.forEach(supplier => { %>
@@ -861,7 +1029,7 @@
             </div>
 
 
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-6"><i class="fa-solid fa-cart-shopping mr-2 text-blue-600"></i>Make Purchase</h2>
+            <h2 id="makePurchases" class="text-xl font-semibold text-gray-800 mb-4 mt-6"><i class="fa-solid fa-cart-shopping mr-2 text-blue-600"></i>Make Purchase</h2>
             <% if (medicinesForPurchase.length > 0) { %>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
               <% medicinesForPurchase.forEach(medicine => { %>
@@ -938,7 +1106,7 @@
             </div>
             <% } %>
 
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-6">Pending Purchase</h2>
+            <h2 id="pendingPurchases" class="text-xl font-semibold text-gray-800 mb-4 mt-6">Pending Purchase</h2>
             <% if (cartItems.length === 0) { %>
             <div class="py-12 text-center bg-white rounded-xl shadow-sm">
               <div class="text-gray-400 mb-3"><i class="fa-solid fa-shopping-cart text-5xl"></i></div>
@@ -947,22 +1115,181 @@
             <% } %>
             <% if (cartItems.length > 0) { %>
             <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
-              <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div class="flex items-center space-x-4">
-                  <% 
-                  const uniqueSessionIds = new Set(cartItems.map(item => item.purchase_session_id));
-                  %>
-                  <p class="text-gray-700 font-medium">Total Sessions: <span class="font-bold text-blue-600"><%= uniqueSessionIds.size %></span></p>
-                  <p class="text-gray-700 font-medium">Session ID:
-                    <% Array.from(uniqueSessionIds).forEach(sessionId => { %>
-                    <span class="font-bold text-blue-600"><%= sessionId %></span>
-                    <% }) %>
-                  </p>
+                  <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-shopping-bag text-blue-600"></i>
+                    <p class="text-gray-700 font-medium">Total Sessions: <span class="font-bold text-blue-600"><%= cartItems.length %></span></p>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-hashtag text-blue-600"></i>
+                    <p class="text-gray-700 font-medium">Session ID:
+                      <% cartItems.forEach(session => { %>
+                      <span class="font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full ml-1"><%= session.purchase_session_id %></span>
+                      <% }) %>
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              <% cartItems.forEach(session => { %>
+              <div class="border-b border-gray-100 last:border-b-0">
+                <div class="p-4">
+                  <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center space-x-3">
+                      <h3 class="text-lg font-semibold text-gray-800">Customer ID and Name : <%= session.customer_id %>, <%= session.customer_name %></h3>
+                      <p class="text-sm font-semibold text-gray-800">Session ID: <%= session.purchase_session_id %></p>
+                      <span class="text-sm text-gray-500">
+                        <i class="fa-solid fa-clock mr-1"></i>
+                        <%= new Date(session.purchase_time).toLocaleString() %>
+                      </span>
+                    </div>
+                    <div class="flex space-x-2">
+                      <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="inline">
+                        <input type="hidden" name="purchase_session_id" value="<%= session.purchase_session_id %>">
+                        <input type="hidden" name="action" value="delete">
+                        <button type="submit" class="flex items-center text-red-600 hover:text-red-800 text-sm font-medium bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors" onclick="return confirm('Are you sure you want to clear this session?')">
+                          <i class="fa-solid fa-trash-alt mr-1"></i> Clear Session
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <div class="overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        <% session.purchases.forEach(item => { %>
+                        <tr class="hover:bg-gray-50 transition-colors">
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                              <% if (item.medicine_img) { %>
+                              <img src="data:image/jpeg;base64,<%= item.medicine_img.toString('base64') %>" alt="<%= item.medicine_name %>" class="h-12 w-12 rounded-lg object-cover border border-gray-200">
+                              <% } else { %>
+                              <img src="/img/noImg.jpg" alt="No Image Available" class="h-12 w-12 rounded-lg object-cover border border-gray-200">
+                              <% } %>
+                              <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900"><%= item.medicine_name %></div>
+                                <div class="text-xs text-gray-500"><%= item.medicine_composition %></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900"><%= item.supplier_name %></div>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900"><%= item.purchased_quantity %></div>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">₹<%= item.medicine_price %></div>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-blue-600">₹<%= item.total_amt %></div>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex space-x-2">
+                              <button onclick="toggleEditForm('purchase-<%= item.purchase_id %>')" class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg transition-colors">
+                                <i class="fa-solid fa-edit"></i>
+                              </button>
+                              <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="inline">
+                                <input type="hidden" name="purchase_id" value="<%= item.purchase_id %>">
+                                <input type="hidden" name="action" value="deleteItem">
+                                <button type="submit" class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors" onclick="return confirm('Are you sure you want to remove this item?')">
+                                  <i class="fa-solid fa-trash-alt"></i>
+                                </button>
+                              </form>
+                            </div>
+                          </td>
+                        </tr>
+
+                        <tr id="edit-form-purchase-<%= item.purchase_id %>" class="hidden">
+                          <td colspan="6" class="px-6 py-4 bg-gray-50">
+                            <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="space-y-3">
+                              <input type="hidden" name="purchase_id" value="<%= item.purchase_id %>">
+                              <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                  <label class="block text-sm font-medium text-gray-700 mb-1">Medicine</label>
+                                  <select name="medicine_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <% medicines.forEach(medicine => { %>
+                                    <option value="<%= medicine.medicine_id %>" <%= medicine.medicine_id === item.medicine_id ? 'selected' : '' %>><%= medicine.medicine_id %>: <%= medicine.medicine_name %></option>
+                                    <% }) %>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                                  <select name="supplier_id" class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Supplier</option>
+                                    <% suppliers.forEach(supplier => { %>
+                                    <% const hasMedicine = supplier.medicines.some(medicine => medicine.medicine_id === item.medicine_id) %>
+                                    <% if (hasMedicine) { %>
+                                    <option value="<%= supplier.supplier_id %>" <%= supplier.supplier_id === item.supplier_id ? 'selected' : '' %>>
+                                      <%= supplier.supplier_id %>: <%= supplier.supplier_name %>
+                                      (Stock: <%= supplier.medicines.find(m => m.medicine_id === item.medicine_id)?.stock_quantity || 0 %>)
+                                    </option>
+                                    <% } %>
+                                    <% }) %>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                  <input type="number" name="purchased_quantity" value="<%= item.purchased_quantity %>" min="1" class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                              </div>
+
+                              <div class="flex justify-end space-x-2">
+                                <button type="button" onclick="toggleEditForm('purchase-<%= item.purchase_id %>')" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                                  Cancel
+                                </button>
+                                <button type="submit" name="action" value="editItem" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                  Save Changes
+                                </button>
+                              </div>
+                            </form>
+                          </td>
+                        </tr>
+                        <% }) %>
+                      </tbody>
+                      <tfoot class="bg-gray-50">
+                        <tr>
+                          <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-gray-500">Session Total:</td>
+                          <td class="px-6 py-3 text-sm font-bold text-blue-600">
+                            ₹<%= session.actual_amt_to_pay %>
+                          </td>
+                          <td class="px-6 py-3">
+                            <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="inline flex items-center gap-2">
+                              <input type="hidden" name="purchase_session_id" value="<%= session.purchase_session_id %>">
+                              <input type="hidden" name="action" value="completePurchase">
+                              <label for="discount" class="text-sm font-medium text-gray-700 mr-2 mb-1">Discount:</label>
+                              <input type="number" name="discount" value="0" min="0" max="<%= session.actual_amt_to_pay %>">
+                              <input type="hidden" name="customer_email" value="<%= session.customer_email %>">
+                              <button type="submit" class="flex items-center text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors">
+                                <i class="fa-solid fa-check mr-1"></i> Complete Purchase
+                              </button>
+                            </form>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <% }) %>
             </div>
             <% } %>
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-6">Group Purchases</h2>
+
+            <!-- GROUP PURCHASES -->
+            <h2 id="groupPurchases" class="text-xl font-semibold text-gray-800 mb-4 mt-6">Group Purchases</h2>
             <div class="grid grid-cols-1 gap-6">
               <% groupPurchases.forEach(group => { %>
               <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
@@ -1042,9 +1369,6 @@
                           <td colspan="5" class="px-6 py-4 bg-gray-50">
                             <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="space-y-3">
                               <input type="hidden" name="purchase_id" value="<%= purchase.purchase_id %>">
-                              <% console.log(group.purchase_session_id) %>
-                              <input type="hidden" name="purchase_session_id_1" value="<%= group.purchase_session_id %>">
-
                               <div class="grid grid-cols-3 gap-4">
                                 <div>
                                   <label class="block text-sm font-medium text-gray-700 mb-1">Medicine</label>
@@ -1095,15 +1419,194 @@
               </div>
               <% }) %>
             </div>
+
+            <h2 id="paymentHistory" class="text-xl font-semibold text-gray-800 mb-4 mt-6">Payment History</h2>
+            <div class="grid grid-cols-1 gap-6">
+              <% payment.forEach(payment => { %>
+              <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                <div class="p-4">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                      <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= payment.payment_id %></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= payment.customer_id %></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= payment.customer_name %></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= payment.payment_method %></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= new Date(payment.payment_time).toLocaleString() %></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= payment.payment_amt %></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <% }) %>
+            </div>
+
+            <h2 id="invoiceHistory" class="text-xl font-semibold text-gray-800 mb-4 mt-6">Invoice History</h2>
+            <div class="grid grid-cols-1 gap-6">
+              <% invoice.forEach(invoice => { %>
+              <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                <div class="p-4">
+                  <div class="flex justify-between items-center mb-4">
+                    <p class="text-sm text-gray-500">Invoice ID: <%= invoice.invoice_no %></p>
+                    <p class="text-sm text-gray-500">Invoice Time: <%= new Date(invoice.invoice_time).toLocaleString() %></p>
+                    <p class="text-sm text-gray-500">Invoice Admin: <%= invoice.admin_username %></p>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Composition</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        <% 
+            const medicines = invoice.medicine_names.split(',');
+            const compositions = invoice.medicine_compositions.split(',');
+            const suppliers = invoice.supplier_names.split(',');
+            const expiryDates = invoice.medicine_expiry_dates.split(',');
+            const prices = invoice.medicine_prices.split(',');
+            const quantities = invoice.purchased_quantities.split(',');
+            const amounts = invoice.total_amt.split(',');
+            
+            for(let i = 0; i < medicines.length; i++) { %>
+                        <tr>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= medicines[i].trim() %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= compositions[i].trim() %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= suppliers[i].trim() %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= expiryDates[i].trim() %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= prices[i].trim() %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= quantities[i].trim() %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= amounts[i].trim() %></td>
+                        </tr>
+                        <% } %>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="mt-6 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount to Pay</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Previous Balance</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Total</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Date</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= invoice.actual_amt_to_pay %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= invoice.prev_balance %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= invoice.discount %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= invoice.net_total %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= invoice.amount_paid %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= invoice.payment_date ? new Date(invoice.payment_date).toLocaleString() : 'N/A' %></td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= invoice.curr_balance %></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <% }) %>
+            </div>
           </div>
+              <button id="back-to-top" class="back-to-top p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 focus:outline-none">
+        <i class="fas fa-arrow-up"></i>
+      </button>
         </div>
+      </main>
     </div>
-    </main>
   </div>
 </div>
-</div>
-<!-- MAKE INVOICE AND PAYMENT HISTORY -->
+
+
 <script>
+// Sidebar toggle functionality
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+    const sidebarTexts = document.querySelectorAll('.sidebar-text');
+    
+    // Check if sidebar state is stored in localStorage
+    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    
+    // Initialize sidebar state
+    if (sidebarCollapsed) {
+      sidebar.classList.remove('sidebar-expanded');
+      sidebar.classList.add('sidebar-collapsed');
+      mainContent.classList.remove('main-content-with-sidebar');
+      mainContent.classList.add('main-content-with-sidebar-collapsed');
+      sidebarTexts.forEach(text => text.style.display = 'none');
+    }
+    
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar-collapsed');
+      sidebar.classList.toggle('sidebar-expanded');
+      mainContent.classList.toggle('main-content-with-sidebar');
+      mainContent.classList.toggle('main-content-with-sidebar-collapsed');
+      
+      const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+      localStorage.setItem('sidebarCollapsed', isCollapsed);
+      
+      if (isCollapsed) {
+        sidebarTexts.forEach(text => text.style.display = 'none');
+      } else {
+        sidebarTexts.forEach(text => text.style.display = 'inline');
+      }
+    });
+    
+    // Active link highlighting
+    sidebarLinks.forEach(link => {
+      link.addEventListener('click', function() {
+        sidebarLinks.forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+      });
+      
+      // Check if link href matches current hash
+      if (link.getAttribute('href') === window.location.hash) {
+        link.classList.add('active');
+      }
+    });
+    
+    // Back to top button
+    const backToTopButton = document.getElementById('back-to-top');
+    
+    window.addEventListener('scroll', () => {
+      if (window.pageYOffset > 300) {
+        backToTopButton.style.display = 'block';
+      } else {
+        backToTopButton.style.display = 'none';
+      }
+    });
+    
+    backToTopButton.addEventListener('click', () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+
   function toggleEditForm(formId) {
     document.querySelectorAll("form[id^='edit-form']").forEach(form => form.classList.add('hidden'));
     document.getElementById(`edit-form-${formId}`).classList.toggle('hidden');

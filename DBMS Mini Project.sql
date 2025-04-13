@@ -408,6 +408,7 @@ CREATE PROCEDURE UpdateCustomerBalanceAfterInvoice(
     IN p_purchase_session_id INT, 
     IN p_total_amt_to_pay DECIMAL(10,2), 
     IN p_payment_id INT, 
+    IN p_discount DECIMAL(10,2),
     OUT p_balance_amt DECIMAL(10,2)
 )
 BEGIN
@@ -429,7 +430,7 @@ BEGIN
     END IF;
     
     -- Calculate balance
-    SET p_balance_amt = p_total_amt_to_pay - paid_amount;
+    SET p_balance_amt = (p_total_amt_to_pay - p_discount) - paid_amount;
     
     -- Update customer's balance
     UPDATE customers 
@@ -444,7 +445,7 @@ FOR EACH ROW
 BEGIN
     DECLARE balance_amt DECIMAL(10,2);
     -- Call the stored procedure with correct parameters
-    CALL UpdateCustomerBalanceAfterInvoice(NEW.purchase_session_id, NEW.total_amt_to_pay, NEW.payment_id, balance_amt);
+    CALL UpdateCustomerBalanceAfterInvoice(NEW.purchase_session_id, NEW.total_amt_to_pay, NEW.payment_id, NEW.discount, balance_amt);
     SET NEW.curr_balance = balance_amt;
 END$$
 

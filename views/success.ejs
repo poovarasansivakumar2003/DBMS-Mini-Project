@@ -232,6 +232,19 @@
           }, 3000); // 3 seconds delay
         </script>
               <% } %>
+              <% if (message==='Purchase session has been sent for customer payment!' ) { %>
+                <p class="text-gray-600 text-sm sm:text-base mb-12">
+                  <%= message %>
+                </p>
+              </div>
+            </div>
+          </div>
+          <script>
+            setTimeout(() => {
+              window.location.href = "/admin/adminDashboard";
+            }, 3000); // 3 seconds delay
+          </script>
+                <% } %>
             <% if (message==='Purchase details have been merged successfully!' ) { %>
               <p class="text-gray-600 text-sm sm:text-base mb-12">
                 <%= message %>

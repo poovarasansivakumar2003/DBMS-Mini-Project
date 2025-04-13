@@ -1,5 +1,14 @@
 const pool = require('../db');
 const multer = require('multer');
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
 
 // Configure multer for file uploads
 const upload = multer({
@@ -230,19 +239,26 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
         }));
 
         const [cartItems] = await pool.query(`SELECT 
-                        p.purchase_id,
-                        ps.purchase_session_id,
-                        c.customer_id,
-                        c.customer_name,
-                        m.medicine_id,
-                        m.medicine_name,
-                        m.medicine_composition,
-                        m.medicine_price,
-                        s.supplier_id,
-                        s.supplier_name,
-                        p.purchased_quantity,
-                        p.total_amt,
-                        m.medicine_img
+                    ps.purchase_session_id,
+                    ps.purchase_time,
+                    ps.actual_amt_to_pay,
+                    c.customer_id,
+                    c.customer_name,
+                    c.customer_email,
+                    GROUP_CONCAT(
+                        JSON_OBJECT(
+                            'purchase_id', p.purchase_id,
+                            'medicine_id', m.medicine_id,
+                            'medicine_img', m.medicine_img,
+                            'medicine_name', m.medicine_name,
+                            'medicine_composition', m.medicine_composition,
+                            'medicine_price', m.medicine_price,
+                            'supplier_id', s.supplier_id,
+                            'supplier_name', s.supplier_name,
+                            'purchased_quantity', p.purchased_quantity,
+                            'total_amt', p.total_amt
+                        )
+                    ) as purchases
                     FROM purchases p
                     JOIN medicines m ON m.medicine_id = p.medicine_id
                     LEFT JOIN customers c ON c.customer_id = p.customer_id
@@ -250,7 +266,16 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     LEFT JOIN purchase_sessions ps ON p.purchase_time = ps.purchase_time
                     LEFT JOIN invoice i ON ps.purchase_session_id = i.purchase_session_id
                     WHERE i.invoice_no IS NULL
+                    GROUP BY ps.purchase_session_id, ps.purchase_time, ps.actual_amt_to_pay, c.customer_id, c.customer_name
+                    ORDER BY ps.purchase_time DESC
         `);
+
+        // Parse the purchases JSON string for each group
+        cartItems.forEach(group => {
+            if (group.purchases) {
+                group.purchases = JSON.parse(`[${group.purchases}]`);
+            }
+        });
 
         const [invoice] = await pool.query(`
                     SELECT 
@@ -284,6 +309,18 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     ORDER BY i.invoice_time DESC
                 `);
 
+        const[payment] = await pool.query(`
+            SELECT 
+            py.payment_id,
+            py.payment_time,
+            py.payment_amt,
+            py.payment_method,
+            c.customer_id,
+            c.customer_name
+            FROM payments py
+            JOIN customers c ON py.customer_id = c.customer_id
+        `);
+
         const [groupPurchases] = await pool.query(`
             SELECT 
                 ps.purchase_session_id,
@@ -295,6 +332,7 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     JSON_OBJECT(
                         'purchase_id', p.purchase_id,
                         'medicine_id', m.medicine_id,
+                        'medicine_img', m.medicine_img,
                         'medicine_name', m.medicine_name,
                         'medicine_composition', m.medicine_composition,
                         'medicine_price', m.medicine_price,
@@ -335,7 +373,8 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
             cartItems,
             medicinesForPurchase,
             invoice,
-            groupPurchases
+            groupPurchases,
+            payment
         });
 
     } catch (err) {
@@ -1020,7 +1059,17 @@ exports.purchaseMedicine = [isAdmin, async (req, res) => {
 
 exports.processGroupPurchase = [isAdmin, async (req, res) => {
     try {
-        const { action, purchase_session_id, main_purchase_session_id, purchase_id, medicine_id, supplier_id, purchased_quantity, purchase_session_id_1 } = req.body;
+        const admin_username = req.session.user?.username;
+
+        if (!admin_username) {
+            return res.status(400).render("400", {
+                username: null,
+                profile: "admin",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
+        const { action, purchase_session_id, main_purchase_session_id, purchase_id, medicine_id, supplier_id, purchased_quantity, discount, customer_email } = req.body;
 
         if (action === "merge") {
             const invoiceCreated = await pool.query(`
@@ -1124,24 +1173,6 @@ exports.processGroupPurchase = [isAdmin, async (req, res) => {
                 message: "Purchase details has been deleted successfully!"
             });
         } else if (action === "deleteItem") {
-
-            const invoiceCreated = await pool.query(`
-                SELECT i.invoice_no FROM invoice i
-                JOIN purchase_sessions ps ON i.purchase_session_id = ps.purchase_session_id
-                WHERE ps.purchase_session_id = ?
-            `, [purchase_session_id_1]);
-
-            console.log(purchase_session_id_1);
-            console.log(invoiceCreated);
-
-            if (invoiceCreated[0].length > 0) {
-                return res.status(400).render("400", {
-                    username: req.session.user?.username,
-                    profile: "admin",
-                    pagetitle: "Bad Request",
-                    error: "Invoice has already been created for this purchase session."
-                });
-            }
             // Remove item from purchase session
             await pool.query('UPDATE purchases SET purchase_time = CURRENT_TIMESTAMP WHERE purchase_id = ?', [purchase_id]);
 
@@ -1151,8 +1182,44 @@ exports.processGroupPurchase = [isAdmin, async (req, res) => {
                 pagetitle: "Success",
                 message: "Item has been removed from the purchase session successfully!"
             });
-        }
+        } else if (action === "completePurchase") {
+            await pool.query('INSERT INTO invoice (purchase_session_id,admin_username,discount) VALUES (?,?,?)', [purchase_session_id, admin_username, discount]);
+            const purchaseTime = await pool.query('SELECT purchase_time FROM purchase_sessions WHERE purchase_session_id = ?', [purchase_session_id]);
+            try {
 
+                if (!customer_email) {
+                    return res.render("404", {
+                        pagetitle: 'Page Not Found',
+                        profile: "admin",
+                        username: req.session.user?.username,
+                        error: "Email not found"
+                    });
+                }
+
+                await transporter.sendMail({
+                    from: process.env.EMAIL_USER,
+                    to: customer_email,
+                    subject: 'Invoice Generated',
+                    text: `Your invoice has been generated for purchase made on ${purchaseTime[0][0].purchase_time}. Please do payment by logging into your dashboard in our website.`
+                });
+
+                return res.render("success", {
+                    username: req.session.user?.username,
+                    profile: "admin",
+                    pagetitle: "Success",
+                    message: "Purchase session has been sent for customer payment!"
+                });
+
+            } catch (error) {
+                console.error('Error sending email:', error);
+                res.render('contact', {
+                    error: err.message,
+                    profile: req.session.user?.role,
+                    username: req.session.user?.username,
+                    pagetitle: 'Contact Us'
+                });
+            }
+        }
         return res.status(400).render("400", {
             username: req.session.user?.username,
             profile: "admin",
