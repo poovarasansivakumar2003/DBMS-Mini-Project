@@ -130,6 +130,37 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
             WHERE i.invoice_no IS NULL AND p.customer_id = ?
         `, [customerId]);
 
+        const [pendingPayments] = await pool.query(`
+            SELECT 
+            i.invoice_no,
+            i.invoice_time,
+            a.admin_username,
+            GROUP_CONCAT(m.medicine_name ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_names,
+            GROUP_CONCAT(m.medicine_composition ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_compositions,
+            GROUP_CONCAT(COALESCE(s.supplier_name, 'Unknown') ORDER BY m.medicine_name SEPARATOR ', ') AS supplier_names,
+            GROUP_CONCAT(DATE_FORMAT(m.medicine_expiry_date, '%Y-%m-%d') ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_expiry_dates,
+            GROUP_CONCAT(m.medicine_price ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_prices,
+            GROUP_CONCAT(p.purchase_id ORDER BY m.medicine_name SEPARATOR ', ') AS purchase_ids,
+            GROUP_CONCAT(p.purchased_quantity ORDER BY m.medicine_name SEPARATOR ', ') AS purchased_quantities,
+            GROUP_CONCAT(p.total_amt ORDER BY m.medicine_name SEPARATOR ', ') AS total_amt,
+            ps.purchase_session_id,
+            ps.actual_amt_to_pay,
+            i.prev_balance,
+            i.total_amt_to_pay,
+            i.discount,
+            i.net_total
+            FROM invoice i
+            JOIN purchase_sessions ps ON i.purchase_session_id = ps.purchase_session_id
+            JOIN purchases p ON ps.customer_id = p.customer_id AND ps.purchase_time = p.purchase_time
+            JOIN medicines m ON p.medicine_id = m.medicine_id
+            LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
+            JOIN customers c ON ps.customer_id = c.customer_id
+            LEFT JOIN admin a ON i.admin_username = a.admin_username
+            WHERE i.payment_id IS NULL AND c.customer_id = ?
+            GROUP BY i.invoice_no
+            ORDER BY i.invoice_time DESC
+        `, [customerId]);
+
         res.render('customerDashboard', {
             pagetitle: `Customer Panel - ${req.session.user.username}`,
             username: req.session.user.username,
@@ -140,6 +171,7 @@ exports.getCustomerDashboard = [isCustomer, async (req, res) => {
             feedbacks,
             medicines: medicines || [],
             cartItems: cartItems || [],
+            pendingPayments: pendingPayments || [],
             invoice
         });
 
@@ -1133,7 +1165,7 @@ exports.payPurchaseMedicine = [isCustomer, async (req, res) => {
                 GROUP_CONCAT(DISTINCT pur.total_amt ORDER BY m.medicine_name SEPARATOR ', ') AS total_amt,
                 ps.purchase_session_id,
                 ps.actual_amt_to_pay,
-                c.customer_balance_amt
+                c.customer_balance_amt as prev_balance
                 FROM customers c
                 JOIN purchases pur ON c.customer_id = pur.customer_id
                 JOIN medicines m ON pur.medicine_id = m.medicine_id
@@ -1173,6 +1205,108 @@ exports.payPurchaseMedicine = [isCustomer, async (req, res) => {
             await pool.query(
                 "INSERT INTO invoice (purchase_session_id, payment_id) VALUES (?, ?)",
                 [purchase_session_id, payment_id]
+            );
+
+            return res.render("success", {
+                pdfName: null,
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Success",
+                message: "Your payment is successful, Please check ur purchase history for Invoice"
+            });
+
+        }
+        return res.status(400).render("400", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Bad Request",
+            error: "Invalid action provided."
+        });
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).render("500", {
+            username: req.session.user?.username,
+            profile: "customer",
+            pagetitle: "Internal Server Error",
+            error: err.message
+        });
+    }
+}];
+
+exports.payPendingPayments = [isCustomer, async (req, res) => {
+    try {
+        const customerId = req.session.customerId;
+        if (!customerId) {
+            return res.status(400).render("400", {
+                username: req.session.user?.username,
+                profile: "customer",
+                pagetitle: "Unauthorized",
+                error: "User not logged in."
+            });
+        }
+
+        const { action } = req.body;
+
+        if (action === 'proceedToPay') {
+            const [paymentResult] = await pool.query(`  
+            SELECT 
+            i.invoice_no,
+            c.customer_name,
+            GROUP_CONCAT(DISTINCT m.medicine_name ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_names,
+            GROUP_CONCAT(DISTINCT m.medicine_composition ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_compositions,
+            GROUP_CONCAT(DISTINCT COALESCE(s.supplier_name, 'Unknown') ORDER BY m.medicine_name SEPARATOR ', ') AS supplier_names,
+            GROUP_CONCAT(DISTINCT DATE_FORMAT(m.medicine_expiry_date, '%Y-%m-%d') ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_expiry_dates,
+            GROUP_CONCAT(DISTINCT m.medicine_price ORDER BY m.medicine_name SEPARATOR ', ') AS medicine_prices,
+            GROUP_CONCAT(DISTINCT pur.purchased_quantity ORDER BY m.medicine_name SEPARATOR ', ') AS purchased_quantities,
+            GROUP_CONCAT(DISTINCT pur.total_amt ORDER BY m.medicine_name SEPARATOR ', ') AS total_amt,         GROUP_CONCAT(DISTINCT pur.total_amt ORDER BY m.medicine_name SEPARATOR ', ') AS total_amt,
+            ps.purchase_session_id,
+            ps.actual_amt_to_pay,
+            i.prev_balance,
+            i.total_amt_to_pay,
+            i.discount,
+            i.net_total
+            FROM invoice i
+            JOIN purchase_sessions ps ON i.purchase_session_id = ps.purchase_session_id
+            JOIN customers c ON ps.customer_id = c.customer_id
+            JOIN purchases pur ON ps.customer_id = pur.customer_id AND ps.purchase_time = pur.purchase_time
+            JOIN medicines m ON pur.medicine_id = m.medicine_id
+            LEFT JOIN suppliers s ON pur.supplier_id = s.supplier_id
+            WHERE i.payment_id IS NULL AND c.customer_id = ?
+            GROUP BY i.invoice_no
+            ORDER BY i.invoice_time DESC
+        `, [customerId]);
+
+            return res.render('payment', {
+                pagetitle: `Customer Panel - ${req.session.user.username}`,
+                username: req.session.user.username,
+                profile: "customer",
+                customerId,
+                paymentResult
+            });
+
+        } else if (action === 'payNow') {
+            const { customer_id, payment_amt, payment_method, invoice_no } = req.body;
+            console.log(customer_id, payment_amt, payment_method, invoice_no);
+            // Validate input fields
+            if (!customer_id || !payment_amt || !payment_method || !invoice_no) {
+                return res.status(400).render("400", {
+                    username: req.session.user?.username,
+                    profile: "customer",
+                    pagetitle: "Bad Request",
+                    error: "All fields must be provided."
+                });
+            }
+
+            const [insertPayment] = await pool.execute(
+                "INSERT INTO payments (customer_id, payment_amt, payment_method) VALUES (?, ?, ?)",
+                [customer_id, payment_amt, payment_method]
+            );
+
+            const payment_id = insertPayment.insertId;
+
+            await pool.query(
+                "UPDATE invoice SET payment_id = ? WHERE invoice_no = ?",
+                [payment_id, invoice_no]
             );
 
             return res.render("success", {

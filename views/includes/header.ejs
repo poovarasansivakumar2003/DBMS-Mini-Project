@@ -127,5 +127,28 @@
           menuBtn.innerHTML = '<i class="fas fa-bars text-xl"></i>';
         }
       });
+
+      // Go to Top Button
+      const goToTopBtn = document.createElement("button");
+      goToTopBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+      goToTopBtn.className = "fixed bottom-8 right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 opacity-0 invisible transform translate-y-4";
+      document.body.appendChild(goToTopBtn);
+
+      window.addEventListener("scroll", () => {
+        if (window.scrollY > 300) {
+          goToTopBtn.classList.remove("opacity-0", "invisible", "translate-y-4");
+          goToTopBtn.classList.add("opacity-100", "visible", "translate-y-0");
+        } else {
+          goToTopBtn.classList.add("opacity-0", "invisible", "translate-y-4");
+          goToTopBtn.classList.remove("opacity-100", "visible", "translate-y-0");
+        }
+      });
+
+      goToTopBtn.addEventListener("click", () => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+      });
     });
   </script>

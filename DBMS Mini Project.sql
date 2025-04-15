@@ -438,9 +438,19 @@ BEGIN
     WHERE customer_id = cust_id;
 END$$
 
--- Trigger: Update customer balance after invoice insert
+-- Trigger: Update customer balance after invoice changes
 CREATE TRIGGER update_customer_balance_after_invoice_insert
 BEFORE INSERT ON invoice
+FOR EACH ROW
+BEGIN
+    DECLARE balance_amt DECIMAL(10,2);
+    -- Call the stored procedure with correct parameters
+    CALL UpdateCustomerBalanceAfterInvoice(NEW.purchase_session_id, NEW.total_amt_to_pay, NEW.payment_id, NEW.discount, balance_amt);
+    SET NEW.curr_balance = balance_amt;
+END$$
+
+CREATE TRIGGER update_customer_balance_after_invoice_update
+BEFORE UPDATE ON invoice
 FOR EACH ROW
 BEGIN
     DECLARE balance_amt DECIMAL(10,2);
@@ -576,23 +586,3 @@ select * from invoice;
 
 SHOW ERRORS;
 SHOW WARNINGS;
-
--- Recent Orders & Deliveries
--- Low Stock Alerts
--- Revenue Overview
--- Upcoming Expiry Alerts
--- Customer Growth Analytics
--- How Can Suppliers View Their Stock?
--- How Can Suppliers Update Their Stock?
--- Show Medicine Stock for Each Supplier
--- How to See All Suppliers for a Medicine?
--- How to Get the Combined Stock of Each Medicine?
--- How to Get Stock per Supplier for a Medicine?
--- How to Get Supplier of Medicine Purchased by a Customer?
--- How to See All Suppliers for a Customer’s Purchased Medicines?
--- How to Fetch Only Non-Expired Medicines for Purchase?
--- How to Prevent Expired Medicines from Being Purchased?
--- Query to Get Total Amount Spent by Each Customer
--- make invoice
--- reduce stock as purchase happens
--- only admin can generate bill
