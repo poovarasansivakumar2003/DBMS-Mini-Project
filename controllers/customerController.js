@@ -1286,7 +1286,6 @@ exports.payPendingPayments = [isCustomer, async (req, res) => {
 
         } else if (action === 'payNow') {
             const { customer_id, payment_amt, payment_method, invoice_no } = req.body;
-            console.log(customer_id, payment_amt, payment_method, invoice_no);
             // Validate input fields
             if (!customer_id || !payment_amt || !payment_method || !invoice_no) {
                 return res.status(400).render("400", {

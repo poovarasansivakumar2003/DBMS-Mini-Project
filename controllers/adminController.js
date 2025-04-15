@@ -249,7 +249,6 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                         JSON_OBJECT(
                             'purchase_id', p.purchase_id,
                             'medicine_id', m.medicine_id,
-                            'medicine_img', m.medicine_img,
                             'medicine_name', m.medicine_name,
                             'medicine_composition', m.medicine_composition,
                             'medicine_price', m.medicine_price,
@@ -332,7 +331,6 @@ exports.getAdminDashboard = [isAdmin, async (req, res) => {
                     JSON_OBJECT(
                         'purchase_id', p.purchase_id,
                         'medicine_id', m.medicine_id,
-                        'medicine_img', m.medicine_img,
                         'medicine_name', m.medicine_name,
                         'medicine_composition', m.medicine_composition,
                         'medicine_price', m.medicine_price,

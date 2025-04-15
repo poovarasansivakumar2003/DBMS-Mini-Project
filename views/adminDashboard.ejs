@@ -1028,16 +1028,10 @@
                     <% session.purchases.forEach(item => { %>
                     <tr class="hover:bg-gray-50 transition-colors">
                       <td class="pl-6 pr-20 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                          <% if (item.medicine_img) { %>
-                          <img src="data:image/jpeg;base64,<%= item.medicine_img.toString('base64') %>" alt="<%= item.medicine_name %>" class="h-12 w-12 rounded-lg object-cover border border-gray-200">
-                          <% } else { %>
-                          <img src="/img/noImg.jpg" alt="No Image Available" class="h-12 w-12 rounded-lg object-cover border border-gray-200">
-                          <% } %>
-                          <div class="ml-4">
+                        <div class="flex flex-col">
                             <div class="text-sm font-medium text-gray-900"><%= item.medicine_name %></div>
                             <div class="text-xs text-gray-500"><%= item.medicine_composition %></div>
-                          </div>
+
                         </div>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap">
@@ -1152,28 +1146,10 @@
           <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
             <div class="p-4">
               <div class="flex justify-between items-center mb-4">
-                <div>
                   <h3 class="text-lg font-semibold text-gray-800">Customer: <%= group.customer_name %></h3>
                   <p class="text-sm text-gray-500">Session ID: <%= group.purchase_session_id %></p>
                   <p class="text-sm text-gray-500">Time: <%= new Date(group.purchase_time).toLocaleString() %></p>
                   <p class="text-sm text-gray-500">Total Amount to Pay: ₹<%= group.actual_amt_to_pay %></p>
-                </div>
-                <div class="flex space-x-2">
-                  <!-- <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="inline">
-                    <input type="hidden" name="purchase_session_id" value="<%= group.purchase_session_id %>">
-                    <input type="hidden" name="action" value="delete">
-                    <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors" onclick="return confirm('Are you sure you want to delete this purchase session?')">
-                      Delete Session
-                    </button>
-                  </form> -->
-                  <!-- <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="inline">
-                    <input type="hidden" name="main_purchase_session_id" value="<%= group.purchase_session_id %>">
-                    <input type="number" name="purchase_session_id" placeholder="Session ID to merge" class="rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500 mr-2">
-                    <button type="submit" name="action" value="merge" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors">
-                      Merge
-                    </button>
-                  </form> -->
-                </div>
               </div>
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -1184,30 +1160,23 @@
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <!-- <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th> -->
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
                     <% group.purchases.forEach(purchase => { %>
                     <tr>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div class="flex items-center">
-                          <% if (purchase.medicine_img) { %>
-                          <img src="data:image/jpeg;base64,<%= purchase.medicine_img.toString('base64') %>" alt="<%= purchase.medicine_name %>" class="w-10 h-10 object-cover rounded-md mr-2">
-                          <% } else { %>
-                          <img src="/img/noImg.jpg" alt="No Image Available" class="w-10 h-10 object-cover rounded-md mr-2">
-                          <% } %>
-                          <div>
+                        <div class="flex flex-col">
                             <div class="font-medium text-gray-900"><%= purchase.medicine_name %></div>
                             <div class="text-gray-500 text-xs"><%= purchase.medicine_composition %></div>
-                          </div>
                         </div>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= purchase.supplier_name %></td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= purchase.purchased_quantity %></td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= purchase.medicine_price %></td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹<%= purchase.total_amt %></td>
-                      <!-- <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div class="flex space-x-2">
                           <button onclick="toggleEditForm('purchase-<%= purchase.purchase_id %>')" class="text-blue-600 hover:text-blue-900">
                             <i class="fa-solid fa-edit"></i>
@@ -1220,9 +1189,9 @@
                             </button>
                           </form>
                         </div>
-                      </td> -->
+                      </td>
                     </tr>
-                    <!-- <tr id="edit-form-purchase-<%= purchase.purchase_id %>" class="hidden">
+                    <tr id="edit-form-purchase-<%= purchase.purchase_id %>" class="hidden">
                       <td colspan="5" class="px-6 py-4 bg-gray-50">
                         <form action="/admin/adminDashboard/groupPurchase/processGroupPurchase" method="POST" class="space-y-3">
                           <input type="hidden" name="purchase_id" value="<%= purchase.purchase_id %>">
@@ -1267,7 +1236,7 @@
                           </div>
                         </form>
                       </td>
-                    </tr> -->
+                    </tr>
                     <% }) %>
                   </tbody>
                 </table>
