@@ -176,7 +176,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Poovarasan S**
 
 - GitHub: [@poovarasansivakumar2003](https://github.com/poovarasansivakumar2003)
-- Email: [Your Email](poovarasansivakumar2003@gmail.com)
+- Email: [Click here](poovarasansivakumar2003@gmail.com)
 
 ---
 
