@@ -1,51 +1,83 @@
 # 💊 Pharmacy Management System
 
+<div align="center">
+
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+
+</div>
+
 ## 📌 Overview
 
 A full-stack **Pharmacy Management System** developed as a part of the **DBMS Mini Project (5th Semester)**.
 Built with Node.js, Express, EJS, and MySQL this project helps pharmacies streamline their operations digitally.
 
-## 📌 Project Highlights
+## 🎯 Project Highlights
 
-Manage core pharmacy operations like:
+<div align="center">
 
-✅ Medicine Inventory Tracking  
-✅ Customer Purchase Handling  
-✅ Supplier Management  
-✅ Invoice Generation  
-✅ Role-based Dashboard for Admins & Customers
+| Feature | Description |
+|---------|-------------|
+| 🏥 **Admin Dashboard** | Manage medicines, suppliers, and customers |
+| 🧑 **Customer Management** | Add and update customer details |
+| 💊 **Medicine Inventory** | Track stock levels & prevent expired medicines |
+| 🚛 **Supplier Management** | Maintain records of medicine suppliers |
+| 🛍️ **Purchases & Sales** | Manage medicine purchases & generate invoices |
+| 📝 **Invoice Generation** | Automatic invoice creation based on purchases |
 
-## ✨ Features
-
-- 🏥 **Admin Dashboard**: Manage medicines, suppliers, and customers
-- 🧑 **Customer Management**: Add and update customer details
-- 🧍 **Customer Registration/Login**: Customers can register, login, add address and feedback and view medicine availability and invoices
-- 💊 **Medicine Inventory**: Track stock levels & prevent expired medicines from being sold
-- 🚛 **Supplier Management**: Maintain records of medicine suppliers
-- 🛍️ **Purchases & Sales**: Manage medicine purchases & generate invoices
-- 📝 **Invoice Generation**: Automatic invoice creation based on purchases
-- 🗃️ **Data Persistence**: MySQL database to store & retrieve pharmacy records efficiently
+</div>
 
 ## 📊 Database Schema
 
 ### ER Diagram
-![ER Diagram](path/to/er-diagram.png)
+<div align="center">
+<img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/ER%20Diagram.jpg?raw=true" alt="ER Diagram" width="600"/>
+</div>
 
 ### Relational Schema
-![Relational Schema](path/to/relational-schema.png)
+<div align="center">
+<img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/Relational%20Diagram.jpg?raw=true" alt="Relational Schema" width="600"/>
+</div>
 
-### Screenshots
-![Website Screenshot](path/to/website-screenshot.png)
+## 🖼️ Screenshots
 
-## 🛠️ Technologies Used
+<div align="center">
+<table>
+  <tr>
+    <td><img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/screenshot/Picture1.png?raw=true" alt="Screenshot 1" width="300"/></td>
+    <td><img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/screenshot/Picture2.png?raw=true" alt="Screenshot 2" width="300"/></td>
+    <td><img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/screenshot/Picture6.png?raw=true" alt="Screenshot 6" width="300"/></td>
+    <td><img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/screenshot/Picture7.png?raw=true" alt="Screenshot 7" width="300"/></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/screenshot/Picture4.png?raw=true" alt="Screenshot 4" width="300"/></td>
+    <td><img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/screenshot/Picture8.png?raw=true" alt="Screenshot 8" width="300"/></td>
+    <td><img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/screenshot/Picture9.png?raw=true" alt="Screenshot 9" width="300"/></td>
+    <td><img src="https://github.com/poovarasansivakumar2003/DBMS-Mini-Project/blob/main/public/img/screenshot/Picture10.png?raw=true" alt="Screenshot 10" width="300"/></td>
 
-- **⚙️ Backend**: Node.js with Express.js  
-- **🎨 Frontend**: EJS (Embedded JavaScript) + Tailwind CSS
-- **🗄️ Database**: MySQL
+  </tr>
+</table>
+</div>
 
-## 📁 Folder Structure
+## 🛠️ Tech Stack
 
-```
+<div align="center">
+
+| Category | Technologies |
+|----------|--------------|
+| **Backend** | Node.js, Express.js |
+| **Frontend** | EJS, Tailwind CSS |
+| **Database** | MySQL |
+| **Authentication** | Session-based |
+| **Email** | Nodemailer |
+
+</div>
+
+## 📁 Project Structure
+
+```bash
 📦 DBMS-Mini-Project
  ┣ 📂 controllers           # Route logic (admin, customer, auth, etc.)
  ┣ 📂 routes                # Express.js routing modules
@@ -60,26 +92,30 @@ Manage core pharmacy operations like:
  ┣ 📜 README.md             # You're here!
 ```
 
-## 🏗️ Setup Instructions
+## 🚀 Getting Started
 
-### 📌 Prerequisites
+### Prerequisites
 
-Ensure you have the following installed:  
-✔️ Node.js  
-✔️ MySQL 
-✔️ Git  
+- Node.js (v14 or higher)
+- MySQL (v8.0 or higher)
+- Git
 
-### 📥 Installation Steps
+### Installation
 
-1. Clone the repository:
-   ```bash
+1. **Clone the repository**
+   ```
    git clone https://github.com/poovarasansivakumar2003/DBMS-Mini-Project.git
    cd DBMS-Mini-Project
    ```
 
-2. Configure Environment Variables:
+2. **Install dependencies**
+   ```
+   npm install
+   ```
+
+3. **Configure environment variables**
    Create a `.env` file in the root directory:
-   ```env
+   ```
    DB_HOST=localhost
    DB_USER=root
    DB_PASSWORD=your_password
@@ -89,74 +125,61 @@ Ensure you have the following installed:
    EMAIL_USER=your_email@gmail.com
    EMAIL_PASS=your_app_password
    ```
-   
-   > Note: Make sure to run queries in `dbQueries.sql` in MySQL and create EMAIL_PASS from [this link](https://itsupport.umd.edu/itsupport?id=kb_article_view&sysparm_article=KB0015112)
 
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-4. Configure the database:
+4. **Set up the database**
    - Create a MySQL database
-   - Update the database credentials in the `.env` file
+   - Run the SQL queries from `dbQueries.sql`
+   - Update the database credentials in `.env`
 
-5. Run the server locally:
+5. **Start the server**
    ```bash
    npm start
    ```
 
-6. Open the app in your browser:
-   🌐 `http://localhost:3000`
+6. **Access the application**
+   Open your browser and navigate to `http://localhost:3000`
 
-## 🧬 Database Schema Overview
+## 🔒 Security Features
 
-The system uses multiple relational tables:
+- 🔐 Password hashing using bcrypt
+- 🔑 Session-based authentication
+- 🔒 Secure environment variable management
+- 📧 Email verification system
+- 🔄 Password reset functionality
 
-- 📌 **admin** — Admin login info
-- 📌 **customers** — Registered users
-- 📌 **medicines** — Medicines with expiry, price, etc.
-- 📌 **suppliers** — Supplier details
-- 📌 **stocks** — Inventory tracking
-- 📌 **purchases** — Purchase sessions
-- 📌 **invoice** — Billing and receipts
+## 📈 Future Roadmap
 
-Includes SQL triggers and stored procedures for validation and automation.
+- 🏷️ Barcode scanning integration
+- 📱 Mobile application development
+- 📊 Advanced analytics dashboard
+- 💰 GST and tax management
+- 📦 Online ordering system
+- 📱 SMS notifications
+- 👥 Multi-role user system
 
-## 🔐 Security Notes
+## 🤝 Contributing
 
-- Passwords are hashed before storage
-- Authentication is session-based
-- `.env` file securely stores credentials
-- Basic email verification and reset password flow included
+Contributions are welcome! Please follow these steps:
 
-## 📌 Future Enhancements
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-- Integration with barcode scanning for faster billing and stock updates
-- Automated SMS/email alerts for low-stock medicines or upcoming expiry dates
-- Implementation of a role-based user system (e.g., admin, cashier, pharmacist) for better access control
-- Online ordering system for customers to place medicine orders remotely
-- Mobile-friendly web interface or a dedicated Android/iOS application for managing the pharmacy on the go
-- GST and tax handling features for compliance and financial accuracy
-- Detailed analytics and sales dashboards for monthly or yearly reporting
+## 📝 License
 
-## 🤝 Contribution Guide
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Want to contribute?
+## 👨‍💻 Author
 
-1. Fork the repo
-2. Create your feature branch: `git checkout -b feature/YourFeature`
-3. Commit your changes
-4. Push to the branch: `git push origin feature/YourFeature`
-5. Open a pull request
+**Poovarasan S**
 
-## 📜 License
+- GitHub: [@poovarasansivakumar2003](https://github.com/poovarasansivakumar2003)
+- Email: [Your Email](poovarasansivakumar2003@gmail.com)
 
-This project is licensed under the MIT License.
-Feel free to modify and use for educational or commercial purposes.
+---
 
-## 💬 Contact
-
+<div align="center">
 Made with ❤️ by Poovarasan S
-
-For queries or collaboration, feel free to reach out!
+</div>
