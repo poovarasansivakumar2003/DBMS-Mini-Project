@@ -1,6 +1,6 @@
 <%- include('includes/header') %>
 <div class="bg-blue-50 flex flex-col md:flex-row min-h-screen">
-  <aside class="bg-white shadow-md fixed md:h-screen z-20 overflow w-full md:w-1/5">
+  <aside class="bg-white shadow-md md:fixed md:h-screen z-20 overflow-y-auto w-full md:w-1/5">
     <div class="py-2">
       <ul class="space-y-0.5 px-2">
         <% const navItems = [
@@ -27,7 +27,7 @@
       </ul>
     </div>
   </aside>
-  <div class="w-full md:w-4/5 px-4 sm:px-6 lg:px-8 absolute right-0 overflow-y-auto">
+  <div class="w-full md:w-4/5 px-4 sm:px-6 lg:px-8 right-0 md:absolute overflow-y-auto">
     <main>
       <div class="mx-auto py-6">
         <!-- Dashboard Card -->

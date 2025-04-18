@@ -401,8 +401,6 @@ BEGIN
     SET NEW.prev_balance = prev_balance;
 END$$
 
-DELIMITER $$
-
 -- Stored Procedure: Update Customer Balance After Invoice Insert
 CREATE PROCEDURE UpdateCustomerBalanceAfterInvoice(
     IN p_purchase_session_id INT, 
